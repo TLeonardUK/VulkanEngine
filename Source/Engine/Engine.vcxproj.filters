@@ -1,0 +1,314 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Engine">
+      <UniqueIdentifier>{4f72e594-77e0-40da-b237-4d357c4f3d6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Engine">
+      <UniqueIdentifier>{5646377e-00c9-4634-8521-d3a2990b1fdc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Graphics">
+      <UniqueIdentifier>{87db66fd-e62e-4ef0-bb43-82f65d2987ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Graphics">
+      <UniqueIdentifier>{7f4a566c-8c4d-4f69-b26c-e574361ddc9e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Graphics\Vulkan">
+      <UniqueIdentifier>{13ddce77-f7a3-4c85-a640-c7f99b7f2476}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Graphics\Vulkan">
+      <UniqueIdentifier>{66f2c366-f4ba-4c2b-976c-a33105ed9c20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windowing">
+      <UniqueIdentifier>{88f1c892-4bc7-42e7-9ee6-8995b551cab1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windowing">
+      <UniqueIdentifier>{45e41b2e-9a6d-48fa-836b-58ba423d11dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Windowing\Sdl">
+      <UniqueIdentifier>{a8537d8e-eb35-498c-afab-d54600977156}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windowing\Sdl">
+      <UniqueIdentifier>{a5883e6d-22f2-44c4-91f7-0fd24c996c8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Platform">
+      <UniqueIdentifier>{dcacd691-5d9e-4076-a2e2-8535ec0bdffa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Platform">
+      <UniqueIdentifier>{fbbeed2e-9536-47df-a533-190292037299}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Platform\Sdl">
+      <UniqueIdentifier>{45b8fd72-a3ee-4136-9a76-55013d01b3de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Platform\Sdl">
+      <UniqueIdentifier>{8dd192e5-a0cb-4bf8-85ca-38ba5d5d3dc0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Types">
+      <UniqueIdentifier>{71df9094-1da4-431f-939b-b8d60621066d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Streaming">
+      <UniqueIdentifier>{dffb84f3-d93e-44bd-8dd6-78de481af1c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Streaming">
+      <UniqueIdentifier>{0ece482f-fe16-4f16-bb26-9d445f5d8676}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Engine.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Windowing\Sdl\SdlWindow.cpp">
+      <Filter>Source Files\Windowing\Sdl</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\Sdl\SdlPlatform.cpp">
+      <Filter>Source Files\Platform\Sdl</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Logging.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Windowing\Window.cpp">
+      <Filter>Source Files\Windowing</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanGraphics.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanExtensions.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanDeviceInfo.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanExtensionInfo.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Streaming\File.cpp">
+      <Filter>Source Files\Streaming</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanShader.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanRenderPass.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsRenderPass.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanFramebuffer.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanPipeline.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsPipeline.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanImageView.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanImage.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanCommandBufferPool.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanCommandBuffer.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsVertexBuffer.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanVertexBuffer.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanEnums.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanMemoryAllocator.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanIndexBuffer.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanResourceSetPool.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsResourceSetPool.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanResourceSet.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanUniformBuffer.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanSampler.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Engine\Engine.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Windowing\Window.h">
+      <Filter>Header Files\Windowing</Filter>
+    </ClInclude>
+    <ClInclude Include="Windowing\Sdl\SdlWindow.h">
+      <Filter>Header Files\Windowing\Sdl</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\Platform.h">
+      <Filter>Header Files\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Platform\Sdl\SdlPlatform.h">
+      <Filter>Header Files\Platform\Sdl</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Logging.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Build.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Graphics.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanGraphics.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\String.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Array.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanExtensions.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanDeviceInfo.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanExtensionInfo.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Streaming\File.h">
+      <Filter>Header Files\Streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsPipeline.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsShader.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanShader.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsRenderPass.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanRenderPass.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsFramebuffer.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanFramebuffer.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanPipeline.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanImageView.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsImageView.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsImage.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanImage.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsCommandBufferPool.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsCommandBuffer.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanCommandBufferPool.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanCommandBuffer.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsVertexBuffer.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanVertexBuffer.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsEnums.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanEnums.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanMemoryAllocator.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsIndexBuffer.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanIndexBuffer.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsResourceSetPool.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsResourceSet.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanResourceSetPool.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanResourceSet.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsUniformBuffer.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanUniformBuffer.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Color.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsSampler.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanSampler.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Engine\LogSeverity.inc">
+      <Filter>Header Files\Engine</Filter>
+    </None>
+    <None Include="Engine\LogCategory.inc">
+      <Filter>Header Files\Engine</Filter>
+    </None>
+  </ItemGroup>
+</Project>

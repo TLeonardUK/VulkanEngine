@@ -1,0 +1,6 @@
+LOG_CATEGORY(Engine)
+LOG_CATEGORY(Graphics)
+LOG_CATEGORY(Platform)
+LOG_CATEGORY(SdlPlatform)
+LOG_CATEGORY(Windowing)
+LOG_CATEGORY(Vulkan)
