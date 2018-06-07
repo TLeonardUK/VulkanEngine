@@ -202,7 +202,7 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = resourceLayouts.size();
+	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(resourceLayouts.size());
 	pipelineLayoutInfo.pSetLayouts = resourceLayouts.empty() ? nullptr : resourceLayouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional

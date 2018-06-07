@@ -53,15 +53,15 @@ bool VulkanSampler::Build(const SamplerDescription& description)
 	samplerInfo.addressModeV = GraphicsAddressModeToVkAddressMode(description.AddressModeV);
 	samplerInfo.addressModeW = GraphicsAddressModeToVkAddressMode(description.AddressModeW);
 	samplerInfo.anisotropyEnable = (description.MaxAnisotropy > 0);
-	samplerInfo.maxAnisotropy = description.MaxAnisotropy;
+	samplerInfo.maxAnisotropy = static_cast<float>(description.MaxAnisotropy);
 	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 	samplerInfo.compareEnable = VK_FALSE;
 	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = 0.0f;
+	samplerInfo.mipmapMode = GraphicsMipMapModeToVkSamplerMipMapMode(description.MipmapMode);
+	samplerInfo.mipLodBias = description.MipLodBias;
+	samplerInfo.minLod = description.MinLod;
+	samplerInfo.maxLod = description.MaxLod;
 
 	CheckVkResultReturnOnFail(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_sampler));
 

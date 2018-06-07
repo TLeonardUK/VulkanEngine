@@ -22,6 +22,8 @@ private:
 	VulkanAllocation m_stagingBuffer;
 	VulkanAllocation m_mainImage;
 
+	uint32_t m_mipLevels;
+
 	VkDevice m_device;
 	VkImage m_image;
 	VkFormat m_format;
@@ -36,13 +38,12 @@ private:
 	friend class VulkanCommandBuffer;
 
 	void FreeResources();
-	bool Build(int width, int height, int depth, GraphicsFormat format);
+	bool Build(int width, int height, GraphicsFormat format, bool generateMips);
 
 	VkBuffer GetStagingBuffer();
-	VkImage GetImage();
-	VkFormat GetFormat();
-	VkExtent3D GetExtents();
-	bool IsDepth();
+	VkImage GetVkImage();
+	VkFormat GetVkFormat();
+	VkExtent3D GetVkExtents();
 
 public:
 	VulkanImage(
@@ -59,6 +60,12 @@ public:
 		std::shared_ptr<Logger> logger,
 		const String& name,
 		std::shared_ptr<VulkanMemoryAllocator> allocator);
+
+	virtual int GetWidth();
+	virtual int GetHeight();
+	virtual int GetMipLevels();
+	virtual GraphicsFormat GetFormat();
+	virtual bool IsDepth();
 
 	virtual bool Stage(void* buffer, int offset, int length);
 

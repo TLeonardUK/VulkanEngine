@@ -13,3 +13,5 @@ int GraphicsFormatBytesPerPixel(GraphicsFormat format);
 
 VkFilter GraphicsFilterToVkFilter(GraphicsFilter filter);
 VkSamplerAddressMode GraphicsAddressModeToVkAddressMode(GraphicsAddressMode addressMode);
+
+VkSamplerMipmapMode GraphicsMipMapModeToVkSamplerMipMapMode(GraphicsMipMapMode mode);

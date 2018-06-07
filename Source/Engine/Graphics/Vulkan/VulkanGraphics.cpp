@@ -18,7 +18,6 @@
 #include "Engine/Graphics/Vulkan/VulkanSampler.h"
 #include "Engine/Windowing/Sdl/SdlWindow.h"
 #include "Engine/Engine/Logging.h"
-#include "Engine/Streaming/File.h"
 
 #include "Engine/Build.h"
 
@@ -50,12 +49,10 @@ const Array<const char*> VulkanGraphics::InstanceLayersToRequest = {
 VulkanGraphics::VulkanGraphics(
 	std::shared_ptr<Logger> logger, 
 	const String& gameName,
-	const String& assetsFolder, 
 	int gameVersionMajor, 
 	int gameVersionMinor, 
 	int gameVersionBuild)
 	: m_logger(logger)
-	, m_assetsFolder(assetsFolder)
 	, m_extensionInfo(logger)
 	, m_physicalDeviceInfo(logger)
 	, m_gameName(gameName)
@@ -91,7 +88,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanGraphics::DebugCallback(
 	const char* layerPrefix,
 	const char* msg)
 {
-	/*String message = String::Format("Validation Message: obj=0x%08x obj_type=0x%08x location=0x%08x code=0x%08x layer=%s: %s",
+	/*String message = StringFormat("Validation Message: obj=0x%08x obj_type=0x%08x location=0x%08x code=0x%08x layer=%s: %s",
 		obj,
 		objType,
 		location,
@@ -100,7 +97,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanGraphics::DebugCallback(
 		msg);
 	*/
 
-	String message = String::Format("%s: %s",
+	String message = StringFormat("%s: %s",
 		layerPrefix,
 		msg);
 
@@ -549,7 +546,7 @@ bool VulkanGraphics::CreateSwapChain()
 
 		std::shared_ptr<VulkanImage> image = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, "Swap Chain Buffer", swapChainImages[i], m_swapChainFormat.format, extent, false);
 		m_swapChainImages[i] = image;
-		m_swapChainImageViews[i] = std::dynamic_pointer_cast<VulkanImageView>(CreateImageView(String::Format("Swap Chain Buffer Image View %i", i), image));
+		m_swapChainImageViews[i] = std::dynamic_pointer_cast<VulkanImageView>(CreateImageView(StringFormat("Swap Chain Buffer Image View %i", i), image));
 	}
 
 	m_logger->WriteSuccess(LogCategory::Vulkan, "Successfully created swapchain with %i images.", swapChainImageCount);
@@ -690,6 +687,8 @@ void VulkanGraphics::DisposeSwapChain()
 
 void VulkanGraphics::Dispose()
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	m_logger->WriteInfo(LogCategory::Vulkan, "Destroying vulkan instance.");
 
 	// Wait for device to finish rendering before we tear everything apart.
@@ -914,6 +913,8 @@ bool VulkanGraphics::Present()
 
 std::shared_ptr<IGraphicsShader> VulkanGraphics::CreateShader(const String& name, const String& entryPoint, GraphicsPipelineStage stage, const Array<char>& data)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanShader> shader = std::make_shared<VulkanShader>(m_logicalDevice, m_logger, name, entryPoint, stage);
 	if (!shader->LoadFromArray(data))
 	{
@@ -926,6 +927,8 @@ std::shared_ptr<IGraphicsShader> VulkanGraphics::CreateShader(const String& name
 
 std::shared_ptr<IGraphicsRenderPass> VulkanGraphics::CreateRenderPass(const String& name, const GraphicsRenderPassSettings& settings)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanRenderPass> pass = std::make_shared<VulkanRenderPass>(m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
 	{
@@ -938,6 +941,8 @@ std::shared_ptr<IGraphicsRenderPass> VulkanGraphics::CreateRenderPass(const Stri
 
 std::shared_ptr<IGraphicsPipeline> VulkanGraphics::CreatePipeline(const String& name, const GraphicsPipelineSettings& settings)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanPipeline> pass = std::make_shared<VulkanPipeline>(m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
 	{
@@ -950,6 +955,8 @@ std::shared_ptr<IGraphicsPipeline> VulkanGraphics::CreatePipeline(const String& 
 
 std::shared_ptr<IGraphicsFramebuffer> VulkanGraphics::CreateFramebuffer(const String& name, const GraphicsFramebufferSettings& settings)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanFramebuffer> pass = std::make_shared<VulkanFramebuffer>(m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
 	{
@@ -962,6 +969,8 @@ std::shared_ptr<IGraphicsFramebuffer> VulkanGraphics::CreateFramebuffer(const St
 
 std::shared_ptr<IGraphicsImageView> VulkanGraphics::CreateImageView(const String& name, std::shared_ptr<IGraphicsImage> image)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanImageView> pass = std::make_shared<VulkanImageView>(m_logicalDevice, m_logger, name);
 	if (!pass->Build(image))
 	{
@@ -974,6 +983,8 @@ std::shared_ptr<IGraphicsImageView> VulkanGraphics::CreateImageView(const String
 
 std::shared_ptr<IGraphicsCommandBufferPool> VulkanGraphics::CreateCommandBufferPool(const String& name)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanCommandBufferPool> pass = std::make_shared<VulkanCommandBufferPool>(m_logicalDevice, m_physicalDeviceInfo, m_logger, name);
 	if (!pass->Build())
 	{
@@ -986,6 +997,8 @@ std::shared_ptr<IGraphicsCommandBufferPool> VulkanGraphics::CreateCommandBufferP
 
 std::shared_ptr<IGraphicsVertexBuffer> VulkanGraphics::CreateVertexBuffer(const String& name, const VertexBufferBindingDescription& binding, int vertexCount)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanVertexBuffer> pass = std::make_shared<VulkanVertexBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator);
 	if (!pass->Build(binding, vertexCount))
 	{
@@ -998,6 +1011,8 @@ std::shared_ptr<IGraphicsVertexBuffer> VulkanGraphics::CreateVertexBuffer(const 
 
 std::shared_ptr<IGraphicsIndexBuffer> VulkanGraphics::CreateIndexBuffer(const String& name, int indexSize, int indexCount)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanIndexBuffer> pass = std::make_shared<VulkanIndexBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator);
 	if (!pass->Build(indexSize, indexCount))
 	{
@@ -1010,6 +1025,8 @@ std::shared_ptr<IGraphicsIndexBuffer> VulkanGraphics::CreateIndexBuffer(const St
 
 std::shared_ptr<IGraphicsUniformBuffer> VulkanGraphics::CreateUniformBuffer(const String& name, int bufferSize)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanUniformBuffer> pass = std::make_shared<VulkanUniformBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator);
 	if (!pass->Build(bufferSize))
 	{
@@ -1022,6 +1039,8 @@ std::shared_ptr<IGraphicsUniformBuffer> VulkanGraphics::CreateUniformBuffer(cons
 
 std::shared_ptr<IGraphicsResourceSetPool> VulkanGraphics::CreateResourceSetPool(const String& name)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanResourceSetPool> pass = std::make_shared<VulkanResourceSetPool>(m_logicalDevice, m_logger, name);
 	if (!pass->Build())
 	{
@@ -1032,10 +1051,12 @@ std::shared_ptr<IGraphicsResourceSetPool> VulkanGraphics::CreateResourceSetPool(
 	return pass;
 }
 
-std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, int width, int height, int depth, GraphicsFormat format)
+std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, int width, int height, GraphicsFormat format, bool generateMips)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanImage> pass = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, name, m_memoryAllocator);
-	if (!pass->Build(width, height, depth, format))
+	if (!pass->Build(width, height, format, generateMips))
 	{
 		return nullptr;
 	}
@@ -1046,6 +1067,8 @@ std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, 
 
 std::shared_ptr<IGraphicsSampler> VulkanGraphics::CreateSampler(const String& name, const SamplerDescription& settings)
 {
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
 	std::shared_ptr<VulkanSampler> pass = std::make_shared<VulkanSampler>(m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
 	{
@@ -1091,7 +1114,7 @@ bool VulkanGraphics::AttachToWindow(std::shared_ptr<IWindow> window)
 	return true;
 }
 
-std::shared_ptr<IGraphics> VulkanGraphics::Create(std::shared_ptr<Logger> logger, const String& gameName, const String& assetsFolder, int gameVersionMajor, int gameVersionMinor, int gameVersionBuild)
+std::shared_ptr<IGraphics> VulkanGraphics::Create(std::shared_ptr<Logger> logger, const String& gameName, int gameVersionMajor, int gameVersionMinor, int gameVersionBuild)
 {
-	return std::make_shared<VulkanGraphics>(logger, gameName, assetsFolder, gameVersionMajor, gameVersionMinor, gameVersionBuild);
+	return std::make_shared<VulkanGraphics>(logger, gameName, gameVersionMajor, gameVersionMinor, gameVersionBuild);
 }

@@ -15,6 +15,12 @@ public:
 	GraphicsAddressMode AddressModeV;
 	GraphicsAddressMode AddressModeW;
 
+	GraphicsMipMapMode MipmapMode;
+
+	float MinLod;
+	float MaxLod;
+	float MipLodBias;
+
 	int MaxAnisotropy;
 
 	SamplerDescription()
@@ -24,6 +30,10 @@ public:
 		, AddressModeV(GraphicsAddressMode::ClampToEdge)
 		, AddressModeW(GraphicsAddressMode::ClampToEdge)
 		, MaxAnisotropy(0)
+		, MinLod(0.0f)
+		, MaxLod(-1.0f)
+		, MipLodBias(0.0f)
+		, MipmapMode(GraphicsMipMapMode::Linear)
 	{
 	}
 };

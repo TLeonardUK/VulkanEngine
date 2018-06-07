@@ -51,7 +51,7 @@ public:
 	virtual std::shared_ptr<IGraphicsUniformBuffer> CreateUniformBuffer(const String& name, int dataSize) = 0;
 	virtual std::shared_ptr<IGraphicsCommandBufferPool> CreateCommandBufferPool(const String& name) = 0;
 	virtual std::shared_ptr<IGraphicsResourceSetPool> CreateResourceSetPool(const String& name) = 0;
-	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int depth, GraphicsFormat format) = 0;
+	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, GraphicsFormat format, bool generateMips) = 0;
 	virtual std::shared_ptr<IGraphicsSampler> CreateSampler(const String& name, const SamplerDescription& settings) = 0;
 
 	// GraphicsDescriptorSetPool pool = CreateDescriptorSetPool(settings)

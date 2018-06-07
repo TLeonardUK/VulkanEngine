@@ -1,28 +1,22 @@
 #include "Engine/Build.h"
 
+#include "Engine/Engine/GameInstance.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Logging.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Windowing/Window.h"
-#include "Engine/Streaming/File.h"
 
-#if defined(USE_SDL_PLATFORM)
+#include "Engine/Rendering/Renderer.h"
+#include "Engine/Resources/ResourceManager.h"
+#include "Engine/Resources/Types/TextureResourceLoader.h"
+
 #include "Engine/Platform/Sdl/SdlPlatform.h"
-#endif
-
-#if defined(USE_SDL_WINDOW)
 #include "Engine/Windowing/Sdl/SdlWindow.h"
-#endif
-
-#if defined(USE_VULKAN_GRAPHICS)
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
-#endif
+#include "Engine/Input/Sdl/SdlInput.h"
 
 #include "Engine/Graphics/GraphicsEnums.h"
 #include "Engine/Graphics/GraphicsRenderPass.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -49,12 +43,27 @@ bool Engine::Init()
 	{
 		return false;
 	}
+	if (!InitInput())
+	{
+		return false;
+	}
+	if (!InitRenderer())
+	{
+		return false;
+	}
+	if (!InitResourceManager())
+	{
+		return false;
+	}
 
 	return true;
 }
 
 bool Engine::Term()
 {
+	TermResourceManager();
+	TermRenderer();
+	TermInput();
 	TermWindow();
 	TermGraphics();
 	TermLogger();
@@ -63,9 +72,14 @@ bool Engine::Term()
 	return true;
 }
 
-bool Engine::Run()
+bool Engine::Run(std::shared_ptr<IGameInstance> gameInstance)
 {
 	bool bResult = true;
+
+	m_gameInstance = gameInstance;
+	m_name = m_gameInstance->GetGameName();
+	m_assetFolder = m_gameInstance->GetAssetFolder();
+	m_gameInstance->GetGameVersion(m_versionMajor, m_versionMinor, m_versionBuild);
 
 	if (Init())
 	{
@@ -106,11 +120,15 @@ void Engine::TermLogger()
 
 bool Engine::InitPlatform()
 {
-#if defined(USE_SDL_PLATFORM)
-	m_platform = SdlPlatform::Create();
-#else
-	#error No platform system defined
-#endif
+	PlatformSystem system = m_gameInstance->GetPlatformSystem();
+	if (system == PlatformSystem::Sdl)
+	{
+		m_platform = SdlPlatform::Create();
+	}
+	else
+	{
+		return false;
+	}
 
 	if (m_platform == nullptr)
 	{
@@ -131,11 +149,20 @@ void Engine::TermPlatform()
 
 bool Engine::InitWindow()
 {
-#if defined(USE_SDL_WINDOW)
-	m_window = SdlWindow::Create(m_logger, m_graphics, m_name, 800, 600, 60, WindowMode::Windowed);
-#else
-	#error No window system defined
-#endif
+	int windowWidth, windowHeight, windowRate;
+	WindowMode windowMode;
+
+	m_gameInstance->GetWindowSettings(windowWidth, windowHeight, windowRate, windowMode);
+
+	WindowSystem system = m_gameInstance->GetWindowSystem();
+	if (system == WindowSystem::Sdl)
+	{
+		m_window = SdlWindow::Create(m_logger, m_graphics, m_name, windowWidth, windowHeight, windowRate, windowMode);
+	}
+	else
+	{
+		return false;
+	}
 
 	if (m_window == nullptr)
 	{
@@ -163,11 +190,15 @@ void Engine::TermWindow()
 
 bool Engine::InitGraphics()
 {
-#if defined(USE_VULKAN_GRAPHICS)
-	m_graphics = VulkanGraphics::Create(m_logger, m_name, m_assetFolder, m_versionMajor, m_versionMinor, m_versionBuild);
-#else
-#error No graphics system defined
-#endif
+	GraphicsSystem system = m_gameInstance->GetGraphicsSystem();
+	if (system == GraphicsSystem::Vulkan)
+	{
+		m_graphics = VulkanGraphics::Create(m_logger, m_name, m_versionMajor, m_versionMinor, m_versionBuild);
+	}
+	else
+	{
+		return false;
+	}
 
 	if (m_graphics == nullptr)
 	{
@@ -186,231 +217,81 @@ void Engine::TermGraphics()
 	}
 }
 
-void Engine::CreateResources()
+bool Engine::InitInput()
 {
-	String fragShaderPath = String::Format("%s/Shaders/triangle.frag", m_assetFolder.c_str());
-	String vertShaderPath = String::Format("%s/Shaders/triangle.vert", m_assetFolder.c_str());
-	String texturePath = String::Format("%s/Models/chalet.jpg", m_assetFolder.c_str());
-	String modelPath = String::Format("%s/Models/chalet.obj", m_assetFolder.c_str());
-
-	m_fragShader = m_graphics->CreateShader("Triangle Fragment Shader", "main", GraphicsPipelineStage::Fragment, File::ReadAllBytes(fragShaderPath));
-	m_vertShader = m_graphics->CreateShader("Triangle Vertex Shader", "main", GraphicsPipelineStage::Vertex, File::ReadAllBytes(vertShaderPath));
-
-	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-	m_image = m_graphics->CreateImage("Main Image", texWidth, texHeight, 1, GraphicsFormat::UNORM_R8G8B8A8);
-	m_image->Stage(pixels, 0, texWidth * texHeight * 4);
-	m_imageView = m_graphics->CreateImageView("Main Image View", m_image);
-
-	SamplerDescription description;
-	m_sampler = m_graphics->CreateSampler("Main Image Sampler", description);
-
-	m_commandBufferPool = m_graphics->CreateCommandBufferPool("Main Command Buffer Pool");
-	m_resourceSetPool = m_graphics->CreateResourceSetPool("Main Resource Set Pool");
-	
-
-	m_vertices.reserve(1000000);
-	m_indices.reserve(1000000);
-
-	tinyobj::attrib_t attrib;
-	std::vector<tinyobj::shape_t> shapes;
-	std::vector<tinyobj::material_t> materials;
-	std::string err;
-
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, modelPath.c_str())) 
+	InputSystem system = m_gameInstance->GetInputSystem();
+	if (system == InputSystem::Sdl)
 	{
-		assert(false);
+		m_input = SdlInput::Create(m_logger);
 	}
-	
-	for (const auto& shape : shapes) 
+	else
 	{
-		for (const auto& index : shape.mesh.indices) 
-		{
-			Vertex vertex = {};
-
-			vertex.pos = {
-				attrib.vertices[3 * index.vertex_index + 0],
-				attrib.vertices[3 * index.vertex_index + 1],
-				attrib.vertices[3 * index.vertex_index + 2]
-			};
-
-			vertex.texCoord = {
-				attrib.texcoords[2 * index.texcoord_index + 0],
-				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-			};
-
-			vertex.color = { 1.0f, 1.0f, 1.0f };
-
-			m_vertices.push_back(vertex);
-			m_indices.push_back(m_indices.size());
-		}
+		return false;
 	}
 
-	m_hasUploadedState = false;
-
-
-	m_vertexBufferFormat = {};
-	m_vertexBufferFormat.AddAttribute("position", 0, GraphicsBindingFormat::Float3, sizeof(Vertex), offsetof(Vertex, pos));
-	m_vertexBufferFormat.AddAttribute("color", 1, GraphicsBindingFormat::Float3, sizeof(Vertex), offsetof(Vertex, color));
-	m_vertexBufferFormat.AddAttribute("texCoord", 2, GraphicsBindingFormat::Float2, sizeof(Vertex), offsetof(Vertex, texCoord));
-	m_vertexBufferFormat.SetVertexSize(sizeof(Vertex));
-
-	m_indexBuffer = m_graphics->CreateIndexBuffer("Main Index Buffer", sizeof(uint32_t), (int)m_indices.size());
-	m_indexBuffer->Stage((void*)m_indices.data(), 0, (int)m_indices.size() * sizeof(uint32_t));
-
-	m_vertexBuffer = m_graphics->CreateVertexBuffer("Main Vertex Buffer", m_vertexBufferFormat, (int)m_vertices.size());
-	m_vertexBuffer->Stage((void*)m_vertices.data(), 0, (int)m_vertices.size() * sizeof(Vertex));
-
-	m_resourceSetDescription = {};
-	m_resourceSetDescription.AddBinding("ubo", 0, GraphicsBindingType::UniformBufferObject);
-	m_resourceSetDescription.AddBinding("sampler", 1, GraphicsBindingType::Sampler);
-
-	m_resourceSet = m_resourceSetPool->Allocate(m_resourceSetDescription);
-
-	m_uniformBuffer = m_graphics->CreateUniformBuffer("Main Uniform Buffer Object", sizeof(m_uniforms));
-
-	CreateSwapChainDependentResources();
-}
-
-void Engine::FreeResources()
-{
-	m_fragShader = nullptr;
-	m_vertShader = nullptr;
-
-	m_resourceSet = nullptr;
-
-	FreeSwapChainDependentResources();
-}
-
-void Engine::FreeSwapChainDependentResources()
-{
-	m_depthBufferImage = nullptr;
-	m_depthBufferView = nullptr;
-	m_renderPass = nullptr;
-	m_swapChainFramebuffers.clear();
-	m_pipeline = nullptr;
-	m_commandBuffers.clear();
-}
-
-void Engine::CreateSwapChainDependentResources()
-{
-	// Create render pass.
-	GraphicsRenderPassSettings renderPassSettings;
-	renderPassSettings.AddColorAttachment(m_graphics->GetSwapChainFormat(), true);
-	renderPassSettings.AddDepthAttachment(GraphicsFormat::UNORM_D24_UINT_S8);
-
-	GraphicsSubPassIndex subPass1 = renderPassSettings.AddSubPass();
-	renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
-
-	m_renderPass = m_graphics->CreateRenderPass("Main Render Pass", renderPassSettings);
-
-	m_swapChainViews = m_graphics->GetSwapChainViews();
-	m_swapChainWidth = m_swapChainViews[0]->GetWidth();
-	m_swapChainHeight = m_swapChainViews[0]->GetHeight();
-
-	// Create depth buffer.
-	m_depthBufferImage = m_graphics->CreateImage("Depth Buffer", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::UNORM_D24_UINT_S8);
-	m_depthBufferView = m_graphics->CreateImageView("Depth BUffer View", m_depthBufferImage);
-
-	// Create frame buffers for each swap chain image.
-	m_swapChainFramebuffers.resize(m_swapChainViews.size());
-	for (int i = 0; i < m_swapChainViews.size(); i++)
+	if (m_input == nullptr)
 	{
-		std::shared_ptr<IGraphicsImageView> imageView = m_swapChainViews[i];
-
-		GraphicsFramebufferSettings frameBufferSettings;
-		frameBufferSettings.width = imageView->GetWidth();
-		frameBufferSettings.height = imageView->GetHeight();
-		frameBufferSettings.renderPass = m_renderPass;
-		frameBufferSettings.attachments.push_back(imageView);
-		frameBufferSettings.attachments.push_back(m_depthBufferView);
-
-		m_swapChainFramebuffers[i] = m_graphics->CreateFramebuffer(String::Format("Swap Chain Framebuffer %i", i), frameBufferSettings);;
+		return false;
 	}
 
-	// Create pipeline.
-	GraphicsPipelineSettings pipelineSettings;
-	pipelineSettings.SetRenderPass(m_renderPass);
-	pipelineSettings.SetShaderStage(GraphicsPipelineStage::Vertex, m_vertShader);
-	pipelineSettings.SetShaderStage(GraphicsPipelineStage::Fragment, m_fragShader);
-	pipelineSettings.SetVertexFormat(m_vertexBufferFormat);
-	pipelineSettings.AddResourceSet(m_resourceSet);
-	pipelineSettings.SetDepthTestEnabled(true);
-	pipelineSettings.SetDepthWriteEnabled(true);
+	return true;
+}
 
-	m_pipeline = m_graphics->CreatePipeline("Main Pipeline", pipelineSettings);
-
-	// Create command buffer.
-	m_commandBuffers.resize(m_swapChainViews.size());
-	for (int i = 0; i < m_commandBuffers.size(); i++)
+void Engine::TermInput()
+{
+	if (m_input != nullptr)
 	{
-		m_commandBuffers[i] = m_commandBufferPool->Allocate();
+		m_input->Dispose();
+		m_input = nullptr;
 	}
 }
 
-void Engine::SwapChainModified()
+bool Engine::InitRenderer()
 {
-	FreeSwapChainDependentResources();
-	CreateSwapChainDependentResources();
-}
-
-void Engine::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer)
-{
-	buffer->Reset();
-
-	buffer->Begin();
-
-	// Upload vertex buffer (todo: only if changed).
-	// todo: we shouldn't be doing this, we are meant to wait before buffer is not being used
-	// before pushing stuff to it. Use staged data until gpu is ready? Ring buffer? Also be nice
-	// if we can get rid of this and do it in another way rather than manual uploads. Just have an Update
-	// function of the index/vert buffer and do it automagically?
-	if (!m_hasUploadedState)
+	m_renderer = std::make_shared<Renderer>(m_graphics);
+	if (!m_renderer->Init())
 	{
-		buffer->Upload(m_image);
-		buffer->Upload(m_indexBuffer);
-		buffer->Upload(m_vertexBuffer);
-		m_hasUploadedState = true;
+		return false;
 	}
 
-	buffer->Clear(m_swapChainViews[m_frameIndex]->GetImage(), Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
-	buffer->Clear(m_depthBufferImage, Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
-
-	// Render the frame.
-	buffer->BeginPass(m_renderPass, m_swapChainFramebuffers[m_frameIndex]);
-	buffer->BeginSubPass();
-
-	buffer->SetPipeline(m_pipeline);
-	buffer->SetScissor(0, 0, m_swapChainViews[0]->GetWidth(), m_swapChainViews[0]->GetHeight());
-	buffer->SetViewport(0, 0, m_swapChainViews[0]->GetWidth(), m_swapChainViews[0]->GetHeight());
-
-	buffer->SetIndexBuffer(m_indexBuffer);
-	buffer->SetVertexBuffer(m_vertexBuffer);
-	buffer->SetResourceSets({ m_resourceSet });
-	buffer->DrawIndexedElements(m_indices.size(), 1, 0, 0, 0);
-
-	buffer->EndSubPass();
-	buffer->EndPass();
-
-	buffer->End();
+	return true;
 }
 
-void Engine::UpdateUniforms()
+void Engine::TermRenderer()
 {
-	static auto startTime = std::chrono::high_resolution_clock::now();
+	if (m_renderer != nullptr)
+	{
+		m_renderer->Dispose();
+		m_renderer = nullptr;
+	}
+}
 
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count() / 5.0f;
+bool Engine::InitResourceManager()
+{
+	m_resourceManager = std::make_shared<ResourceManager>(m_logger);
+	if (!m_resourceManager->Init())
+	{
+		return false;
+	}
 
-	m_uniforms.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	m_uniforms.view = glm::lookAt(glm::vec3(1.5f, 1.5f, 1.5f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	m_uniforms.proj = glm::perspective(glm::radians(45.0f), m_swapChainWidth / (float)m_swapChainHeight, 0.1f, 10.0f);
-	m_uniforms.proj[1][1] *= -1;
+	if (!m_resourceManager->Mount(m_assetFolder))
+	{
+		return false;
+	}
 
-	m_uniformBuffer->Upload(&m_uniforms, 0, sizeof(m_uniforms));
+	m_resourceManager->AddLoader(std::make_shared<TextureResourceLoader>(m_logger, m_graphics));
+	m_resourceManager->LoadDefaults();
 
-	m_resourceSet->UpdateBinding(0, 0, m_uniformBuffer);
-	m_resourceSet->UpdateBinding(1, 0, m_sampler, m_imageView);
+	return true;
+}
+
+void Engine::TermResourceManager()
+{
+	if (m_resourceManager != nullptr)
+	{
+		m_resourceManager->Dispose();
+		m_resourceManager = nullptr;
+	}
 }
 
 void Engine::UpdateFps()
@@ -427,7 +308,7 @@ void Engine::UpdateFps()
 	{
 		float avgFrameTime = m_frameTimeSumCounter / m_fpsCounter;
 
-		m_window->SetTitle(String::Format("Vulkan Test (%i fps, %0.2f ms)", (int)m_fpsCounter, avgFrameTime));
+		m_window->SetTitle(StringFormat("%s (%i fps, %0.2f ms)", m_name.c_str(), (int)m_fpsCounter, avgFrameTime));
 
 		m_fpsCounter = 0.0f;
 		m_frameTimeSumCounter = 0.0f;
@@ -438,26 +319,23 @@ void Engine::UpdateFps()
 
 void Engine::MainLoop()
 {
-	CreateResources();
-
-	m_frameIndex = 0;
+	m_gameInstance->Initialize();
 
 	while (!m_platform->WasCloseRequested())
 	{
 		m_platform->PumpMessageQueue();
 
+		m_gameInstance->Tick();
+		m_renderer->Present();
+		m_resourceManager->CollectGarbage();
+
 		UpdateFps();
-		UpdateUniforms();
-
-		std::shared_ptr<IGraphicsCommandBuffer> commandBuffer = m_commandBuffers[m_frameIndex];
-		BuildCommandBuffer(commandBuffer);
-		m_graphics->Dispatch(commandBuffer);
-
-		m_frameIndex = (m_frameIndex + 1) % m_commandBuffers.size();
-
-		if (m_graphics->Present())
-		{
-			SwapChainModified();
-		}
 	}
+
+	m_gameInstance->Terminate();
+}
+
+std::shared_ptr<ResourceManager> Engine::GetResourceManager()
+{
+	return m_resourceManager;
 }

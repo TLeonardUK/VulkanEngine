@@ -1,24 +1,26 @@
 #pragma once
 
-#include "Engine/Streaming/File.h"
+#include "Engine/Utilities/File.h"
 
 #include <stdio.h>
 #include <fstream>
 
-Array<char> File::ReadAllBytes(const String& filename)
+bool File::ReadAllBytes(const String& filename, Array<char>& buffer)
 {
 	std::ifstream file(filename.c_str(), std::ios::ate | std::ios::binary);
 
-	if (!file.is_open()) {
-		throw std::runtime_error("failed to open file!");
+	if (!file.is_open()) 
+	{
+		return false;
 	}
 
 	size_t fileSize = (size_t)file.tellg();
-	Array<char> buffer(fileSize);
+
+	buffer.resize(fileSize);
 
 	file.seekg(0);
 	file.read(buffer.data(), fileSize);
 	file.close();
 
-	return buffer;
+	return true;
 }

@@ -1,0 +1,8 @@
+{
+    "type": "material",    
+    "shader": "Shaders/diffuse.json",
+    "samplers": 
+    {
+        "diffuseTexture": "Textures/chalet.json"
+    }
+}

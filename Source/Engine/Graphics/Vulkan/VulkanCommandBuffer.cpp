@@ -138,7 +138,7 @@ void VulkanCommandBuffer::Clear(std::shared_ptr<IGraphicsImage> image, Color col
 	VkClearValue clearValue = {};
 	clearValue.color = clearColor;
 	clearValue.depthStencil.depth = depth;
-	clearValue.depthStencil.stencil = stencil;
+	clearValue.depthStencil.stencil = static_cast<uint32_t>(stencil);
 
 	VkImageSubresourceRange imageRange = {};
 	imageRange.aspectMask = vulkanImage->IsDepth() ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -149,7 +149,7 @@ void VulkanCommandBuffer::Clear(std::shared_ptr<IGraphicsImage> image, Color col
 	{
 		vkCmdClearDepthStencilImage(
 			m_commandBuffer,
-			vulkanImage->GetImage(),
+			vulkanImage->GetVkImage(),
 			VK_IMAGE_LAYOUT_GENERAL,
 			&clearValue.depthStencil,
 			1,
@@ -160,7 +160,7 @@ void VulkanCommandBuffer::Clear(std::shared_ptr<IGraphicsImage> image, Color col
 	{
 		vkCmdClearColorImage(
 			m_commandBuffer,
-			vulkanImage->GetImage(),
+			vulkanImage->GetVkImage(),
 			VK_IMAGE_LAYOUT_GENERAL,
 			&clearColor,
 			1,
@@ -214,7 +214,7 @@ void VulkanCommandBuffer::SetResourceSets(Array<std::shared_ptr<IGraphicsResourc
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		m_activePipeline->GetPipelineLayout(),
 		0,
-		sets.size(),
+		static_cast<uint32_t>(sets.size()),
 		sets.data(),
 		0,
 		nullptr
@@ -261,7 +261,7 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsIndexBuffer> buffer)
 	vkCmdCopyBuffer(m_commandBuffer, stagingBuffer.Buffer, gpuBuffer.Buffer, 1, &copyRegion);
 }
 
-void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, VkImageLayout srcLayout, VkImageLayout dstLayout)
+void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout)
 {
 	VkImageMemoryBarrier barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -272,9 +272,9 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, VkImag
 	barrier.image = image;
 	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.levelCount = mipLevels;
 	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
 
 	VkPipelineStageFlags sourceStage;
 	VkPipelineStageFlags destinationStage;
@@ -331,7 +331,9 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
 {
 	std::shared_ptr<VulkanImage> vulkanImage = std::dynamic_pointer_cast<VulkanImage>(buffer);
 
-	VkImage image = vulkanImage->GetImage();
+	int mipLevels = vulkanImage->GetMipLevels();
+
+	VkImage image = vulkanImage->GetVkImage();
 	VkBuffer stagingBuffer = vulkanImage->GetStagingBuffer();
 
 	VkBufferImageCopy region = {};
@@ -345,9 +347,9 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
 	region.imageSubresource.layerCount = 1;
 
 	region.imageOffset = { 0, 0, 0 };
-	region.imageExtent = vulkanImage->GetExtents();
+	region.imageExtent = vulkanImage->GetVkExtents();
 
-	TransitionImage(image, vulkanImage->GetFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	TransitionImage(image, vulkanImage->GetVkFormat(), mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	vkCmdCopyBufferToImage(
 		m_commandBuffer,
@@ -358,5 +360,112 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
 		&region
 	);
 
-	TransitionImage(image, vulkanImage->GetFormat(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	VkImageMemoryBarrier barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.image = image;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.levelCount = 1;
+
+	// Blit down to each mip level.
+	int32_t mipWidth = vulkanImage->GetVkExtents().width;
+	int32_t mipHeight = vulkanImage->GetVkExtents().height;
+
+	for (int i = 1; i < mipLevels; i++)
+	{
+		// Transition previous mip level to src-optimal.
+		barrier.subresourceRange.baseMipLevel = i - 1;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+		vkCmdPipelineBarrier(
+			m_commandBuffer,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,
+			0,
+			nullptr,
+			0,
+			nullptr,
+			1,
+			&barrier);
+
+		// Blit to this level.
+		VkImageBlit blit = {};
+
+		blit.srcOffsets[0] = { 0, 0, 0 };
+		blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+		blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.srcSubresource.mipLevel = i - 1;
+		blit.srcSubresource.baseArrayLayer = 0;
+		blit.srcSubresource.layerCount = 1;
+
+		blit.dstOffsets[0] = { 0, 0, 0 };
+		blit.dstOffsets[1] = { mipWidth / 2, mipHeight / 2, 1 };
+		blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		blit.dstSubresource.mipLevel = i;
+		blit.dstSubresource.baseArrayLayer = 0;
+		blit.dstSubresource.layerCount = 1;
+
+		vkCmdBlitImage(
+			m_commandBuffer,
+			image,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1,
+			&blit,
+			VK_FILTER_LINEAR);
+
+		// Transition level to optimal layout for reading.
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(
+			m_commandBuffer,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			0,
+			0,
+			nullptr,
+			0,
+			nullptr,
+			1,
+			&barrier);
+
+		if (mipWidth > 1)
+		{
+			mipWidth /= 2;
+		}
+		if (mipHeight > 1)
+		{
+			mipHeight /= 2;
+		}
+	}
+
+	// Transition top level mip to optimal layout for reading.
+	barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+	vkCmdPipelineBarrier(
+		m_commandBuffer,
+		VK_PIPELINE_STAGE_TRANSFER_BIT, 
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 
+		0,
+		0, 
+		nullptr,
+		0, 
+		nullptr,
+		1, 
+		&barrier);
 }

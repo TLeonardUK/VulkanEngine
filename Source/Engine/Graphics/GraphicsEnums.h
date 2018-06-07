@@ -56,3 +56,9 @@ enum class GraphicsFilter
 	Linear,
 	NearestNeighbour
 };
+
+enum class GraphicsMipMapMode
+{
+	Linear,
+	NearestNeighbour
+};

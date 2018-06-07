@@ -101,7 +101,7 @@ std::shared_ptr<IGraphicsResourceSet> VulkanResourceSetPool::Allocate(const Grap
 	// todo: cache these, don't create ones for each set if same bindings.
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = bindings.size();
+	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 	layoutInfo.pBindings = bindings.data();
 
 	VkDescriptorSetLayout descriptorSetLayout;
@@ -121,7 +121,7 @@ std::shared_ptr<IGraphicsResourceSet> VulkanResourceSetPool::Allocate(const Grap
 	std::shared_ptr<VulkanResourceSet> resourceSet = std::make_shared<VulkanResourceSet>(
 		m_device, 
 		m_logger, 
-		String::Format("%s Set", m_name.c_str()), 
+		StringFormat("%s Set", m_name.c_str()), 
 		descriptorSetLayout, 
 		descriptorSet,
 		m_descriptorPool);

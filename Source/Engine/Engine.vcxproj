@@ -18,13 +18,13 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -43,14 +43,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\ThirdParty\sdl2\2.0.8\include\;$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Include\;$(SolutionDir)..\ThirdParty\glm\0.9.9-a2\;$(SolutionDir)..\ThirdParty\stb\;$(SolutionDir)..\ThirdParty\tiny_obj_loader\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\ThirdParty\sdl2\2.0.8\include\;$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Include\;$(SolutionDir)..\ThirdParty\glm\0.9.9-a2\;$(SolutionDir)..\ThirdParty\stb\;$(SolutionDir)..\ThirdParty\tiny_obj_loader\;$(SolutionDir)..\ThirdParty\nlohmann\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)</IncludePath>
     <OutDir>$(SolutionDir)..\Binaries\</OutDir>
     <IntDir>$(SolutionDir)..\Temp\Source\Engine\$(Platform)\$(Configuration)\</IntDir>
     <LibraryPath>$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Lib\;$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\ThirdParty\sdl2\2.0.8\include\;$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Include\;$(SolutionDir)..\ThirdParty\glm\0.9.9-a2\;$(SolutionDir)..\ThirdParty\stb\;$(SolutionDir)..\ThirdParty\tiny_obj_loader\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\ThirdParty\sdl2\2.0.8\include\;$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Include\;$(SolutionDir)..\ThirdParty\glm\0.9.9-a2\;$(SolutionDir)..\ThirdParty\stb\;$(SolutionDir)..\ThirdParty\tiny_obj_loader\;$(SolutionDir)..\ThirdParty\nlohmann\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)</IncludePath>
     <LibraryPath>$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Lib\;$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)..\Binaries\</OutDir>
+    <IntDir>$(SolutionDir)..\Temp\Source\Engine\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -69,6 +71,9 @@
     <PostBuildEvent>
       <Command>XCOPY /d "$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\SDL2.dll" "$(SolutionDir)..\Binaries\"</Command>
     </PostBuildEvent>
+    <Lib>
+      <AdditionalDependencies>vulkan-1.lib;SDL2.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -87,6 +92,9 @@
     <PostBuildEvent>
       <Command>XCOPY /d "$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\SDL2.dll" "$(SolutionDir)..\Binaries\"</Command>
     </PostBuildEvent>
+    <Lib>
+      <AdditionalDependencies>vulkan-1.lib;SDL2.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Link>
@@ -99,7 +107,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Components\Camera\CameraViewComponent.cpp" />
+    <ClCompile Include="Components\Component.cpp" />
+    <ClCompile Include="Components\Entity.cpp" />
+    <ClCompile Include="Components\Rendering\MeshComponent.cpp" />
+    <ClCompile Include="Components\Transform\TransformComponent.cpp" />
     <ClCompile Include="Engine\Engine.cpp" />
+    <ClCompile Include="Engine\GameInstance.cpp" />
     <ClCompile Include="Engine\Logging.cpp" />
     <ClCompile Include="Graphics\GraphicsPipeline.cpp" />
     <ClCompile Include="Graphics\GraphicsRenderPass.cpp" />
@@ -125,15 +139,27 @@
     <ClCompile Include="Graphics\Vulkan\VulkanShader.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanUniformBuffer.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanVertexBuffer.cpp" />
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Input\Input.cpp" />
+    <ClCompile Include="Input\Sdl\SdlInput.cpp" />
     <ClCompile Include="Platform\Sdl\SdlPlatform.cpp" />
-    <ClCompile Include="Streaming\File.cpp" />
+    <ClCompile Include="Rendering\Renderer.cpp" />
+    <ClCompile Include="Resources\ResourceManager.cpp" />
+    <ClCompile Include="Resources\Types\Texture.cpp" />
+    <ClCompile Include="Resources\Types\TextureResourceLoader.cpp" />
+    <ClCompile Include="Types\String.cpp" />
+    <ClCompile Include="Utilities\File.cpp" />
     <ClCompile Include="Windowing\Sdl\SdlWindow.cpp" />
     <ClCompile Include="Windowing\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Build.h" />
+    <ClInclude Include="Components\Camera\CameraViewComponent.h" />
+    <ClInclude Include="Components\Component.h" />
+    <ClInclude Include="Components\Entity.h" />
+    <ClInclude Include="Components\Rendering\MeshComponent.h" />
+    <ClInclude Include="Components\Transform\TransformComponent.h" />
     <ClInclude Include="Engine\Engine.h" />
+    <ClInclude Include="Engine\GameInstance.h" />
     <ClInclude Include="Engine\Logging.h" />
     <ClInclude Include="Graphics\Graphics.h" />
     <ClInclude Include="Graphics\GraphicsCommandBuffer.h" />
@@ -171,12 +197,25 @@
     <ClInclude Include="Graphics\Vulkan\VulkanShader.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanUniformBuffer.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanVertexBuffer.h" />
+    <ClInclude Include="Input\Input.h" />
+    <ClInclude Include="Input\Sdl\SdlInput.h" />
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\Sdl\SdlPlatform.h" />
-    <ClInclude Include="Streaming\File.h" />
+    <ClInclude Include="Rendering\Renderer.h" />
+    <ClInclude Include="Resources\Resource.h" />
+    <ClInclude Include="Resources\ResourceLoader.h" />
+    <ClInclude Include="Resources\ResourceManager.h" />
+    <ClInclude Include="Resources\Types\Texture.h" />
+    <ClInclude Include="Resources\Types\TextureResourceLoader.h" />
+    <ClInclude Include="Threading\Semaphore.h" />
     <ClInclude Include="Types\Color.h" />
+    <ClInclude Include="Types\Dictionary.h" />
+    <ClInclude Include="Types\Math.h" />
+    <ClInclude Include="Types\Queue.h" />
     <ClInclude Include="Types\String.h" />
     <ClInclude Include="Types\Array.h" />
+    <ClInclude Include="Utilities\File.h" />
+    <ClInclude Include="Utilities\Json.h" />
     <ClInclude Include="Windowing\Sdl\SdlWindow.h" />
     <ClInclude Include="Windowing\Window.h" />
   </ItemGroup>

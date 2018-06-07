@@ -58,17 +58,74 @@
     <Filter Include="Header Files\Types">
       <UniqueIdentifier>{71df9094-1da4-431f-939b-b8d60621066d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Streaming">
+    <Filter Include="Source Files\Components">
+      <UniqueIdentifier>{5c500065-e978-4e77-881d-d66dbd290d49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components">
+      <UniqueIdentifier>{ffeee4a5-b3cc-4a84-ae68-bf0d3aad9253}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Components\Camera">
+      <UniqueIdentifier>{b4f738bf-970f-4740-a91e-fb4a11b4af5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Camera">
+      <UniqueIdentifier>{47ace416-6250-4a5c-b273-143d3ddbd27e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Transform">
+      <UniqueIdentifier>{23dc04a9-065a-4541-b7b0-ce314b0398f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Components\Transform">
+      <UniqueIdentifier>{81ec6447-46a4-4ead-8a38-3d23a27c621e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Rendering">
+      <UniqueIdentifier>{d092b1ff-051d-49e6-93a9-6cff847ff6b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Components\Rendering">
+      <UniqueIdentifier>{fc98fbcf-8268-4855-babd-3450653bde70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Input">
+      <UniqueIdentifier>{0bd8c044-6a2d-422d-9584-516ccc99636d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Input">
+      <UniqueIdentifier>{4ce07887-5799-43bf-b9f1-2c19fb9dd2bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Rendering">
+      <UniqueIdentifier>{aef9dc74-5e2c-4812-9133-7d7afde906e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Input\Sdl">
+      <UniqueIdentifier>{478ebdb0-6601-46e2-b748-092c4e75cc52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Input\Sdl">
+      <UniqueIdentifier>{5e7059ff-1896-4176-b1c0-e96b170ad55b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources">
       <UniqueIdentifier>{dffb84f3-d93e-44bd-8dd6-78de481af1c0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Streaming">
+    <Filter Include="Source Files\Resources">
       <UniqueIdentifier>{0ece482f-fe16-4f16-bb26-9d445f5d8676}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utilities">
+      <UniqueIdentifier>{0735ea97-bf39-4c06-8cb4-dd6667f9451f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utilities">
+      <UniqueIdentifier>{fca21bf9-5605-48e6-91d8-7d134478c9ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Resources\Types">
+      <UniqueIdentifier>{3f941924-3dde-4d8b-8b78-225727ed003c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Resources\Types">
+      <UniqueIdentifier>{0a16ee11-0977-4d71-aa39-972f211e68b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Rendering">
+      <UniqueIdentifier>{37f3275e-d51e-4d98-adeb-4298ee0c8fd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Threading">
+      <UniqueIdentifier>{4bbcf7d5-75ce-4e37-96f5-9ddac81ba92f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Types">
+      <UniqueIdentifier>{8d73f38a-4f14-4f20-a52f-4d9ea7e6a564}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Engine.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
@@ -95,9 +152,6 @@
     </ClCompile>
     <ClCompile Include="Graphics\Vulkan\VulkanExtensionInfo.cpp">
       <Filter>Source Files\Graphics\Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Streaming\File.cpp">
-      <Filter>Source Files\Streaming</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\Vulkan\VulkanShader.cpp">
       <Filter>Source Files\Graphics\Vulkan</Filter>
@@ -159,6 +213,48 @@
     <ClCompile Include="Graphics\Vulkan\VulkanSampler.cpp">
       <Filter>Source Files\Graphics\Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="Components\Entity.cpp">
+      <Filter>Source Files\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Component.cpp">
+      <Filter>Source Files\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Transform\TransformComponent.cpp">
+      <Filter>Source Files\Components\Transform</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Camera\CameraViewComponent.cpp">
+      <Filter>Source Files\Components\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Rendering\MeshComponent.cpp">
+      <Filter>Source Files\Components\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\Renderer.cpp">
+      <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\Input.cpp">
+      <Filter>Source Files\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\Sdl\SdlInput.cpp">
+      <Filter>Source Files\Input\Sdl</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\GameInstance.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\File.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\ResourceManager.cpp">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\TextureResourceLoader.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\String.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\Texture.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Engine.h">
@@ -202,9 +298,6 @@
     </ClInclude>
     <ClInclude Include="Graphics\Vulkan\VulkanExtensionInfo.h">
       <Filter>Header Files\Graphics\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Streaming\File.h">
-      <Filter>Header Files\Streaming</Filter>
     </ClInclude>
     <ClInclude Include="Graphics\GraphicsPipeline.h">
       <Filter>Header Files\Graphics</Filter>
@@ -301,6 +394,66 @@
     </ClInclude>
     <ClInclude Include="Graphics\Vulkan\VulkanSampler.h">
       <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Entity.h">
+      <Filter>Header Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Component.h">
+      <Filter>Header Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Transform\TransformComponent.h">
+      <Filter>Header Files\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Camera\CameraViewComponent.h">
+      <Filter>Header Files\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Rendering\MeshComponent.h">
+      <Filter>Header Files\Components\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\Input.h">
+      <Filter>Header Files\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\Sdl\SdlInput.h">
+      <Filter>Header Files\Input\Sdl</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\GameInstance.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Math.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\File.h">
+      <Filter>Header Files\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\ResourceManager.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\ResourceLoader.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Resource.h">
+      <Filter>Header Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\Texture.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\TextureResourceLoader.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\Renderer.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Dictionary.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\Semaphore.h">
+      <Filter>Header Files\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Queue.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\Json.h">
+      <Filter>Header Files\Utilities</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

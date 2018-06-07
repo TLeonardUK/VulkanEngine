@@ -109,5 +109,17 @@ VkSamplerAddressMode GraphicsAddressModeToVkAddressMode(GraphicsAddressMode addr
 	}
 
 	assert(false);
-	return VK_SAMPLER_ADDRESS_MODE_END_RANGE;
+	return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
+}
+
+VkSamplerMipmapMode GraphicsMipMapModeToVkSamplerMipMapMode(GraphicsMipMapMode mode)
+{
+	switch (mode)
+	{
+	case GraphicsMipMapMode::Linear:			return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	case GraphicsMipMapMode::NearestNeighbour:	return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	}
+
+	assert(false);
+	return VK_SAMPLER_MIPMAP_MODE_MAX_ENUM;
 }

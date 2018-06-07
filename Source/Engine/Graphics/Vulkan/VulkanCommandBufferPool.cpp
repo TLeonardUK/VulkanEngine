@@ -74,7 +74,7 @@ std::shared_ptr<IGraphicsCommandBuffer> VulkanCommandBufferPool::Allocate()
 
 	CheckVkResultReturnValueOnFail(vkAllocateCommandBuffers(m_device, &allocInfo, &buffer), nullptr);
 
-	std::shared_ptr<VulkanCommandBuffer> output = std::make_shared<VulkanCommandBuffer>(m_device, m_logger, String::Format("%s Buffer", m_name.c_str()), buffer, m_commandBufferPool);
+	std::shared_ptr<VulkanCommandBuffer> output = std::make_shared<VulkanCommandBuffer>(m_device, m_logger, StringFormat("%s Buffer", m_name.c_str()), buffer, m_commandBufferPool);
 	m_allocatedBuffers.push_back(output);
 
 	return output;

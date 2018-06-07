@@ -15,6 +15,9 @@
 #include <vulkan/vulkan.h>
 #include <SDL_vulkan.h>
 
+#include <thread>
+#include <mutex>
+
 class Logger;
 class IWindow;
 
@@ -74,7 +77,6 @@ private:
 	static const Array<const char*> DeviceLayersToRequest;
 
 	std::shared_ptr<Logger> m_logger;
-	String m_assetsFolder;
 	String m_gameName;
 	int m_gameVersionMajor;
 	int m_gameVersionMinor;
@@ -120,6 +122,8 @@ private:
 	// todo: change to weak pointers, or better yet check if they are unique, if they are wait
 	// x number of frames (how many frames behind we are), before disposing to ensure gpu is finished
 	// with them.
+	std::mutex m_resourcesMutex;
+
 	Array<std::shared_ptr<VulkanShader>> m_shaders;
 	Array<std::shared_ptr<VulkanRenderPass>> m_renderPasses;
 	Array<std::shared_ptr<VulkanPipeline>> m_pipelines;
@@ -190,7 +194,6 @@ public:
 	VulkanGraphics(
 		std::shared_ptr<Logger> logger, 
 		const String& gameName,
-		const String& assetsFolder,
 		int gameVersionMajor, 
 		int gameVersionMinor, 
 		int gameVersionBuild);
@@ -214,7 +217,7 @@ public:
 	virtual std::shared_ptr<IGraphicsUniformBuffer> CreateUniformBuffer(const String& name, int dataSize);
 	virtual std::shared_ptr<IGraphicsResourceSetPool> CreateResourceSetPool(const String& name);
 	virtual std::shared_ptr<IGraphicsCommandBufferPool> CreateCommandBufferPool(const String& name);
-	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int depth, GraphicsFormat format);
+	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, GraphicsFormat format, bool generateMips);
 	virtual std::shared_ptr<IGraphicsSampler> CreateSampler(const String& name, const SamplerDescription& settings);
 
 	virtual void Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer);
@@ -231,7 +234,6 @@ public:
 	static std::shared_ptr<IGraphics> Create(
 		std::shared_ptr<Logger> logger, 
 		const String& gameName, 
-		const String& assetsFolder,
 		int gameVersionMajor, 
 		int gameVersionMinor, 
 		int gameVersionBuild);

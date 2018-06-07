@@ -67,8 +67,8 @@ void Logger::Write(LogSeverity serverity, LogCategory category, const String& da
 	long long elapsedSeconds = ((timeSinceStart / 1000) % 60);
 	long long elapsedMilliseconds = (timeSinceStart % 1000);
 
-	String format = String("[%02i:%02i:%02i:%04i] [%-14s] %-8s: %s\n");
-	String buffer = String::Format(
+	String format = String("[%02i:%02i:%02i:%04i] [%-14s] [%-8s] %s\n");
+	String buffer = StringFormat(
 		format,
 		elapsedHours,
 		elapsedMinutes,
@@ -97,7 +97,7 @@ void Logger::WriteInfo(LogCategory category, const String data, ...)
 {
 	va_list list;
 	va_start(list, data);
-	String buffer = String::Format(data, list);
+	String buffer = StringFormat(data, list);
 	va_end(list);
 
 	Write(LogSeverity::Info, category, buffer);
@@ -107,7 +107,7 @@ void Logger::WriteWarning(LogCategory category, const String data, ...)
 {
 	va_list list;
 	va_start(list, data);
-	String buffer = String::Format(data, list);
+	String buffer = StringFormat(data, list);
 	va_end(list);
 
 	Write(LogSeverity::Warning, category, buffer);
@@ -117,7 +117,7 @@ void Logger::WriteError(LogCategory category, const String data, ...)
 {
 	va_list list;
 	va_start(list, data);
-	String buffer = String::Format(data, list);
+	String buffer = StringFormat(data, list);
 	va_end(list);
 
 	Write(LogSeverity::Error, category, buffer);
@@ -127,7 +127,7 @@ void Logger::WriteSuccess(LogCategory category, const String data, ...)
 {
 	va_list list;
 	va_start(list, data);
-	String buffer = String::Format(data, list);
+	String buffer = StringFormat(data, list);
 	va_end(list);
 
 	Write(LogSeverity::Success, category, buffer);

@@ -31,7 +31,7 @@ private:
 
 	VkCommandBuffer GetCommandBuffer();
 
-	void TransitionImage(VkImage image, VkFormat format, VkImageLayout srcLayout, VkImageLayout dstLayout);
+	void TransitionImage(VkImage image, VkFormat format, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout);
 
 public:
 	VulkanCommandBuffer(
