@@ -1,0 +1,145 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/default.json",    
+    "Bindings":
+    {        
+        "DiffuseTexture":
+        {   
+            "Format": "Texture",          
+            "Value": "Engine/Textures/default.json"   
+        },
+        
+        "boolValue":
+        {   
+            "Format": "Bool",          
+            "Value": true
+        },
+        "boolValue2":
+        {       
+            "Format": "Bool2",          
+            "Value": [ true, true ]
+        },
+        "boolValue3":
+        {   
+            "Format": "Bool3",          
+            "Value": [ true, true, true ]
+        },
+        "boolValue4":
+        {   
+            "Format": "Bool4",          
+            "Value": [ true, true, true, true ]
+        },
+        
+        "intValue":
+        {   
+            "Format": "Int",          
+            "Value": 2.0
+        },
+        "intValue2":
+        {   
+            "Format": "Int2",          
+            "Value": [ 2.0, 2.0]
+        },
+        "intValue3":
+        {   
+            "Format": "Int3",          
+            "Value": [ 2.0, 2.0, 2.0 ]
+        },
+        "intValue4":
+        {   
+            "Format": "Int4",          
+            "Value": [ 2.0, 2.0, 2.0, 2.0 ]
+        },
+        
+        "uintValue":
+        {   
+            "Format": "UInt",          
+            "Value": 2.0
+        },
+        "uintValue2":
+        {   
+            "Format": "UInt2",          
+            "Value": [ 2.0, 2.0 ]
+        },
+        "uintValue3":
+        {   
+            "Format": "UInt3",          
+            "Value": [ 2.0, 2.0, 2.0 ]
+        },
+        "intValue4":
+        {   
+            "Format": "UInt4",          
+            "Value": [ 2.0, 2.0, 2.0, 2.0 ]
+        },        
+        
+        "floatValue":
+        {   
+            "Format": "Float",          
+            "Value": 2.0
+        },
+        "floatValue2":
+        {   
+            "Format": "Float2",          
+            "Value": [ 2.0, 2.0 ]
+        },
+        "floatValue3":
+        {   
+            "Format": "Float3",          
+            "Value": [ 2.0, 2.0, 2.0 ]
+        },
+        "floatValue4":
+        {   
+            "Format": "Float4",          
+            "Value": [ 2.0, 2.0, 2.0, 2.0 ]
+        },        
+        
+        "doubleValue":
+        {   
+            "Format": "Double",          
+            "Value": 2.0
+        },
+        "doubleValue2":
+        {   
+            "Format": "Double2",          
+            "Value": [ 2.0, 2.0 ]
+        },
+        "doubleValue3":
+        {   
+            "Format": "Double3",          
+            "Value": [ 2.0, 2.0, 2.0 ]
+        },
+        "doubleValue4":
+        {   
+            "Format": "Double4",          
+            "Value": [ 2.0, 2.0, 2.0, 2.0 ]
+        },
+        
+        "matrix2Value":
+        {   
+            "Format": "Matrix2",          
+            "Value": [ 
+                2.0, 2.0, 
+                2.0, 2.0
+            ]
+        },
+        "matrix3Value":
+        {   
+            "Format": "Matrix3",          
+            "Value": [ 
+                2.0, 2.0, 2.0,
+                2.0, 2.0, 2.0,
+                2.0, 2.0, 2.0
+            ]
+        },
+        "matrix4Value":
+        {   
+            "Format": "Matrix4",          
+            "Value": [ 
+                2.0, 2.0, 2.0, 2.0,
+                2.0, 2.0, 2.0, 2.0,
+                2.0, 2.0, 2.0, 2.0,
+                2.0, 2.0, 2.0, 2.0
+            ]
+        }
+    }
+}

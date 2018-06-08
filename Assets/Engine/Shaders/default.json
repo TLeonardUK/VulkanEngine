@@ -1,0 +1,77 @@
+{
+    "Type": "Shader",    
+    "Stages":
+    {
+        "Vertex":
+        {
+            "ShaderPath": "Engine/Shaders/default.vert",
+            "EntryPoint": "main",
+            "Bindings":
+            {   
+                "ubo":
+                {
+                    "Type": "UniformBufferObject",
+                    "Binding": 0,
+                    "Fields":
+                    {
+                        "model":
+                        {
+                            "Format": "Matrix4",
+                            "BindTo": "ModelMatrix"
+                        },                        
+                        "view":
+                        {
+                            "Format": "Matrix4",
+                            "BindTo": "ViewMatrix"
+                        },                        
+                        "proj":
+                        {
+                            "Format": "Matrix4",
+                            "BindTo": "ProjectionMatrix"
+                        },                        
+                        "bCustomValue":
+                        {
+                            "Format": "Float",
+                            "BindTo": "ValueFromMaterial"
+                        }
+                    }
+                }
+            },
+            "VertexStreams":
+            {
+                "inPosition":
+                {
+                    "Format": "Float3",
+                    "Location": 0,
+                    "BindTo": "Position"
+                },
+                "inColor":
+                {
+                    "Format": "Float3",
+                    "Location": 1,
+                    "BindTo": "Color"
+                },
+                "inTexCoord":
+                {
+                    "Format": "Float2",
+                    "Location": 2,
+                    "BindTo": "TexCoord1"
+                }
+            }
+        },
+        "Fragment":
+        {
+            "ShaderPath": "Engine/Shaders/default.frag",
+            "EntryPoint": "main",
+            "Bindings":
+            {   
+                "texSampler":
+                {
+                    "Type": "Sampler",
+                    "Binding": 1,
+                    "BindTo": "DiffuseTexture"
+                }
+            }
+        }
+    }
+}

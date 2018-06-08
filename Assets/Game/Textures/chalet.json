@@ -1,4 +1,4 @@
 {
-    "type": "texture",    
-    "imagePath": "Game/Textures/chalet.jpg"
+    "Type": "Texture",    
+    "ImagePath": "Game/Textures/chalet.jpg"
 }

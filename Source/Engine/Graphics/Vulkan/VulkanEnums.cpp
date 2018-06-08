@@ -60,15 +60,15 @@ VkFormat GraphicsBindingFormatToVkFormat(GraphicsBindingFormat format)
 {
 	switch (format)
 	{
-		case GraphicsBindingFormat::Bool1:		return VK_FORMAT_R8_SINT;
+		case GraphicsBindingFormat::Bool:		return VK_FORMAT_R8_SINT;
 		case GraphicsBindingFormat::Bool2:		return VK_FORMAT_R8G8_SINT;
 		case GraphicsBindingFormat::Bool3:		return VK_FORMAT_R8G8B8_SINT;
 		case GraphicsBindingFormat::Bool4:		return VK_FORMAT_R8G8B8A8_SINT;
-		case GraphicsBindingFormat::Int1:		return VK_FORMAT_R32_SINT;
+		case GraphicsBindingFormat::Int:		return VK_FORMAT_R32_SINT;
 		case GraphicsBindingFormat::Int2:		return VK_FORMAT_R32G32_SINT;
 		case GraphicsBindingFormat::Int3:		return VK_FORMAT_R32G32B32_SINT;
 		case GraphicsBindingFormat::Int4:		return VK_FORMAT_R32G32B32A32_SINT;
-		case GraphicsBindingFormat::UInt1:		return VK_FORMAT_R32_UINT;
+		case GraphicsBindingFormat::UInt:		return VK_FORMAT_R32_UINT;
 		case GraphicsBindingFormat::UInt2:		return VK_FORMAT_R32G32_UINT;
 		case GraphicsBindingFormat::UInt3:		return VK_FORMAT_R32G32B32_UINT;
 		case GraphicsBindingFormat::UInt4:		return VK_FORMAT_R32G32B32A32_UINT;
@@ -76,7 +76,7 @@ VkFormat GraphicsBindingFormatToVkFormat(GraphicsBindingFormat format)
 		case GraphicsBindingFormat::Float2:		return VK_FORMAT_R32G32_SFLOAT;
 		case GraphicsBindingFormat::Float3:		return VK_FORMAT_R32G32B32_SFLOAT;
 		case GraphicsBindingFormat::Float4:		return VK_FORMAT_R32G32B32A32_SFLOAT;
-		case GraphicsBindingFormat::Double1:	return VK_FORMAT_R64_SFLOAT;
+		case GraphicsBindingFormat::Double:		return VK_FORMAT_R64_SFLOAT;
 		case GraphicsBindingFormat::Double2:	return VK_FORMAT_R64G64_SFLOAT;
 		case GraphicsBindingFormat::Double3:	return VK_FORMAT_R64G64B64_SFLOAT;
 		case GraphicsBindingFormat::Double4:	return VK_FORMAT_R64G64B64A64_SFLOAT;

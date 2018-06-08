@@ -115,6 +115,7 @@
     <ClCompile Include="Engine\Engine.cpp" />
     <ClCompile Include="Engine\GameInstance.cpp" />
     <ClCompile Include="Engine\Logging.cpp" />
+    <ClCompile Include="Graphics\GraphicsEnums.cpp" />
     <ClCompile Include="Graphics\GraphicsPipeline.cpp" />
     <ClCompile Include="Graphics\GraphicsRenderPass.cpp" />
     <ClCompile Include="Graphics\GraphicsResourceSetPool.cpp" />
@@ -144,9 +145,16 @@
     <ClCompile Include="Platform\Sdl\SdlPlatform.cpp" />
     <ClCompile Include="Rendering\Renderer.cpp" />
     <ClCompile Include="Resources\ResourceManager.cpp" />
+    <ClCompile Include="Resources\Types\Material.cpp" />
+    <ClCompile Include="Resources\Types\MaterialResourceLoader.cpp" />
+    <ClCompile Include="Resources\Types\Model.cpp" />
+    <ClCompile Include="Resources\Types\ModelResourceLoader.cpp" />
+    <ClCompile Include="Resources\Types\Shader.cpp" />
+    <ClCompile Include="Resources\Types\ShaderResourceLoader.cpp" />
     <ClCompile Include="Resources\Types\Texture.cpp" />
     <ClCompile Include="Resources\Types\TextureResourceLoader.cpp" />
     <ClCompile Include="Types\String.cpp" />
+    <ClCompile Include="Utilities\Enum.cpp" />
     <ClCompile Include="Utilities\File.cpp" />
     <ClCompile Include="Windowing\Sdl\SdlWindow.cpp" />
     <ClCompile Include="Windowing\Window.cpp" />
@@ -164,6 +172,7 @@
     <ClInclude Include="Graphics\Graphics.h" />
     <ClInclude Include="Graphics\GraphicsCommandBuffer.h" />
     <ClInclude Include="Graphics\GraphicsCommandBufferPool.h" />
+    <ClInclude Include="Graphics\EGraphicsPipelineStage.inc" />
     <ClInclude Include="Graphics\GraphicsResourceSet.h" />
     <ClInclude Include="Graphics\GraphicsResourceSetPool.h" />
     <ClInclude Include="Graphics\GraphicsEnums.h" />
@@ -205,6 +214,12 @@
     <ClInclude Include="Resources\Resource.h" />
     <ClInclude Include="Resources\ResourceLoader.h" />
     <ClInclude Include="Resources\ResourceManager.h" />
+    <ClInclude Include="Resources\Types\Material.h" />
+    <ClInclude Include="Resources\Types\MaterialResourceLoader.h" />
+    <ClInclude Include="Resources\Types\Model.h" />
+    <ClInclude Include="Resources\Types\ModelResourceLoader.h" />
+    <ClInclude Include="Resources\Types\Shader.h" />
+    <ClInclude Include="Resources\Types\ShaderResourceLoader.h" />
     <ClInclude Include="Resources\Types\Texture.h" />
     <ClInclude Include="Resources\Types\TextureResourceLoader.h" />
     <ClInclude Include="Threading\Semaphore.h" />
@@ -214,14 +229,25 @@
     <ClInclude Include="Types\Queue.h" />
     <ClInclude Include="Types\String.h" />
     <ClInclude Include="Types\Array.h" />
+    <ClInclude Include="Utilities\Enum.h" />
     <ClInclude Include="Utilities\File.h" />
+    <ClInclude Include="Utilities\EnumImplementation.h" />
     <ClInclude Include="Utilities\Json.h" />
     <ClInclude Include="Windowing\Sdl\SdlWindow.h" />
     <ClInclude Include="Windowing\Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Engine\LogCategory.inc" />
-    <None Include="Engine\LogSeverity.inc" />
+    <None Include="Engine\ELogCategory.inc" />
+    <None Include="Engine\ELogSeverity.inc" />
+    <None Include="Graphics\EGraphicsAccessMask.inc" />
+    <None Include="Graphics\EGraphicsAddressMode.inc" />
+    <None Include="Graphics\EGraphicsBindingFormat.inc" />
+    <None Include="Graphics\EGraphicsBindingType.inc" />
+    <None Include="Graphics\EGraphicsFilter.inc" />
+    <None Include="Graphics\EGraphicsFormat.inc" />
+    <None Include="Graphics\EGraphicsMipMapMode.inc" />
+    <None Include="Graphics\EGraphicsPresentMode.inc" />
+    <None Include="Resources\Types\EShaderVertexStreamBinding.inc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

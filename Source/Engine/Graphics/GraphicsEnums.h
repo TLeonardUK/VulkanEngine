@@ -1,64 +1,41 @@
 #pragma once
 
-enum class GraphicsFormat
-{
-	UNORM_R8,
-	UNORM_R8G8B8,
-	UNORM_R8G8B8A8,
-	UNORM_B8G8R8,
-	UNORM_B8G8R8A8,
-	UNORM_R16G16B16,
-	UNORM_R16G16B16A16,
-	UNORM_D24_UINT_S8,
-	Undefined
-};
+#include "Engine/Utilities/Enum.h"
 
-enum class GraphicsBindingFormat
-{
-	Bool1,
-	Bool2,
-	Bool3,
-	Bool4,
-	Int1,
-	Int2,
-	Int3,
-	Int4,
-	UInt1,
-	UInt2,
-	UInt3,
-	UInt4,
-	Float,
-	Float2,
-	Float3,
-	Float4,
-	Double1,
-	Double2,
-	Double3,
-	Double4,
-};
+enum_begin_declaration(GraphicsPresentMode)
+#include "Engine/Graphics/EGraphicsPresentMode.inc"
+enum_end_declaration(GraphicsPresentMode)
 
-enum class GraphicsBindingType
-{
-	UniformBufferObject,
-	Sampler
-};
+enum_begin_declaration(GraphicsPipelineStage)
+#include "Engine/Graphics/EGraphicsPipelineStage.inc"
+enum_end_declaration(GraphicsPipelineStage)
 
-enum class GraphicsAddressMode
-{
-	Repeat,
-	MirroredRepeat,
-	ClampToEdge,
-	ClampToBorder
-};
+enum_begin_declaration(GraphicsAccessMask)
+#include "Engine/Graphics/EGraphicsAccessMask.inc"
+enum_end_declaration(GraphicsAccessMask)
 
-enum class GraphicsFilter
-{
-	Linear,
-	NearestNeighbour
-};
+enum_begin_declaration(GraphicsFormat)
+#include "Engine/Graphics/EGraphicsFormat.inc"
+enum_end_declaration(GraphicsFormat)
 
-enum class GraphicsMipMapMode
-{
-	Linear,
-	NearestNeighbour
-};
+enum_begin_declaration(GraphicsBindingFormat)
+#include "Engine/Graphics/EGraphicsBindingFormat.inc"
+enum_end_declaration(GraphicsBindingFormat)
+
+enum_begin_declaration(GraphicsBindingType)
+#include "Engine/Graphics/EGraphicsBindingType.inc"
+enum_end_declaration(GraphicsBindingType)
+
+enum_begin_declaration(GraphicsAddressMode)
+#include "Engine/Graphics/EGraphicsAddressMode.inc"
+enum_end_declaration(GraphicsAddressMode)
+
+enum_begin_declaration(GraphicsFilter)
+#include "Engine/Graphics/EGraphicsFilter.inc"
+enum_end_declaration(GraphicsFilter)
+
+enum_begin_declaration(GraphicsMipMapMode)
+#include "Engine/Graphics/EGraphicsMipMapMode.inc"
+enum_end_declaration(GraphicsMipMapMode)
+
+int GetValueCountForGraphicsBindingFormat(GraphicsBindingFormat format);

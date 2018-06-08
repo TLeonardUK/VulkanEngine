@@ -9,6 +9,9 @@
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Resources/ResourceManager.h"
 #include "Engine/Resources/Types/TextureResourceLoader.h"
+#include "Engine/Resources/Types/ShaderResourceLoader.h"
+#include "Engine/Resources/Types/MaterialResourceLoader.h"
+#include "Engine/Resources/Types/ModelResourceLoader.h"
 
 #include "Engine/Platform/Sdl/SdlPlatform.h"
 #include "Engine/Windowing/Sdl/SdlWindow.h"
@@ -17,9 +20,6 @@
 
 #include "Engine/Graphics/GraphicsEnums.h"
 #include "Engine/Graphics/GraphicsRenderPass.h"
-
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
 
 // TODO:
 //	Depth buffer needs transition before use.
@@ -280,6 +280,9 @@ bool Engine::InitResourceManager()
 	}
 
 	m_resourceManager->AddLoader(std::make_shared<TextureResourceLoader>(m_logger, m_graphics));
+	m_resourceManager->AddLoader(std::make_shared<ShaderResourceLoader>(m_logger, m_graphics));
+	m_resourceManager->AddLoader(std::make_shared<MaterialResourceLoader>(m_logger, m_graphics));
+	m_resourceManager->AddLoader(std::make_shared<ModelResourceLoader>(m_logger, m_graphics));
 	m_resourceManager->LoadDefaults();
 
 	return true;

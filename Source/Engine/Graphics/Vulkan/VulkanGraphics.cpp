@@ -1069,6 +1069,8 @@ std::shared_ptr<IGraphicsSampler> VulkanGraphics::CreateSampler(const String& na
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
+	// todo: do some caching?
+
 	std::shared_ptr<VulkanSampler> pass = std::make_shared<VulkanSampler>(m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
 	{

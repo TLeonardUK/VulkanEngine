@@ -1,0 +1,2 @@
+enum_entry(UniformBufferObject)
+enum_entry(Sampler)

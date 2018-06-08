@@ -31,13 +31,13 @@ void TextureResourceLoader::AssignDefault(std::shared_ptr<ResourceStatus> resour
 
 std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceManager> manager, std::shared_ptr<ResourceStatus> resource, json& jsonValue)
 {
-	if (jsonValue.count("imagePath") == 0)
+	if (jsonValue.count("ImagePath") == 0)
 	{
-		m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'imagePath'", resource->Path.c_str());
+		m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'ImagePath'", resource->Path.c_str());
 		return nullptr;
 	}
 
-	String imagePath = jsonValue["imagePath"];
+	String imagePath = jsonValue["ImagePath"];
 
 	Array<char> buffer;
 	if (!manager->ReadResourceBytes(imagePath.c_str(), buffer))
@@ -70,5 +70,86 @@ std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceM
 		return nullptr;
 	}
 
-	return std::make_shared<Texture>(image, imageView);
+	// Load sampler information.
+	SamplerDescription description;
+
+	if (jsonValue.count("MagnificationFilter"))
+	{
+		String value = jsonValue["MagnificationFilter"];
+		if (!StringToEnum<GraphicsFilter>(value, description.MagnificationFilter))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised magnification filter.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("MinificationFilter"))
+	{
+		String value = jsonValue["MinificationFilter"];
+		if (!StringToEnum<GraphicsFilter>(value, description.MinificationFilter))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised minification filter.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("AddressModeU"))
+	{
+		String value = jsonValue["AddressModeU"];
+		if (!StringToEnum<GraphicsAddressMode>(value, description.AddressModeU))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised address mode.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("AddressModeV"))
+	{
+		String value = jsonValue["AddressModeV"];
+		if (!StringToEnum<GraphicsAddressMode>(value, description.AddressModeV))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised address mode.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("AddressModeW"))
+	{
+		String value = jsonValue["AddressModeW"];
+		if (!StringToEnum<GraphicsAddressMode>(value, description.AddressModeW))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised address mode.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("MaxAnisotropy"))
+	{
+		description.MaxAnisotropy = jsonValue["MaxAnisotropy"];
+	}
+	if (jsonValue.count("MinLod"))
+	{
+		description.MinLod = jsonValue["MinLod"];
+	}
+	if (jsonValue.count("MaxLod"))
+	{
+		description.MaxLod = jsonValue["MaxLod"];
+	}
+	if (jsonValue.count("MipLodBias"))
+	{
+		description.MipLodBias = jsonValue["MipLodBias"];
+	}
+	if (jsonValue.count("MimapMode"))
+	{
+		String value = jsonValue["MimapMode"];
+		if (!StringToEnum<GraphicsMipMapMode>(value, description.MipmapMode))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised mipmap mode mode.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+
+	std::shared_ptr<IGraphicsSampler> sampler = m_graphics->CreateSampler(StringFormat("%s Sampler", imagePath.c_str()), description);
+	if (sampler == nullptr)
+	{
+		m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to create sampler for texture.", resource->Path.c_str());
+		return false;
+	}
+
+	return std::make_shared<Texture>(image, imageView, sampler);
 }

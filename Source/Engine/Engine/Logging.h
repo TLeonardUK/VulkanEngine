@@ -9,7 +9,7 @@
 enum class LogCategory
 {
 #define LOG_CATEGORY(Name) Name,
-#include "Engine/Engine/LogCategory.inc"
+#include "Engine/Engine/ELogCategory.inc"
 #undef LOG_CATEGORY
 
 	COUNT
@@ -18,7 +18,7 @@ enum class LogCategory
 enum class LogSeverity
 {
 #define LOG_SEVERITY(Name, Color) Name,
-#include "Engine/Engine/LogSeverity.inc"
+#include "Engine/Engine/ELogSeverity.inc"
 #undef LOG_SEVERITY
 
 	COUNT

@@ -11,13 +11,6 @@
 
 class IGraphicsShader;
 
-enum class GraphicsPipelineStage
-{
-	Vertex,
-	Fragment,
-	Count
-};
-
 struct GraphicsPipelineSettings
 {
 public:

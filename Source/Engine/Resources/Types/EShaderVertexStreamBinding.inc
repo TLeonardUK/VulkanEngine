@@ -1,0 +1,7 @@
+enum_entry(Position)
+enum_entry(Color)
+enum_entry(Normal)
+enum_entry(TexCoord1)
+enum_entry(TexCoord2)
+enum_entry(TexCoord3)
+enum_entry(TexCoord4)

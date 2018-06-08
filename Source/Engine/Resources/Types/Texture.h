@@ -5,6 +5,7 @@
 
 class IGraphicsImage;
 class IGraphicsImageView;
+class IGraphicsSampler;
 class TextureResourceLoader;
 
 class Texture
@@ -13,10 +14,11 @@ class Texture
 private:
 	std::shared_ptr<IGraphicsImage> m_image;
 	std::shared_ptr<IGraphicsImageView> m_imageView;
+	std::shared_ptr<IGraphicsSampler> m_sampler;
 
 public:
 	static const char* Tag;
 
-	Texture(std::shared_ptr<IGraphicsImage> image, std::shared_ptr<IGraphicsImageView> imageView);
+	Texture(std::shared_ptr<IGraphicsImage> image, std::shared_ptr<IGraphicsImageView> imageView, std::shared_ptr<IGraphicsSampler> sampler);
 
 };

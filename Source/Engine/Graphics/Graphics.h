@@ -15,18 +15,11 @@
 #include "Engine/Graphics/GraphicsUniformBuffer.h"
 #include "Engine/Graphics/GraphicsResourceSetPool.h"
 #include "Engine/Graphics/GraphicsSampler.h"
+#include "Engine/Graphics/GraphicsEnums.h"
 
 #include <memory>
 
 class IWindow;
-
-enum class GraphicsPresentMode
-{
-	Immediate,
-	VSync,
-	AdaptiveVSync,
-	TripleBuffer
-};
 
 class IGraphics
 {

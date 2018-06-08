@@ -1,0 +1,8 @@
+{
+    "Type": "Model",    
+    "ModelPath": "Engine/Models/default.obj",    
+    "MaterialMapping":
+    {
+        "cube": "Engine/Materials/default.json"
+    }
+}

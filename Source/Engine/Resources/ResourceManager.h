@@ -151,7 +151,10 @@ private:
 
 	std::shared_ptr<ResourceStatus> GetPendingResource();
 
-	std::shared_ptr<IResourceLoader> GetLoaderForTag(String tag);
+	std::shared_ptr<IResourceLoader> GetLoaderForTag(const String& tag);
+	ResourcePtr<IResource> GetDefaultForTag(const String& tag);
+
+	ResourcePtr<IResource> LoadTypeLess(const String& path, const String& tag = "");
 
 	void WorkerLoop();
 
@@ -175,7 +178,15 @@ public:
 
 	ResourcePtr<IResource> GetResource(const String& path);
 
-	ResourcePtr<IResource> LoadTypeLess(const String& path, const String& tag = "");
+	template <typename ResourceType>
+	ResourcePtr<ResourceType> GetDefault()
+	{
+		ResourcePtr<IResource> typeless = GetDefaultForTag(ResourceType::Tag);
+
+		ResourcePtr<ResourceType> resource(typeless.m_loadState);
+
+		return resource;
+	}
 
 	template <typename ResourceType>
 	ResourcePtr<ResourceType> Load(const String& path)

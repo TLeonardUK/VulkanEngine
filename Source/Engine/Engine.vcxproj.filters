@@ -255,6 +255,30 @@
     <ClCompile Include="Resources\Types\Texture.cpp">
       <Filter>Source Files\Resources\Types</Filter>
     </ClCompile>
+    <ClCompile Include="Resources\Types\Shader.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\ShaderResourceLoader.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Utilities\Enum.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsEnums.cpp">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\Material.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\MaterialResourceLoader.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\Model.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\ModelResourceLoader.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Engine.h">
@@ -455,13 +479,67 @@
     <ClInclude Include="Utilities\Json.h">
       <Filter>Header Files\Utilities</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\Types\Shader.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\ShaderResourceLoader.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\Enum.h">
+      <Filter>Header Files\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\EGraphicsPipelineStage.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\EnumImplementation.h">
+      <Filter>Header Files\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\MaterialResourceLoader.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\Material.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\Model.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\ModelResourceLoader.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Engine\LogSeverity.inc">
+    <None Include="Graphics\EGraphicsAccessMask.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsAddressMode.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsBindingFormat.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsBindingType.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsFilter.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsFormat.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsMipMapMode.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsPresentMode.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Engine\ELogSeverity.inc">
       <Filter>Header Files\Engine</Filter>
     </None>
-    <None Include="Engine\LogCategory.inc">
+    <None Include="Engine\ELogCategory.inc">
       <Filter>Header Files\Engine</Filter>
+    </None>
+    <None Include="Resources\Types\EShaderVertexStreamBinding.inc">
+      <Filter>Header Files\Resources\Types</Filter>
     </None>
   </ItemGroup>
 </Project>

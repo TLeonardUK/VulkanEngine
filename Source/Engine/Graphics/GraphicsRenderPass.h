@@ -12,14 +12,6 @@ typedef int GraphicsSubPassDependencyIndex;
 
 #define GraphicsExternalPassIndex static_cast<GraphicsSubPassIndex>(-1)
 
-enum class GraphicsAccessMask
-{
-	Read = 1,
-	Write = 2,
-	ReadWrite = 3,
-	None = 0
-};
-
 struct GraphicsRenderPassAttachment
 {
 	bool bIsDepthStencil;

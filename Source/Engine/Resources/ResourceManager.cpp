@@ -5,6 +5,7 @@
 #include "Engine/Utilities/Json.h"
 
 // todo: this should use parallel io to stream in, rather than just block loading on a couple of threads.
+// todo: what do if nested loads?
 
 ResourceManager::ResourceManager(std::shared_ptr<Logger> logger)
 	: m_logger(logger)
@@ -199,15 +200,15 @@ void ResourceManager::LoadResource(std::shared_ptr<ResourceStatus> resource)
 	}
 
 	// Check tag.
-	if (jsonValue.count("type") == 0)
+	if (jsonValue.count("Type") == 0)
 	{
-		m_logger->WriteError(LogCategory::Resources, "[%-30s] Resource definition does not include required paramter 'type'", resource->Path.c_str());
+		m_logger->WriteError(LogCategory::Resources, "[%-30s] Resource definition does not include required paramter 'Type'", resource->Path.c_str());
 		resource->Status = ResourceLoadStatus::Failed;
 		return;
 	}
 
 	// Try and find a loader for the type tag.
-	String type = jsonValue["type"];
+	String type = jsonValue["Type"];
 	std::shared_ptr<IResourceLoader> loader = GetLoaderForTag(type);
 	if (loader == nullptr)
 	{
@@ -266,7 +267,23 @@ void ResourceManager::WorkerLoop()
 	}
 }
 
-std::shared_ptr<IResourceLoader> ResourceManager::GetLoaderForTag(String tag)
+ResourcePtr<IResource> ResourceManager::GetDefaultForTag(const String& tag)
+{
+	std::shared_ptr<ResourceStatus> status = std::make_shared<ResourceStatus>();
+	status->Path = "Internal:Default " + tag;
+	status->Status = ResourceLoadStatus::;
+	status->ResourceManager = shared_from_this();
+
+	std::shared_ptr<IResourceLoader> loader = GetLoaderForTag(tag);
+	if (loader != nullptr)
+	{
+		loader->AssignDefault(status);
+	}
+
+	return status;
+}
+
+std::shared_ptr<IResourceLoader> ResourceManager::GetLoaderForTag(const String& tag)
 {
 	for (auto& loader : m_loaders)
 	{
@@ -289,6 +306,3 @@ void ResourceStatus::WaitUntilLoaded()
 		ResourceManager->m_idleWaitCondVariable.wait(lock);
 	}
 }
-
-// todo: default resources
-// todo: what do if nested loads?

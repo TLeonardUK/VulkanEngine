@@ -58,11 +58,13 @@ void VulkanGameInstance::Initialize()
 	std::shared_ptr<Engine> engine = GetEngine();
 	std::shared_ptr<ResourceManager> resourceManager = engine->GetResourceManager();
 
-	ResourcePtr<IResource> texture1 = resourceManager->LoadTypeLess("Game/Textures/chalet.json");
-	ResourcePtr<Texture> texture2 = resourceManager->Load<Texture>("Game/Textures/chalet.json");
+	ResourcePtr<Texture> chaletTexture = resourceManager->Load<Texture>("Game/Textures/chalet.json");
+	//ResourcePtr<Material> chaletMaterial = resourceManager->Load<Material>("Game/Textures/chalet.json");
+	//ResourcePtr<Mesh> chaletMesh = resourceManager->Load<Mesh>("Game/Models/chalet.json");
 
-	texture1.WaitUntilLoaded();
-	texture2.WaitUntilLoaded();
+	chaletTexture.WaitUntilLoaded();
+
+
 }
 
 void VulkanGameInstance::Terminate()

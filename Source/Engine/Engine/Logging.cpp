@@ -8,21 +8,21 @@
 const char* gLogSeverityLiteral[(int)LogSeverity::COUNT] =
 {
 #define LOG_SEVERITY(Name, Color) #Name,
-#include "Engine/Engine/LogSeverity.inc"
+#include "Engine/Engine/ELogSeverity.inc"
 #undef LOG_SEVERITY
 };
 
 ConsoleColor gLogSeverityConsoleColors[(int)LogSeverity::COUNT] =
 {
 #define LOG_SEVERITY(Name, Color) ConsoleColor::Color,
-#include "Engine/Engine/LogSeverity.inc"
+#include "Engine/Engine/ELogSeverity.inc"
 #undef LOG_SEVERITY
 };
 
 const char* gLogCategoryLiteral[(int)LogCategory::COUNT] =
 {
 #define LOG_CATEGORY(Name) #Name,
-#include "Engine/Engine/LogCategory.inc"
+#include "Engine/Engine/ELogCategory.inc"
 #undef LOG_CATEGORY
 };
 
