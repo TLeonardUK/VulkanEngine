@@ -1,0 +1,8 @@
+{
+    "Type": "Model",    
+    "ModelPath": "Game/Models/Dark Souls/17-0 Duke's Archive+Crystal Caves.obj",    
+    "MaterialMapping":
+    {
+        "Default": "Engine/Materials/world_tiled.json"
+    }
+}

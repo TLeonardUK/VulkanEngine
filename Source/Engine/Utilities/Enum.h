@@ -10,17 +10,17 @@
 extern const char* Name##_Strings[(int)Name::COUNT + 1];	\
 															\
 template <>													\
-bool EnumToString(Name value, String& name);				\
+String EnumToString(Name value);							\
 template <>													\
 bool StringToEnum(const String& name, Name& value);			\
 
 int FindEnumIndex(const char** names, const String& name);
 
 template <typename T>
-bool EnumToString(T value, String& name)
+String EnumToString(T value)
 {
 	assert(false);
-	return false;
+	return "";
 }
 
 template <typename T>

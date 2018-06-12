@@ -1,0 +1,8 @@
+{
+    "Type": "Model",    
+    "ModelPath": "Game/Models/Dark Souls/16-0 New Londo Ruins+Valley of Drakes.obj",    
+    "MaterialMapping":
+    {
+        "Default": "Engine/Materials/world_tiled.json"
+    }
+}

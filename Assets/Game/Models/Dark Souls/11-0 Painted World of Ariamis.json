@@ -1,0 +1,8 @@
+{
+    "Type": "Model",    
+    "ModelPath": "Game/Models/Dark Souls/11-0 Painted World of Ariamis.obj",    
+    "MaterialMapping":
+    {
+        "Default": "Engine/Materials/world_tiled.json"
+    }
+}

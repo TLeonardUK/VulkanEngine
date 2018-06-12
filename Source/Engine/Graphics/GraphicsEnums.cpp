@@ -1,4 +1,5 @@
 #include "Engine/Graphics/GraphicsEnums.h"
+#include "Engine/Types/Math.h"
 
 #include "Engine/Utilities/EnumImplementation.h"
 
@@ -66,6 +67,38 @@ int GetValueCountForGraphicsBindingFormat(GraphicsBindingFormat format)
 	case GraphicsBindingFormat::Matrix3:	return 9;
 	case GraphicsBindingFormat::Matrix4:	return 16;
 	case GraphicsBindingFormat::Texture:	return 1;
+	}
+	return 0;
+}
+
+int GetByteSizeForGraphicsBindingFormat(GraphicsBindingFormat format)
+{
+	switch (format)
+	{
+	case GraphicsBindingFormat::Bool:		return sizeof(bool);
+	case GraphicsBindingFormat::Bool2:		return sizeof(BVector2);
+	case GraphicsBindingFormat::Bool3:		return sizeof(BVector3);
+	case GraphicsBindingFormat::Bool4:		return sizeof(BVector4);
+	case GraphicsBindingFormat::Int:		return sizeof(int32_t);
+	case GraphicsBindingFormat::Int2:		return sizeof(IVector2);
+	case GraphicsBindingFormat::Int3:		return sizeof(IVector3);
+	case GraphicsBindingFormat::Int4:		return sizeof(IVector4);
+	case GraphicsBindingFormat::UInt:		return sizeof(uint32_t);
+	case GraphicsBindingFormat::UInt2:		return sizeof(UVector2);
+	case GraphicsBindingFormat::UInt3:		return sizeof(UVector3);
+	case GraphicsBindingFormat::UInt4:		return sizeof(UVector4);
+	case GraphicsBindingFormat::Float:		return sizeof(float);
+	case GraphicsBindingFormat::Float2:		return sizeof(Vector2);
+	case GraphicsBindingFormat::Float3:		return sizeof(Vector3);
+	case GraphicsBindingFormat::Float4:		return sizeof(Vector4);
+	case GraphicsBindingFormat::Double:		return sizeof(double);
+	case GraphicsBindingFormat::Double2:	return sizeof(DVector2);
+	case GraphicsBindingFormat::Double3:	return sizeof(DVector3);
+	case GraphicsBindingFormat::Double4:	return sizeof(DVector4);
+	case GraphicsBindingFormat::Matrix2:	return sizeof(Matrix2);
+	case GraphicsBindingFormat::Matrix3:	return sizeof(Matrix3);
+	case GraphicsBindingFormat::Matrix4:	return sizeof(Matrix4);
+	case GraphicsBindingFormat::Texture:	return 0;
 	}
 	return 0;
 }

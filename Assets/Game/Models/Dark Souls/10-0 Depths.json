@@ -1,0 +1,8 @@
+{
+    "Type": "Model",    
+    "ModelPath": "Game/Models/Dark Souls/10-0 Depths.obj",    
+    "MaterialMapping":
+    {
+        "Default": "Engine/Materials/world_tiled.json"
+    }
+}

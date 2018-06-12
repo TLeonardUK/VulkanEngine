@@ -1,0 +1,8 @@
+{
+    "Type": "Model",    
+    "ModelPath": "Game/Models/chalet.obj",    
+    "MaterialMapping":
+    {
+        "Default": "Game/Materials/chalet.json"
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "Type": "Model",    
+    "ModelPath": "Game/Models/Dark Souls/15-1 Anor Londo.obj",    
+    "MaterialMapping":
+    {
+        "Default": "Engine/Materials/world_tiled.json"
+    }
+}

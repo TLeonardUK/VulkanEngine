@@ -5,10 +5,22 @@
 #include "Engine/Engine/GameInstance.h"
 #include "Engine/Engine/Engine.h"
 
+#include "Engine/Types/Math.h"
+
+class RenderView;
+
 class VulkanGameInstance
 	: public IGameInstance
 {
 protected:
+	std::shared_ptr<RenderView> m_tmpRenderView;
+	Vector3 m_viewPosition;
+	Quaternion m_viewRotation;
+	Vector3 m_viewRotationEuler;
+	int m_frameCount;
+
+	const float MouseSensitivity = 500.0f;
+	const float MovementSpeed = 0.025f;
 
 public:
 	VulkanGameInstance(std::shared_ptr<Engine> engine);
@@ -26,6 +38,6 @@ public:
 
 	virtual void Initialize();
 	virtual void Terminate();
-	virtual void Tick();
+	virtual void Tick(const FrameTime& time);
 
 };

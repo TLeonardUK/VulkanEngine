@@ -226,9 +226,9 @@ void ResourceManager::LoadResource(std::shared_ptr<ResourceStatus> resource)
 	}
 
 	resource->Resource = result;
+	resource->Status = ResourceLoadStatus::Loaded;
 
 	m_logger->WriteSuccess(LogCategory::Resources, "[%-30s] Successfully loaded", resource->Path.c_str());
-	resource->Status = ResourceLoadStatus::Loaded;
 }
 
 std::shared_ptr<ResourceStatus> ResourceManager::GetPendingResource()
@@ -271,7 +271,7 @@ ResourcePtr<IResource> ResourceManager::GetDefaultForTag(const String& tag)
 {
 	std::shared_ptr<ResourceStatus> status = std::make_shared<ResourceStatus>();
 	status->Path = "Internal:Default " + tag;
-	status->Status = ResourceLoadStatus::;
+	status->Status = ResourceLoadStatus::Loaded;
 	status->ResourceManager = shared_from_this();
 
 	std::shared_ptr<IResourceLoader> loader = GetLoaderForTag(tag);

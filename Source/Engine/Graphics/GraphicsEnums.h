@@ -39,3 +39,4 @@ enum_begin_declaration(GraphicsMipMapMode)
 enum_end_declaration(GraphicsMipMapMode)
 
 int GetValueCountForGraphicsBindingFormat(GraphicsBindingFormat format);
+int GetByteSizeForGraphicsBindingFormat(GraphicsBindingFormat format);

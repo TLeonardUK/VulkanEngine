@@ -5,6 +5,8 @@
 #include "Engine/Resources/ResourceManager.h"
 
 #include "Engine/Resources/Types/Texture.h"
+#include "Engine/Resources/Types/Shader.h"
+#include "Engine/Resources/Types/MaterialPropertyCollection.h"
 
 #include "Engine/Graphics/GraphicsEnums.h"
 
@@ -15,61 +17,60 @@
 class TextureResourceLoader;
 class Shader;
 class Binding;
-
-struct MaterialBinding
-{
-public:
-	GraphicsBindingFormat Format;
-	String Name;
-
-	union
-	{
-		bool		Value_Bool;
-		BVector2	Value_Bool2;
-		BVector3	Value_Bool3;
-		BVector4	Value_Bool4;
-
-		int32_t		Value_Int;
-		IVector2	Value_Int2;
-		IVector3	Value_Int3;
-		IVector4	Value_Int4;
-
-		uint32_t	Value_UInt;
-		UVector2	Value_UInt2;
-		UVector3	Value_UInt3;
-		UVector4	Value_UInt4;
-
-		float		Value_Float;
-		Vector2		Value_Float2;
-		Vector3		Value_Float3;
-		Vector4		Value_Float4;
-
-		double		Value_Double;
-		DVector2	Value_Double2;
-		DVector3	Value_Double3;
-		DVector4	Value_Double4;
-
-		Matrix2		Value_Matrix2;
-		Matrix3		Value_Matrix3;
-		Matrix4		Value_Matrix4;
-	};
-
-	ResourcePtr<Texture> Value_Texture;
-
-	void ParseJsonValue(Array<json>& value);
-
-};
+class IGraphics;
+class IGraphicsRenderPass;
+class IGraphicsPipeline;
+class Logger;
+class Renderer;
+struct ShaderBindingField;
 
 class Material
 	: public IResource
 {
 private:
+	std::shared_ptr<Logger> m_logger;
+
 	ResourcePtr<Shader> m_shader;
-	Array<MaterialBinding> m_bindings;
+	MaterialPropertyCollection m_properties;
+
+	std::shared_ptr<IGraphics> m_graphics;
+	std::shared_ptr<Renderer> m_renderer;
+	String m_name;
+
+	std::shared_ptr<IGraphicsRenderPass> m_renderPass;
+	std::shared_ptr<IGraphicsPipeline> m_pipeline;
+
+	std::shared_ptr<IGraphicsResourceSet> m_resourceSet;
+
+	Dictionary<String, std::shared_ptr<IGraphicsUniformBuffer>> m_uniformBuffers;
+
+	std::shared_ptr<Shader> m_lastUpdatedShader;
+
+	bool m_dirty;
+
+private:
+	friend class Renderer;
+	friend class Model;
+	friend class Mesh;
+	friend class MaterialResourceLoader;
+
+	void UpdateResources();
+	void RecreateResources();
+	void UpdateBindings();
+
+	std::shared_ptr<IGraphicsRenderPass> GetRenderPass();
+	std::shared_ptr<IGraphicsPipeline> GetPipeline();
+	std::shared_ptr<IGraphicsResourceSet> GetResourceSet();
+
+	bool FillUniformBuffer(std::shared_ptr<IGraphicsUniformBuffer> buffer, const ShaderBinding& binding);
 
 public:
 	static const char* Tag;
 
-	Material(ResourcePtr<Shader> shader, Array<MaterialBinding>& bindings);
+	Material(std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer, std::shared_ptr<Logger> logger, const String& name, ResourcePtr<Shader> shader, MaterialPropertyCollection& properties);
+
+	bool GetVertexBufferFormat(VertexBufferBindingDescription& format);
+
+	ResourcePtr<Shader> GetShader();
 
 };

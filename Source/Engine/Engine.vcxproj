@@ -144,8 +144,10 @@
     <ClCompile Include="Input\Sdl\SdlInput.cpp" />
     <ClCompile Include="Platform\Sdl\SdlPlatform.cpp" />
     <ClCompile Include="Rendering\Renderer.cpp" />
+    <ClCompile Include="Rendering\RenderView.cpp" />
     <ClCompile Include="Resources\ResourceManager.cpp" />
     <ClCompile Include="Resources\Types\Material.cpp" />
+    <ClCompile Include="Resources\Types\MaterialPropertyCollection.cpp" />
     <ClCompile Include="Resources\Types\MaterialResourceLoader.cpp" />
     <ClCompile Include="Resources\Types\Model.cpp" />
     <ClCompile Include="Resources\Types\ModelResourceLoader.cpp" />
@@ -167,6 +169,7 @@
     <ClInclude Include="Components\Rendering\MeshComponent.h" />
     <ClInclude Include="Components\Transform\TransformComponent.h" />
     <ClInclude Include="Engine\Engine.h" />
+    <ClInclude Include="Engine\FrameTime.h" />
     <ClInclude Include="Engine\GameInstance.h" />
     <ClInclude Include="Engine\Logging.h" />
     <ClInclude Include="Graphics\Graphics.h" />
@@ -211,10 +214,12 @@
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\Sdl\SdlPlatform.h" />
     <ClInclude Include="Rendering\Renderer.h" />
+    <ClInclude Include="Rendering\RenderView.h" />
     <ClInclude Include="Resources\Resource.h" />
     <ClInclude Include="Resources\ResourceLoader.h" />
     <ClInclude Include="Resources\ResourceManager.h" />
     <ClInclude Include="Resources\Types\Material.h" />
+    <ClInclude Include="Resources\Types\MaterialPropertyCollection.h" />
     <ClInclude Include="Resources\Types\MaterialResourceLoader.h" />
     <ClInclude Include="Resources\Types\Model.h" />
     <ClInclude Include="Resources\Types\ModelResourceLoader.h" />

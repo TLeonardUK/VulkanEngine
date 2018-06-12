@@ -1,0 +1,32 @@
+{
+    "Type": "Model",    
+    "ModelPath": "Engine/Models/Sponza/sponza.obj",    
+    "MaterialMapping":
+    {
+        "leaf": "Engine/Materials/Sponza/leaf.json",
+        "vase_round": "Engine/Materials/Sponza/vase_round.json",
+        "Material__57": "Engine/Materials/Sponza/Material__57.json",
+        "Material__298": "Engine/Materials/Sponza/Material__298.json",
+        "bricks": "Engine/Materials/Sponza/bricks.json",
+        "arch": "Engine/Materials/Sponza/arch.json",
+        "ceiling": "Engine/Materials/Sponza/ceiling.json",
+        "column_a": "Engine/Materials/Sponza/column_a.json",
+        "floor": "Engine/Materials/Sponza/floor.json",
+        "column_c": "Engine/Materials/Sponza/column_c.json",
+        "details": "Engine/Materials/Sponza/details.json",
+        "column_b": "Engine/Materials/Sponza/column_b.json",
+        "Material__47": "Engine/Materials/Sponza/Material__47.json",
+        "flagpole": "Engine/Materials/Sponza/flagpole.json",
+        "fabric_e": "Engine/Materials/Sponza/fabric_e.json",
+        "fabric_d": "Engine/Materials/Sponza/fabric_d.json",
+        "fabric_a": "Engine/Materials/Sponza/fabric_a.json",
+        "fabric_g": "Engine/Materials/Sponza/fabric_g.json",
+        "fabric_c": "Engine/Materials/Sponza/fabric_c.json",
+        "fabric_f": "Engine/Materials/Sponza/fabric_f.json",
+        "chain": "Engine/Materials/Sponza/chain.json",
+        "vase_hanging": "Engine/Materials/Sponza/vase_hanging.json",
+        "vase": "Engine/Materials/Sponza/vase.json",
+        "Material__25": "Engine/Materials/Sponza/Material__25.json",
+        "roof": "Engine/Materials/Sponza/roof.json"
+    }
+}

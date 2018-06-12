@@ -1,0 +1,15 @@
+{
+    "Type": "Texture",    
+    "ImagePath": "Engine/Textures/Sponza/vase_dif.png",
+    
+    "MagnificationFilter": "Linear",
+    "MinificationFilter": "Linear",
+    "AddressModeU": "Repeat",
+    "AddressModeV": "Repeat",
+    "AddressModeW": "Repeat",
+    "MaxAnisotropy": 16,
+    "MinLod": 0.0,
+    "MaxLod": -1.0,
+    "MipLodBias": 0.0,
+    "MimapMode": "Linear"
+}

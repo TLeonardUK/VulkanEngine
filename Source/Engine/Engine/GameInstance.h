@@ -4,6 +4,8 @@
 
 #include "Engine/Types/String.h"
 
+#include "Engine/Engine/FrameTime.h"
+
 #include "Engine/Windowing/Window.h"
 
 class Engine;
@@ -54,5 +56,6 @@ public:
 
 	virtual void Initialize() = 0;
 	virtual void Terminate() = 0;
-	virtual void Tick() = 0;
+	virtual void Tick(const FrameTime& time) = 0;
+
 };

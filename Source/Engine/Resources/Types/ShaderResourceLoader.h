@@ -18,7 +18,7 @@ private:
 	ResourcePtr<Shader> m_defaultShader;
 
 private:
-	bool LoadStageBindings(ShaderStage& stage, const String& stageName, json& bindingsJson, std::shared_ptr<ResourceStatus> resource);
+	bool LoadBindings(Array<ShaderBinding>& bindings, json& bindingsJson, std::shared_ptr<ResourceStatus> resource);
 	bool LoadStageStreams(ShaderStage& stage, const String& stageName, json& bindingsJson, std::shared_ptr<ResourceStatus> resource);
 
 public:

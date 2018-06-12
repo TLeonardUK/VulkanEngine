@@ -6,13 +6,13 @@
 class Color
 {
 public:
-	float R, G, B, A;
+	float r, g, b, a;
 
-	Color(float r, float g, float b, float a)
-		: R(r)
-		, G(g)
-		, B(b)
-		, A(a)
+	Color(float r_, float g_, float b_, float a_)
+		: r(r_)
+		, g(g_)
+		, b(b_)
+		, a(a_)
 	{
 	}
 

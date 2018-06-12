@@ -5,6 +5,8 @@
 #include "Engine/Engine/Logging.h"
 #include "Engine/Graphics/Graphics.h"
 
+#include <algorithm>
+
 // todo: parse out pipeline values here as well? blending modes etc? 
 
 ShaderResourceLoader::ShaderResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics)
@@ -28,7 +30,7 @@ void ShaderResourceLoader::AssignDefault(std::shared_ptr<ResourceStatus> resourc
 	resource->DefaultResource = m_defaultShader.Get();
 }
 
-bool ShaderResourceLoader::LoadStageBindings(ShaderStage& stage, const String& stageName, json& jsonData, std::shared_ptr<ResourceStatus> resource)
+bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& jsonData, std::shared_ptr<ResourceStatus> resource)
 {
 	for (auto iter = jsonData.begin(); iter != jsonData.end(); iter++)
 	{
@@ -58,13 +60,15 @@ bool ShaderResourceLoader::LoadStageBindings(ShaderStage& stage, const String& s
 
 		if (binding.Type != GraphicsBindingType::UniformBufferObject)
 		{
-			binding.BindTo = bindingJson["BindTo"];
-
 			if (bindingJson.count("BindTo") == 0)
 			{
 				m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding '%s' does not include required paramater 'BindTo'.", resource->Path.c_str(), bindingName.c_str());
 				return false;
 			}
+
+			String bindToName = bindingJson["BindTo"];
+			binding.BindTo = bindToName;
+			binding.BindToHash = CalculateMaterialPropertyHash(binding.BindTo);
 		}
 		else
 		{
@@ -96,10 +100,17 @@ bool ShaderResourceLoader::LoadStageBindings(ShaderStage& stage, const String& s
 					m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding field '%s' does not include required paramater 'BindTo'.", resource->Path.c_str(), fieldName.c_str());
 					return false;
 				}
+				if (fieldJson.count("Location") == 0)
+				{
+					m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding field '%s' does not include required paramater 'Location'.", resource->Path.c_str(), fieldName.c_str());
+					return false;
+				}
 
 				ShaderBindingField fieldBinding;
 				fieldBinding.Name = fieldName;
 				fieldBinding.BindTo = fieldJson["BindTo"];
+				fieldBinding.BindToHash = CalculateMaterialPropertyHash(fieldBinding.BindTo);
+				fieldBinding.Location = fieldJson["Location"];
 
 				String fieldFormat = fieldJson["Format"];
 
@@ -111,12 +122,29 @@ bool ShaderResourceLoader::LoadStageBindings(ShaderStage& stage, const String& s
 
 				binding.Fields.push_back(fieldBinding);
 			}
+			
+			// Sort by location in struct.
+			std::sort(binding.Fields.begin(), binding.Fields.end(),
+				[](const ShaderBindingField& a, const ShaderBindingField& b) -> bool
+			{
+				return a.Location < b.Location;
+			});
+
+			// Ensure fields are sequential.
+			for (int i = 0; i < binding.Fields.size(); i++)
+			{
+				if (binding.Fields[i].Location != i)
+				{
+					m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding field '%s' is not sequential, expected location %i.", resource->Path.c_str(), binding.Fields[i].Name, i);
+					return false;
+				}
+			}
 		}
 
 		binding.Binding = bindingJson["Binding"];
 		binding.Name = bindingName;		
 
-		stage.Bindings.push_back(binding);
+		bindings.push_back(binding);
 	}
 
 	return true;
@@ -234,22 +262,6 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 			return nullptr;
 		}
 
-		// Parse bindings.
-		if (stageJson.count("Bindings"))
-		{
-			json bindingsJson = stageJson["Bindings"];
-			if (!bindingsJson.is_object())
-			{
-				m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader stage '%s' expected 'Bindings' parameter to be an object.", resource->Path.c_str(), stageName.c_str());
-				return nullptr;
-			}
-
-			if (!LoadStageBindings(shaderStage, stageName, bindingsJson, resource))
-			{
-				return nullptr;
-			}
-		}
-
 		// Parse vertex format.
 		if (shaderStage.Stage == GraphicsPipelineStage::Vertex)
 		{
@@ -269,5 +281,23 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 		shaderStages.push_back(shaderStage);
 	}
 
-	return std::make_shared<Shader>(shaderStages);
+	Array<ShaderBinding> shaderBindings;
+
+	// Parse bindings.
+	if (jsonValue.count("Bindings"))
+	{
+		json bindingsJson = jsonValue["Bindings"];
+		if (!bindingsJson.is_object())
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] Expected 'Bindings' parameter to be an object.", resource->Path.c_str());
+			return nullptr;
+		}
+
+		if (!LoadBindings(shaderBindings, bindingsJson, resource))
+		{
+			return nullptr;
+		}
+	}
+
+	return std::make_shared<Shader>(shaderStages, shaderBindings);
 }

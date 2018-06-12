@@ -4,12 +4,14 @@
 #include "Engine/Resources/Types/Shader.h"
 #include "Engine/Resources/Resource.h"
 #include "Engine/Resources/ResourceManager.h"
+#include "Engine/Rendering/Renderer.h"
 #include "Engine/Engine/Logging.h"
 #include "Engine/Graphics/Graphics.h"
 
-MaterialResourceLoader::MaterialResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics)
+MaterialResourceLoader::MaterialResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer)
 	: m_logger(logger)
 	, m_graphics(graphics)
+	, m_renderer(renderer)
 {
 }
 
@@ -37,7 +39,8 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 	}
 
 	ResourcePtr<Shader> shader = manager->Load<Shader>(jsonValue["ShaderPath"]);
-	Array<MaterialBinding> bindings;
+
+	MaterialPropertyCollection properties;
 
 	if (jsonValue.count("Bindings") != 0)
 	{
@@ -50,8 +53,9 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 
 		for (auto iter = bindingJson.begin(); iter != bindingJson.end(); iter++)
 		{
-			MaterialBinding binding;
+			MaterialProperty binding;
 			binding.Name = iter.key();
+			binding.Hash = CalculateMaterialPropertyHash(binding.Name);
 
 			json bindingJson = iter.value();
 
@@ -114,10 +118,16 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 				binding.ParseJsonValue(values);
 			}
 
-			bindings.push_back(binding);
+			properties.Add(binding);
 		}
 	}
 
-	return std::make_shared<Material>(shader, bindings);
+	std::shared_ptr<Material> material = std::make_shared<Material>(m_graphics, m_renderer, m_logger, resource->Path, shader, properties);
+
+	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+		material->UpdateResources();
+	});
+
+	return material;
 }
 

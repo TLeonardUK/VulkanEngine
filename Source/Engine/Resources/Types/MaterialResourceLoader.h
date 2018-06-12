@@ -7,6 +7,7 @@
 class Logger;
 class IGraphics;
 class Shader;
+class Renderer;
 
 class MaterialResourceLoader
 	: public IResourceLoader
@@ -14,11 +15,12 @@ class MaterialResourceLoader
 private:
 	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<IGraphics> m_graphics;
+	std::shared_ptr<Renderer> m_renderer;
 
 	ResourcePtr<Material> m_defaultMaterial;
 
 public:
-	MaterialResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics);
+	MaterialResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer);
 
 	virtual String GetTag();
 

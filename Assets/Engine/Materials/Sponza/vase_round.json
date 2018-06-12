@@ -1,0 +1,12 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/default.json",    
+    "Bindings":
+    {        
+        "DiffuseTexture":
+        {   
+            "Format": "Texture",          
+            "Value": "Engine/Textures/Sponza/vase_round.json"   
+        }
+    }
+}

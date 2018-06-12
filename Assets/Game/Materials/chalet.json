@@ -1,8 +1,17 @@
 {
-    "type": "material",    
-    "shader": "Shaders/diffuse.json",
-    "samplers": 
-    {
-        "diffuseTexture": "Textures/chalet.json"
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/default.json",    
+    "Bindings":
+    {        
+        "DiffuseTexture":
+        {   
+            "Format": "Texture",          
+            "Value": "Game/Textures/chalet.json"   
+        },
+        "fadeValue":
+        {   
+            "Format": "Float",          
+            "Value": 1.0
+        }
     }
 }

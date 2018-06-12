@@ -1,4 +1,15 @@
 {
     "Type": "Texture",    
-    "ImagePath": "Game/Textures/chalet.jpg"
+    "ImagePath": "Game/Textures/chalet.jpg",
+        
+    "MagnificationFilter": "Linear",
+    "MinificationFilter": "Linear",
+    "AddressModeU": "ClampToEdge",
+    "AddressModeV": "ClampToEdge",
+    "AddressModeW": "ClampToEdge",
+    "MaxAnisotropy": 0,
+    "MinLod": 0.0,
+    "MaxLod": -1.0,
+    "MipLodBias": 0.0,
+    "MimapMode": "NearestNeighbour"
 }

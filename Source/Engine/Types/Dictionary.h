@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <unordered_map>
 
 template <typename Key, typename Value>
-using Dictionary = std::map<Key, Value>;
+using Dictionary = std::unordered_map<Key, Value>;

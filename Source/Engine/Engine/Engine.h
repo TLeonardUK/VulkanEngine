@@ -8,6 +8,8 @@
 
 #include "Engine/Rendering/Renderer.h"
 
+#include "Engine/Engine/FrameTime.h"
+
 #include <memory>
 #include <chrono>
 
@@ -53,16 +55,20 @@ private:
 	void TermRenderer();
 	void TermResourceManager();
 
-	void UpdateFps();
+	void UpdateFrameTime();
 
 	bool Init();
 	bool Term();
 	void MainLoop();
 
+	std::chrono::high_resolution_clock::time_point m_startTime;
 	std::chrono::high_resolution_clock::time_point m_lastFrameTime;
 	std::chrono::high_resolution_clock::time_point m_lastUpdateTime;
+	
 	float m_fpsCounter;
 	float m_frameTimeSumCounter;
+
+	FrameTime m_frameTime;
 
 	std::shared_ptr<IGameInstance> m_gameInstance;
 
@@ -70,5 +76,8 @@ public:
 	bool Run(std::shared_ptr<IGameInstance> gameInstance);
 
 	std::shared_ptr<ResourceManager> GetResourceManager();
+	std::shared_ptr<Renderer> GetRenderer();
+	std::shared_ptr<IInput> GetInput();
+
 
 };

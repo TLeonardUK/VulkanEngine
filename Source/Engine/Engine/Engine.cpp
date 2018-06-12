@@ -81,6 +81,8 @@ bool Engine::Run(std::shared_ptr<IGameInstance> gameInstance)
 	m_assetFolder = m_gameInstance->GetAssetFolder();
 	m_gameInstance->GetGameVersion(m_versionMajor, m_versionMinor, m_versionBuild);
 
+	m_startTime = std::chrono::high_resolution_clock::now();
+
 	if (Init())
 	{
 		MainLoop();
@@ -222,7 +224,7 @@ bool Engine::InitInput()
 	InputSystem system = m_gameInstance->GetInputSystem();
 	if (system == InputSystem::Sdl)
 	{
-		m_input = SdlInput::Create(m_logger);
+		m_input = SdlInput::Create(m_logger, m_window);
 	}
 	else
 	{
@@ -279,10 +281,10 @@ bool Engine::InitResourceManager()
 		return false;
 	}
 
-	m_resourceManager->AddLoader(std::make_shared<TextureResourceLoader>(m_logger, m_graphics));
+	m_resourceManager->AddLoader(std::make_shared<TextureResourceLoader>(m_logger, m_graphics, m_renderer));
 	m_resourceManager->AddLoader(std::make_shared<ShaderResourceLoader>(m_logger, m_graphics));
-	m_resourceManager->AddLoader(std::make_shared<MaterialResourceLoader>(m_logger, m_graphics));
-	m_resourceManager->AddLoader(std::make_shared<ModelResourceLoader>(m_logger, m_graphics));
+	m_resourceManager->AddLoader(std::make_shared<MaterialResourceLoader>(m_logger, m_graphics, m_renderer));
+	m_resourceManager->AddLoader(std::make_shared<ModelResourceLoader>(m_logger, m_graphics, m_renderer));
 	m_resourceManager->LoadDefaults();
 
 	return true;
@@ -297,13 +299,14 @@ void Engine::TermResourceManager()
 	}
 }
 
-void Engine::UpdateFps()
+void Engine::UpdateFrameTime()
 {
+	// Track FPS.
 	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - m_lastFrameTime).count();
+	float lastFrameDuration = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - m_lastFrameTime).count();
 	m_lastFrameTime = std::chrono::high_resolution_clock::now();
 
-	m_frameTimeSumCounter += time;
+	m_frameTimeSumCounter += lastFrameDuration;
 	m_fpsCounter++;
 
 	float timeSinceLastUpdate = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - m_lastUpdateTime).count();
@@ -318,6 +321,12 @@ void Engine::UpdateFps()
 
 		m_lastUpdateTime = std::chrono::high_resolution_clock::now();
 	}
+
+	float timeSinceStart = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - m_startTime).count();
+
+	// Calculate delta.
+	m_frameTime.Time = std::chrono::duration<float, std::chrono::seconds::period>(timeSinceStart).count();
+	m_frameTime.DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(lastFrameDuration).count();
 }
 
 void Engine::MainLoop()
@@ -327,12 +336,14 @@ void Engine::MainLoop()
 	while (!m_platform->WasCloseRequested())
 	{
 		m_platform->PumpMessageQueue();
+		m_input->PollInput();
 
-		m_gameInstance->Tick();
+		m_gameInstance->Tick(m_frameTime);
+
 		m_renderer->Present();
 		m_resourceManager->CollectGarbage();
 
-		UpdateFps();
+		UpdateFrameTime();
 	}
 
 	m_gameInstance->Terminate();
@@ -341,4 +352,14 @@ void Engine::MainLoop()
 std::shared_ptr<ResourceManager> Engine::GetResourceManager()
 {
 	return m_resourceManager;
+}
+
+std::shared_ptr<Renderer> Engine::GetRenderer()
+{
+	return m_renderer;
+}
+
+std::shared_ptr<IInput> Engine::GetInput()
+{
+	return m_input;
 }

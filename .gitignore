@@ -3,3 +3,4 @@ Binaries/*
 Temp/*
 *.VC.db
 *.vcxproj.user
+*.vspx

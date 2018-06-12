@@ -1,0 +1,12 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/world_tiled.json",    
+    "Bindings":
+    {        
+        "DiffuseTexture":
+        {   
+            "Format": "Texture",          
+            "Value": "Engine/Textures/default.json"   
+        }
+    }
+}

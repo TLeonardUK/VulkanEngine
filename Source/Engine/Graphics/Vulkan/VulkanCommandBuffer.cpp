@@ -133,7 +133,7 @@ void VulkanCommandBuffer::Clear(std::shared_ptr<IGraphicsImage> image, Color col
 {
 	std::shared_ptr<VulkanImage> vulkanImage = std::dynamic_pointer_cast<VulkanImage>(image);
 	
-	VkClearColorValue clearColor = { color.R, color.G, color.B, color.A };
+	VkClearColorValue clearColor = { color.r, color.g, color.b, color.a };
 	
 	VkClearValue clearValue = {};
 	clearValue.color = clearColor;

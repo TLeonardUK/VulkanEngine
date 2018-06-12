@@ -6,37 +6,6 @@
         {
             "ShaderPath": "Engine/Shaders/default.vert",
             "EntryPoint": "main",
-            "Bindings":
-            {   
-                "ubo":
-                {
-                    "Type": "UniformBufferObject",
-                    "Binding": 0,
-                    "Fields":
-                    {
-                        "model":
-                        {
-                            "Format": "Matrix4",
-                            "BindTo": "ModelMatrix"
-                        },                        
-                        "view":
-                        {
-                            "Format": "Matrix4",
-                            "BindTo": "ViewMatrix"
-                        },                        
-                        "proj":
-                        {
-                            "Format": "Matrix4",
-                            "BindTo": "ProjectionMatrix"
-                        },                        
-                        "bCustomValue":
-                        {
-                            "Format": "Float",
-                            "BindTo": "ValueFromMaterial"
-                        }
-                    }
-                }
-            },
             "VertexStreams":
             {
                 "inPosition":
@@ -44,12 +13,6 @@
                     "Format": "Float3",
                     "Location": 0,
                     "BindTo": "Position"
-                },
-                "inColor":
-                {
-                    "Format": "Float3",
-                    "Location": 1,
-                    "BindTo": "Color"
                 },
                 "inTexCoord":
                 {
@@ -62,16 +25,42 @@
         "Fragment":
         {
             "ShaderPath": "Engine/Shaders/default.frag",
-            "EntryPoint": "main",
-            "Bindings":
-            {   
-                "texSampler":
+            "EntryPoint": "main"
+        }
+    },
+    "Bindings":
+    {   
+        "ubo":
+        {
+            "Type": "UniformBufferObject",
+            "Binding": 0,
+            "Fields":
+            {
+                "model":
                 {
-                    "Type": "Sampler",
-                    "Binding": 1,
-                    "BindTo": "DiffuseTexture"
+                    "Format": "Matrix4",
+                    "Location": 0,
+                    "BindTo": "ModelMatrix"
+                },                        
+                "view":
+                {
+                    "Format": "Matrix4",
+                    "Location": 1,
+                    "BindTo": "ViewMatrix"
+                },                        
+                "proj":
+                {
+                    "Format": "Matrix4",
+                    "Location": 2,
+                    "BindTo": "ProjectionMatrix"
                 }
             }
+        },
+        "texSampler":
+        {
+            "Type": "Sampler",
+            "Binding": 1,
+            "BindTo": "DiffuseTexture"
         }
     }
 }

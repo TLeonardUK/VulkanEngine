@@ -13,7 +13,7 @@
 #define enum_end_implementation(Name)	"" };		\
 															\
 template <>													\
-bool EnumToString(Name value, String& name)					\
+String EnumToString(Name value)								\
 {															\
 	return Name##_Strings[(int)value];						\
 }															\

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Engine/Resources/Types/MaterialPropertyCollection.h"
 #include "Engine/Resources/ResourceLoader.h"
 #include "Engine/Resources/Resource.h"
 
@@ -30,6 +31,8 @@ public:
 	String Name;
 	GraphicsBindingFormat Format;
 	String BindTo;
+	MaterialPropertyHash BindToHash;
+	int Location;
 
 };
 
@@ -40,7 +43,14 @@ public:
 	GraphicsBindingType Type;
 	int Binding;
 	String BindTo;
+	MaterialPropertyHash BindToHash;
 	Array<ShaderBindingField> Fields;
+
+public:
+	const int UniformPaddingAlignment = 16;
+
+	int GetUniformBufferSize() const;
+	int GetUniformBufferFieldOffset(int fieldIndex) const;
 
 };
 
@@ -49,7 +59,6 @@ struct ShaderStage
 public:
 	GraphicsPipelineStage Stage;
 	std::shared_ptr<IGraphicsShader> Shader;
-	Array<ShaderBinding> Bindings;
 	Array<ShaderVertexStream> Streams;
 
 };
@@ -59,10 +68,15 @@ class Shader
 {
 private:
 	Array<ShaderStage> m_stages;
+	Array<ShaderBinding> m_bindings;
 
 public:
 	static const char* Tag;
 
-	Shader(const Array<ShaderStage>& stages);
+	Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings);
+
+	bool GetStage(GraphicsPipelineStage stage, const ShaderStage** result);
+	const Array<ShaderStage>& GetStages();
+	const Array<ShaderBinding>& GetBindings();
 
 };

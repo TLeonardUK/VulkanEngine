@@ -16,11 +16,12 @@ class ModelResourceLoader
 private:
 	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<IGraphics> m_graphics;
+	std::shared_ptr<Renderer> m_renderer;
 
 	ResourcePtr<Model> m_defaultModel;
 
 public:
-	ModelResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics);
+	ModelResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer);
 
 	virtual String GetTag();
 

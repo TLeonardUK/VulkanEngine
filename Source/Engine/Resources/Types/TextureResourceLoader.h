@@ -6,6 +6,7 @@
 class Logger;
 class IGraphics;
 class Texture;
+class Renderer;
 
 class TextureResourceLoader
 	: public IResourceLoader
@@ -13,11 +14,12 @@ class TextureResourceLoader
 private:
 	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<IGraphics> m_graphics;
+	std::shared_ptr<Renderer> m_renderer;
 
 	ResourcePtr<Texture> m_defaultTexture;
 
 public:
-	TextureResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics);
+	TextureResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer);
 
 	virtual String GetTag();
 

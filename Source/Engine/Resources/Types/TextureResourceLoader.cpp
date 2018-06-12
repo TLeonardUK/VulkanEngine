@@ -2,15 +2,17 @@
 #include "Engine/Resources/Types/Texture.h"
 #include "Engine/Resources/Resource.h"
 #include "Engine/Resources/ResourceManager.h"
+#include "Engine/Rendering/Renderer.h"
 #include "Engine/Engine/Logging.h"
 #include "Engine/Graphics/Graphics.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-TextureResourceLoader::TextureResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics)
+TextureResourceLoader::TextureResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer)
 	: m_logger(logger)
 	, m_graphics(graphics)
+	, m_renderer(renderer)
 {
 }
 
@@ -144,6 +146,11 @@ std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceM
 		}
 	}
 
+	if (description.MaxLod == -1)
+	{
+		description.MaxLod = image->GetMipLevels();
+	}
+
 	std::shared_ptr<IGraphicsSampler> sampler = m_graphics->CreateSampler(StringFormat("%s Sampler", imagePath.c_str()), description);
 	if (sampler == nullptr)
 	{
@@ -151,5 +158,11 @@ std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceM
 		return false;
 	}
 
-	return std::make_shared<Texture>(image, imageView, sampler);
+	std::shared_ptr<Texture> texture = std::make_shared<Texture>(m_renderer, image, imageView, sampler);
+
+	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+		texture->UpdateResources();
+	});
+
+	return texture;
 }
