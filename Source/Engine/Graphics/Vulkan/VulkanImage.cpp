@@ -28,6 +28,7 @@ VulkanImage::VulkanImage(
 	, m_extents(extents)
 	, m_isDepth(false)
 	, m_mipLevels(1)
+	, m_layers(1)
 {
 }
 
@@ -45,6 +46,7 @@ VulkanImage::VulkanImage(
 	, m_memoryAllocator(allocator)
 	, m_isDepth(false)
 	, m_mipLevels(1)
+	, m_layers(1)
 {
 }
 
@@ -70,9 +72,9 @@ void VulkanImage::FreeResources()
 	}
 }
 
-bool VulkanImage::Build(int width, int height, GraphicsFormat format, bool generateMips)
+bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format, bool generateMips)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image: %s", m_name.c_str());
+	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image (%i x %i, %i layers): %s", width, height, layers, m_name.c_str());
 
 	m_mipLevels = 1;
 	if (generateMips)
@@ -83,8 +85,10 @@ bool VulkanImage::Build(int width, int height, GraphicsFormat format, bool gener
 	m_extents.width = width;
 	m_extents.height = height;
 	m_extents.depth = 1;
+	m_layers = layers;
 	m_format = GraphicsFormatToVkFormat(format);
-	m_memorySize = width * height * GraphicsFormatBytesPerPixel(format);
+	m_layerSize = width * height * GraphicsFormatBytesPerPixel(format);
+	m_memorySize = m_layerSize * layers;
 	m_isDepth = (format == GraphicsFormat::UNORM_D24_UINT_S8);
 
 	VkImageCreateInfo imageInfo = {};
@@ -92,11 +96,18 @@ bool VulkanImage::Build(int width, int height, GraphicsFormat format, bool gener
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
 	imageInfo.extent = m_extents;
 	imageInfo.mipLevels = m_mipLevels;
-	imageInfo.arrayLayers = 1;
+	imageInfo.arrayLayers = layers;
 	imageInfo.format = m_format;
 	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = m_isDepth ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+	if (m_isDepth)
+	{
+		imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	}
+	else
+	{
+		imageInfo.usage = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+	}
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.flags = 0;
@@ -166,12 +177,22 @@ int VulkanImage::GetMipLevels()
 	return m_mipLevels;
 }
 
+int VulkanImage::GetLayers()
+{
+	return m_layers;
+}
+
 GraphicsFormat VulkanImage::GetFormat()
 {
 	return VkFormatToGraphicsFormat(m_format);
 }
 
-bool VulkanImage::Stage(void* buffer, int offset, int length)
+int VulkanImage::GetLayerSize()
+{
+	return m_layerSize;
+}
+
+bool VulkanImage::Stage(int layer, void* buffer, int offset, int length)
 {
 	assert(!m_isDepth);
 	assert(offset >= 0 && offset + length <= m_memorySize);
@@ -180,7 +201,7 @@ bool VulkanImage::Stage(void* buffer, int offset, int length)
 
 	vmaMapMemory(m_stagingBuffer.Allocator, m_stagingBuffer.Allocation, &deviceData);
 
-	memcpy((char*)deviceData + offset, buffer, length);
+	memcpy((char*)deviceData + offset + (layer * m_layerSize), (char*)buffer, length);
 
 	vmaUnmapMemory(m_stagingBuffer.Allocator, m_stagingBuffer.Allocation);
 

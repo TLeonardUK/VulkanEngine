@@ -14,25 +14,40 @@ class IGraphicsShader;
 struct GraphicsPipelineSettings
 {
 public:
-	std::shared_ptr<IGraphicsRenderPass> renderPass;
-	std::shared_ptr<IGraphicsShader> shaderStages[(int)GraphicsPipelineStage::Count];
-	Array<std::shared_ptr<IGraphicsResourceSet>> resourceSets;
+	std::shared_ptr<IGraphicsRenderPass> RenderPass;
+	std::shared_ptr<IGraphicsShader> ShaderStages[(int)GraphicsPipelineStage::Count];
+	Array<std::shared_ptr<IGraphicsResourceSet>> ResourceSets;
 
-	bool depthTestEnabled;
-	bool depthWriteEnabled;
+	VertexBufferBindingDescription VertexFormatDescription;
+	bool HasVertexFormatDescription;
 
-	VertexBufferBindingDescription vertexFormatDescription;
-	bool hasVertexFormatDescription;
+	GraphicsPolygonMode PolygonMode;
+	GraphicsCullMode CullMode;
+	GraphicsFaceWindingOrder FaceWindingOrder;
+
+	bool DepthTestEnabled;
+	bool DepthWriteEnabled;
+	GraphicsDepthCompareOp DepthCompareOp;
+
+	bool StencilTestEnabled;
+	int StencilTestReference;
+	int StencilTestReadMask;
+	int StencilTestWriteMask;
+	GraphicsStencilTestCompareOp StencilTestCompareOp;
+	GraphicsStencilTestOp StencilTestPassOp;
+	GraphicsStencilTestOp StencilTestFailOp;
+	GraphicsStencilTestOp StencilTestZFailOp;
+
+	bool BlendEnabled;
+	GraphicsBlendFactor SrcColorBlendFactor;
+	GraphicsBlendFactor DstColorBlendFactor;
+	GraphicsBlendFactor SrcAlphaBlendFactor;
+	GraphicsBlendFactor DstAlphaBlendFactor;
+	GraphicsBlendOp ColorBlendOp;
+	GraphicsBlendOp AlphaBlendOp;
 
 public:
 	GraphicsPipelineSettings();
-
-	void SetShaderStage(GraphicsPipelineStage stage, std::shared_ptr<IGraphicsShader> shader);
-	void SetRenderPass(std::shared_ptr<IGraphicsRenderPass> renderPass);
-	void SetVertexFormat(const VertexBufferBindingDescription& format);
-	void AddResourceSet(std::shared_ptr<IGraphicsResourceSet> set);
-	void SetDepthTestEnabled(bool bValue);
-	void SetDepthWriteEnabled(bool bValue);
 
 };
 

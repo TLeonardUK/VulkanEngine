@@ -9,6 +9,7 @@
 static const MaterialPropertyHash ModelMatrixHash = CalculateMaterialPropertyHash("ModelMatrix");
 static const MaterialPropertyHash ViewMatrixHash = CalculateMaterialPropertyHash("ViewMatrix");
 static const MaterialPropertyHash ProjectionMatrixHash = CalculateMaterialPropertyHash("ProjectionMatrix");
+static const MaterialPropertyHash CameraPositionHash = CalculateMaterialPropertyHash("CameraPosition");
 
 Renderer::Renderer(std::shared_ptr<IGraphics> graphics)
 	: m_graphics(graphics)
@@ -108,7 +109,7 @@ void Renderer::CreateSwapChainDependentResources()
 	m_swapChainHeight = m_swapChainViews[0]->GetHeight();
 
 	// Create depth buffer.
-	m_depthBufferImage = m_graphics->CreateImage("Depth Buffer", m_swapChainWidth, m_swapChainHeight, GraphicsFormat::UNORM_D24_UINT_S8, false);
+	m_depthBufferImage = m_graphics->CreateImage("Depth Buffer", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::UNORM_D24_UINT_S8, false);
 	m_depthBufferView = m_graphics->CreateImageView("Depth Buffer View", m_depthBufferImage);
 
 	// Create frame buffers for each swap chain image.
@@ -164,6 +165,8 @@ void Renderer::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer
 		BuildViewCommandBuffer(view, framebuffer, buffer);
 	}
 
+	RunQueuedCommands(RenderCommandStage::PostViewsRendered, buffer);
+
 	buffer->End();
 }
 
@@ -174,7 +177,8 @@ void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::sha
 	m_globalMaterialProperties.Set(ModelMatrixHash, identityMatrix);
 	m_globalMaterialProperties.Set(ViewMatrixHash, view->ViewMatrix);
 	m_globalMaterialProperties.Set(ProjectionMatrixHash, view->ProjectionMatrix);
-
+	m_globalMaterialProperties.Set(CameraPositionHash, view->Location);
+	
 	// Draw each model to view.
 	for (auto& modelResource : m_tmpModelToRender)
 	{
@@ -234,6 +238,11 @@ int Renderer::GetSwapChainWidth()
 int Renderer::GetSwapChainHeight()
 {
 	return m_swapChainHeight;
+}
+
+std::shared_ptr<IGraphicsFramebuffer> Renderer::GetCurrentFramebuffer()
+{
+	return m_swapChainFramebuffers[m_frameIndex];
 }
 
 void Renderer::TmpAddModelToRender(ResourcePtr<Model> model)

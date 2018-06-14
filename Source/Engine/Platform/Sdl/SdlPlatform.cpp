@@ -44,6 +44,22 @@ void SdlPlatform::PumpMessageQueue()
 	SDL_Event sdlEvent;
 	while (SDL_PollEvent(&sdlEvent))
 	{
+		bool bHandled = false;
+
+		for (auto& callback : m_eventCallbacks)
+		{
+			if (callback(sdlEvent))
+			{
+				bHandled = true;
+				break;
+			}
+		}
+
+		if (bHandled)
+		{
+			continue;
+		}
+
 		switch (sdlEvent.type)
 		{
 		case SDL_QUIT:
@@ -90,6 +106,11 @@ void SdlPlatform::WriteToConsole(ConsoleColor color, const String& data)
 #else
 	printf("%s", data.c_str());
 #endif
+}
+
+void SdlPlatform::RegisterSdlEventCallback(SdlEventCallback_t callback)
+{
+	m_eventCallbacks.push_back(callback);
 }
 
 std::shared_ptr<IPlatform> SdlPlatform::Create()

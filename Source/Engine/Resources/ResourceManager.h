@@ -35,6 +35,7 @@ public:
 	std::shared_ptr<IResource> Resource;
 	std::shared_ptr<IResource> DefaultResource;
 	std::shared_ptr<ResourceManager> ResourceManager;
+	Array<std::shared_ptr<ResourceStatus>> Dependencies;
 	std::string Tag;
 
 public:
@@ -132,6 +133,9 @@ private:
 	std::recursive_mutex m_pendingResourcesMutex;
 	Queue<std::shared_ptr<ResourceStatus>> m_pendingResources;
 
+	std::recursive_mutex m_pendingLoadedFlagMutex;
+	Array<std::shared_ptr<ResourceStatus>> m_pendingLoadedResources;
+
 	std::atomic<int> m_pendingLoads;
 
 	const int MaxResourceLoaders = 2;
@@ -144,6 +148,8 @@ private:
 	std::mutex m_idleWaitLock;
 	std::condition_variable m_idleWaitCondVariable;
 
+	std::thread::id m_ownerThread;
+
 private:
 	friend struct ResourceStatus;
 
@@ -155,6 +161,7 @@ private:
 	ResourcePtr<IResource> GetDefaultForTag(const String& tag);
 
 	ResourcePtr<IResource> LoadTypeLess(const String& path, const String& tag = "");
+	ResourcePtr<IResource> CreateFromTypelessPointer(const String& name, std::shared_ptr<IResource> resource, const String& tag = "");
 
 	void WorkerLoop();
 
@@ -169,14 +176,36 @@ public:
 
 	void AddLoader(std::shared_ptr<IResourceLoader> loader);
 
+	template <typename ResourceType>
+	void AddResourceDependency(std::shared_ptr<ResourceStatus> resource, ResourcePtr<ResourceType> dependency)
+	{
+		resource->Dependencies.push_back(dependency.m_loadState);
+	}
+
 	bool IsIdle();
 	void LoadDefaults();
 	void WaitUntilIdle();
+
 	void CollectGarbage();
+	void ProcessPendingLoads();
 
 	bool ReadResourceBytes(const String& path, Array<char>& buffer);
 
 	ResourcePtr<IResource> GetResource(const String& path);
+
+	template <typename LoaderType>
+	std::shared_ptr<LoaderType> GetLoader()
+	{
+		for (auto& loader : m_loaders)
+		{
+			std::shared_ptr<LoaderType> cast = std::dynamic_pointer_cast<LoaderType>(loader);
+			if (cast != nullptr)
+			{
+				return cast;
+			}
+		}
+		return nullptr;
+	}
 
 	template <typename ResourceType>
 	ResourcePtr<ResourceType> GetDefault()
@@ -192,6 +221,16 @@ public:
 	ResourcePtr<ResourceType> Load(const String& path)
 	{
 		ResourcePtr<IResource> typeless = LoadTypeLess(path, ResourceType::Tag);
+
+		ResourcePtr<ResourceType> resource(typeless.m_loadState);
+
+		return resource;
+	}
+
+	template <typename ResourceType>
+	ResourcePtr<ResourceType> CreateFromPointer(const String& name, std::shared_ptr<ResourceType> res)
+	{
+		ResourcePtr<IResource> typeless = CreateFromTypelessPointer(name, res, ResourceType::Tag);
 
 		ResourcePtr<ResourceType> resource(typeless.m_loadState);
 

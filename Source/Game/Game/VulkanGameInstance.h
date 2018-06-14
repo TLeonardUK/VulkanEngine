@@ -20,7 +20,7 @@ protected:
 	int m_frameCount;
 
 	const float MouseSensitivity = 500.0f;
-	const float MovementSpeed = 0.025f;
+	const float MovementSpeed = 20.0f;
 
 public:
 	VulkanGameInstance(std::shared_ptr<Engine> engine);

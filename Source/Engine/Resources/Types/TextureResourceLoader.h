@@ -7,6 +7,7 @@ class Logger;
 class IGraphics;
 class Texture;
 class Renderer;
+struct SamplerDescription;
 
 class TextureResourceLoader
 	: public IResourceLoader
@@ -28,5 +29,7 @@ public:
 	virtual void AssignDefault(std::shared_ptr<ResourceStatus> resource);
 
 	virtual std::shared_ptr<IResource> Load(std::shared_ptr<ResourceManager> manager, std::shared_ptr<ResourceStatus> resource, json& jsonValue);
+
+	std::shared_ptr<Texture> CreateTextureFromBytes(const String& name, const Array<char>& data, int width, int height, const SamplerDescription& samplerDescription, bool bGenerateMips);
 
 };

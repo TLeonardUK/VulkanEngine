@@ -22,6 +22,7 @@ private:
 	std::shared_ptr<VulkanMemoryAllocator> m_memoryAllocator;
 
 	int m_memorySize;
+	int m_capacity;
 
 	VkDevice m_device;
 	VulkanAllocation m_stagingBuffer;
@@ -48,5 +49,7 @@ public:
 	virtual ~VulkanVertexBuffer();
 
 	virtual bool Stage(void* buffer, int offset, int length);
+
+	virtual int GetCapacity();
 
 };

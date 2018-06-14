@@ -39,4 +39,6 @@ public:
 
 	virtual bool Stage(void* buffer, int offset, int length) = 0;
 
+	virtual int GetCapacity() = 0;
+
 };

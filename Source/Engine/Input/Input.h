@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Types/Math.h"
+#include "Engine/Types/String.h"
 
 enum class InputKey
 {
@@ -138,6 +139,36 @@ enum class InputKey
 	COUNT
 };
 
+enum class InputModifier
+{
+	Shift,
+	Ctrl,
+	Alt,
+	GUI,
+
+	COUNT
+};
+
+enum class InputCursor
+{
+	None,
+
+	Arrow,
+	IBeam,
+	Wait,
+	Crosshair,
+	WaitArrow,
+	SizeNWSE,
+	SizeNESW,
+	SizeWE,
+	SizeNS,
+	SizeAll,
+	No,
+	Hand,
+
+	COUNT
+};
+
 class IInput
 {
 protected:
@@ -149,11 +180,21 @@ public:
 
 	virtual void PollInput() = 0;
 
-	virtual Vector2 GetMousePosition() = 0;
-	virtual void SetMousePosition(Vector2 position) = 0;
-
 	virtual bool IsKeyDown(InputKey key) = 0;
 	virtual bool WasKeyPressed(InputKey key) = 0;
 	virtual bool WasKeyReleased(InputKey key) = 0;
 
+	virtual bool IsModifierActive(InputModifier modifier) = 0;
+
+	virtual String GetClipboardText() = 0;
+	virtual void SetClipboardText(const String& value) = 0;
+
+	virtual String GetInput() = 0;
+
+	virtual Vector2 GetMousePosition() = 0;
+	virtual void SetMousePosition(Vector2 position) = 0;
+	virtual int GetMouseWheel(bool horizontal) = 0;
+	virtual void SetMouseCursor(InputCursor cursor) = 0;
+	virtual void SetMouseCapture(bool capture) = 0;
+	virtual void SetMouseHidden(bool hidden) = 0;
 };

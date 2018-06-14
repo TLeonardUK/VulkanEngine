@@ -52,13 +52,26 @@ bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image)
 	VkImageViewCreateInfo createViewInfo = {};
 	createViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	createViewInfo.image = vulkanImage->GetVkImage();
-	createViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+
+	if (image->GetLayers() == 6)
+	{
+		createViewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+	}
+	else if (image->GetLayers() == 1)
+	{
+		createViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	}
+	else
+	{
+		assert(false);
+	}
+
 	createViewInfo.format = vulkanImage->GetVkFormat();
 	createViewInfo.subresourceRange.aspectMask = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
 	createViewInfo.subresourceRange.baseMipLevel = 0;
-	createViewInfo.subresourceRange.levelCount = vulkanImage->GetMipLevels();
 	createViewInfo.subresourceRange.baseArrayLayer = 0;
-	createViewInfo.subresourceRange.layerCount = 1;
+	createViewInfo.subresourceRange.layerCount = vulkanImage->GetLayers();
+	createViewInfo.subresourceRange.levelCount = vulkanImage->GetMipLevels();
 	createViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 	createViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 	createViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;

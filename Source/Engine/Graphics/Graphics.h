@@ -44,7 +44,7 @@ public:
 	virtual std::shared_ptr<IGraphicsUniformBuffer> CreateUniformBuffer(const String& name, int dataSize) = 0;
 	virtual std::shared_ptr<IGraphicsCommandBufferPool> CreateCommandBufferPool(const String& name) = 0;
 	virtual std::shared_ptr<IGraphicsResourceSetPool> CreateResourceSetPool(const String& name) = 0;
-	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, GraphicsFormat format, bool generateMips) = 0;
+	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips) = 0;
 	virtual std::shared_ptr<IGraphicsSampler> CreateSampler(const String& name, const SamplerDescription& settings) = 0;
 
 	// GraphicsDescriptorSetPool pool = CreateDescriptorSetPool(settings)
@@ -55,6 +55,8 @@ public:
 	// GraphicsDescriptorSet = pool->Allocate(bindingSettings);
 
 	virtual void Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer) = 0;
+
+	virtual void WaitForDeviceIdle() = 0;
 
 	virtual GraphicsFormat GetSwapChainFormat() = 0;
 	virtual Array<std::shared_ptr<IGraphicsImageView>> GetSwapChainViews() = 0;

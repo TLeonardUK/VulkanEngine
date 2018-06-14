@@ -124,6 +124,24 @@
     <Filter Include="Source Files\Types">
       <UniqueIdentifier>{8d73f38a-4f14-4f20-a52f-4d9ea7e6a564}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\ThirdParty">
+      <UniqueIdentifier>{8bb22c9d-8b8e-49f6-bb75-d86b92bf0e37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ThirdParty\imgui">
+      <UniqueIdentifier>{731e9c25-9430-4aee-8214-02a3669f6455}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ThirdParty">
+      <UniqueIdentifier>{d61e1616-d26a-425c-b696-088ce0f62b36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ThirdParty\imgui">
+      <UniqueIdentifier>{b743bc6c-a316-42c0-a7ef-97909ab694ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\UI">
+      <UniqueIdentifier>{3e333c2c-9ca6-43ae-aaab-d0f1dd9dad88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\UI">
+      <UniqueIdentifier>{1f1fbf85-bead-4317-8161-8cec99e438c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine\Engine.cpp">
@@ -285,6 +303,24 @@
     <ClCompile Include="Rendering\RenderView.cpp">
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="Components\EntityManager.cpp">
+      <Filter>Source Files\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Camera\CameraFlyingMovementComponent.cpp">
+      <Filter>Source Files\Components\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui.cpp">
+      <Filter>Source Files\ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp">
+      <Filter>Source Files\ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp">
+      <Filter>Source Files\ThirdParty\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\ImguiManager.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Engine.h">
@@ -434,9 +470,6 @@
     <ClInclude Include="Components\Transform\TransformComponent.h">
       <Filter>Header Files\Components\Transform</Filter>
     </ClInclude>
-    <ClInclude Include="Components\Camera\CameraViewComponent.h">
-      <Filter>Header Files\Components\Camera</Filter>
-    </ClInclude>
     <ClInclude Include="Components\Rendering\MeshComponent.h">
       <Filter>Header Files\Components\Rendering</Filter>
     </ClInclude>
@@ -521,6 +554,27 @@
     <ClInclude Include="Engine\FrameTime.h">
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
+    <ClInclude Include="Components\EntityManager.h">
+      <Filter>Header Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Camera\CameraViewComponent.h">
+      <Filter>Header Files\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Camera\CameraFlyingMovementComponent.h">
+      <Filter>Header Files\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imconfig.h">
+      <Filter>Header Files\ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imgui.h">
+      <Filter>Header Files\ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imgui_internal.h">
+      <Filter>Header Files\ThirdParty\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\ImguiManager.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Graphics\EGraphicsAccessMask.inc">
@@ -556,5 +610,32 @@
     <None Include="Resources\Types\EShaderVertexStreamBinding.inc">
       <Filter>Header Files\Resources\Types</Filter>
     </None>
+    <None Include="Graphics\EGraphicsBlendFactor.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsBlendOp.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsCullMode.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsDepthCompareOp.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsFaceWindingOrder.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsPolygonMode.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsStencilTestCompareOp.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsStencilTestOp.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Todo.txt" />
   </ItemGroup>
 </Project>

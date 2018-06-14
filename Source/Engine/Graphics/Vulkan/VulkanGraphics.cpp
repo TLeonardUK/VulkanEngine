@@ -1051,12 +1051,12 @@ std::shared_ptr<IGraphicsResourceSetPool> VulkanGraphics::CreateResourceSetPool(
 	return pass;
 }
 
-std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, int width, int height, GraphicsFormat format, bool generateMips)
+std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips)
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanImage> pass = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, name, m_memoryAllocator);
-	if (!pass->Build(width, height, format, generateMips))
+	if (!pass->Build(width, height, layers, format, generateMips))
 	{
 		return nullptr;
 	}
@@ -1084,6 +1084,11 @@ std::shared_ptr<IGraphicsSampler> VulkanGraphics::CreateSampler(const String& na
 void VulkanGraphics::Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
 	m_pendingCommandBuffers.push_back(std::dynamic_pointer_cast<VulkanCommandBuffer>(buffer));
+}
+
+void VulkanGraphics::WaitForDeviceIdle()
+{
+	vkDeviceWaitIdle(m_logicalDevice);
 }
 
 GraphicsFormat VulkanGraphics::GetSwapChainFormat()

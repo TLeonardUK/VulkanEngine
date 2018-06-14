@@ -107,9 +107,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Components\Camera\CameraFlyingMovementComponent.cpp" />
     <ClCompile Include="Components\Camera\CameraViewComponent.cpp" />
     <ClCompile Include="Components\Component.cpp" />
     <ClCompile Include="Components\Entity.cpp" />
+    <ClCompile Include="Components\EntityManager.cpp" />
     <ClCompile Include="Components\Rendering\MeshComponent.cpp" />
     <ClCompile Include="Components\Transform\TransformComponent.cpp" />
     <ClCompile Include="Engine\Engine.cpp" />
@@ -155,7 +157,11 @@
     <ClCompile Include="Resources\Types\ShaderResourceLoader.cpp" />
     <ClCompile Include="Resources\Types\Texture.cpp" />
     <ClCompile Include="Resources\Types\TextureResourceLoader.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />
     <ClCompile Include="Types\String.cpp" />
+    <ClCompile Include="UI\ImguiManager.cpp" />
     <ClCompile Include="Utilities\Enum.cpp" />
     <ClCompile Include="Utilities\File.cpp" />
     <ClCompile Include="Windowing\Sdl\SdlWindow.cpp" />
@@ -163,9 +169,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Build.h" />
+    <ClInclude Include="Components\Camera\CameraFlyingMovementComponent.h" />
     <ClInclude Include="Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Components\Component.h" />
     <ClInclude Include="Components\Entity.h" />
+    <ClInclude Include="Components\EntityManager.h" />
     <ClInclude Include="Components\Rendering\MeshComponent.h" />
     <ClInclude Include="Components\Transform\TransformComponent.h" />
     <ClInclude Include="Engine\Engine.h" />
@@ -227,6 +235,9 @@
     <ClInclude Include="Resources\Types\ShaderResourceLoader.h" />
     <ClInclude Include="Resources\Types\Texture.h" />
     <ClInclude Include="Resources\Types\TextureResourceLoader.h" />
+    <ClInclude Include="ThirdParty\imgui\imconfig.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui_internal.h" />
     <ClInclude Include="Threading\Semaphore.h" />
     <ClInclude Include="Types\Color.h" />
     <ClInclude Include="Types\Dictionary.h" />
@@ -234,6 +245,7 @@
     <ClInclude Include="Types\Queue.h" />
     <ClInclude Include="Types\String.h" />
     <ClInclude Include="Types\Array.h" />
+    <ClInclude Include="UI\ImguiManager.h" />
     <ClInclude Include="Utilities\Enum.h" />
     <ClInclude Include="Utilities\File.h" />
     <ClInclude Include="Utilities\EnumImplementation.h" />
@@ -248,11 +260,22 @@
     <None Include="Graphics\EGraphicsAddressMode.inc" />
     <None Include="Graphics\EGraphicsBindingFormat.inc" />
     <None Include="Graphics\EGraphicsBindingType.inc" />
+    <None Include="Graphics\EGraphicsBlendFactor.inc" />
+    <None Include="Graphics\EGraphicsBlendOp.inc" />
+    <None Include="Graphics\EGraphicsCullMode.inc" />
+    <None Include="Graphics\EGraphicsDepthCompareOp.inc" />
+    <None Include="Graphics\EGraphicsFaceWindingOrder.inc" />
     <None Include="Graphics\EGraphicsFilter.inc" />
     <None Include="Graphics\EGraphicsFormat.inc" />
     <None Include="Graphics\EGraphicsMipMapMode.inc" />
+    <None Include="Graphics\EGraphicsPolygonMode.inc" />
     <None Include="Graphics\EGraphicsPresentMode.inc" />
+    <None Include="Graphics\EGraphicsStencilTestCompareOp.inc" />
+    <None Include="Graphics\EGraphicsStencilTestOp.inc" />
     <None Include="Resources\Types\EShaderVertexStreamBinding.inc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Todo.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

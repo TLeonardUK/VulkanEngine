@@ -120,13 +120,15 @@ std::shared_ptr<IResource> ModelResourceLoader::Load(std::shared_ptr<ResourceMan
 		ModelLoadState* loader = (ModelLoadState*)user_data;
 		MeshLoadState& mesh = loader->GetCurrentMesh();
 
-		loader->tmpVertices.push_back(Vector3(x / w, y / w, z / w));
+		// Convert to our texture coordinate system.
+		loader->tmpVertices.push_back(Vector3(-x / w, y / w, z / w));
 	};
 	callbacks.normal_cb = [](void *user_data, tinyobj::real_t x, tinyobj::real_t y, tinyobj::real_t z) {
 		ModelLoadState* loader = (ModelLoadState*)user_data;
 		MeshLoadState& mesh = loader->GetCurrentMesh();
 
-		loader->tmpNormals.push_back(Vector3(x, y, z));
+		// Convert to our texture coordinate system.
+		loader->tmpNormals.push_back(Vector3(-x, y, z));
 	};
 	callbacks.texcoord_cb = [](void *user_data, tinyobj::real_t x, tinyobj::real_t y, tinyobj::real_t z) {
 		ModelLoadState* loader = (ModelLoadState*)user_data;
@@ -273,6 +275,8 @@ std::shared_ptr<IResource> ModelResourceLoader::Load(std::shared_ptr<ResourceMan
 			String materialPath = iter.value();
 
 			ResourcePtr<Material> material = manager->Load<Material>(materialPath);
+			manager->AddResourceDependency(resource, material);
+
 			std::pair<String, ResourcePtr<Material>> pair(materialName, material);
 
 			materialMap.insert(pair);

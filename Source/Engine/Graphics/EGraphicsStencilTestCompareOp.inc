@@ -1,0 +1,8 @@
+enum_entry(Never)
+enum_entry(Less)
+enum_entry(Equal)
+enum_entry(LessOrEqual)
+enum_entry(Greater)
+enum_entry(NotEqual)
+enum_entry(GreaterOrEqual)
+enum_entry(Always)

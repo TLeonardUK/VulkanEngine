@@ -21,6 +21,8 @@
 #include "Engine/Graphics/GraphicsEnums.h"
 #include "Engine/Graphics/GraphicsRenderPass.h"
 
+#include "Engine/UI/ImguiManager.h"
+
 // TODO:
 //	Depth buffer needs transition before use.
 //	Add some kind of way of doing one-shot comments. Maybe EnqueueSetupCommand(lambda ...);
@@ -55,12 +57,17 @@ bool Engine::Init()
 	{
 		return false;
 	}
+	if (!InitImguiManager())
+	{
+		return false;
+	}
 
 	return true;
 }
 
 bool Engine::Term()
 {
+	TermImguiManager();
 	TermResourceManager();
 	TermRenderer();
 	TermInput();
@@ -224,7 +231,7 @@ bool Engine::InitInput()
 	InputSystem system = m_gameInstance->GetInputSystem();
 	if (system == InputSystem::Sdl)
 	{
-		m_input = SdlInput::Create(m_logger, m_window);
+		m_input = SdlInput::Create(m_logger, m_window, m_platform);
 	}
 	else
 	{
@@ -299,6 +306,26 @@ void Engine::TermResourceManager()
 	}
 }
 
+bool Engine::InitImguiManager()
+{
+	m_imguiManager = std::make_shared<ImguiManager>(m_logger);
+	if (!m_imguiManager->Init(m_input, m_graphics, m_window, m_renderer, m_resourceManager))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void Engine::TermImguiManager()
+{
+	if (m_imguiManager != nullptr)
+	{
+		m_imguiManager->Dispose();
+		m_imguiManager = nullptr;
+	}
+}
+
 void Engine::UpdateFrameTime()
 {
 	// Track FPS.
@@ -325,8 +352,8 @@ void Engine::UpdateFrameTime()
 	float timeSinceStart = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - m_startTime).count();
 
 	// Calculate delta.
-	m_frameTime.Time = std::chrono::duration<float, std::chrono::seconds::period>(timeSinceStart).count();
-	m_frameTime.DeltaTime = std::chrono::duration<float, std::chrono::seconds::period>(lastFrameDuration).count();
+	m_frameTime.Time = std::chrono::duration<float, std::chrono::milliseconds::period>(timeSinceStart).count() / 1000.0f;
+	m_frameTime.DeltaTime = std::chrono::duration<float, std::chrono::milliseconds::period>(lastFrameDuration).count() / 1000.0f;
 }
 
 void Engine::MainLoop()
@@ -335,14 +362,21 @@ void Engine::MainLoop()
 
 	while (!m_platform->WasCloseRequested())
 	{
+		// Initial event handling and setup.
+		m_imguiManager->StartFrame(m_frameTime);
 		m_platform->PumpMessageQueue();
 		m_input->PollInput();
 
+		// Main frame tick.
 		m_gameInstance->Tick(m_frameTime);
 
+		// Present frame.
+		m_imguiManager->EndFrame();
 		m_renderer->Present();
-		m_resourceManager->CollectGarbage();
 
+		// Collect garbage and track stats.
+		m_resourceManager->CollectGarbage();
+		m_resourceManager->ProcessPendingLoads();
 		UpdateFrameTime();
 	}
 
@@ -362,4 +396,9 @@ std::shared_ptr<Renderer> Engine::GetRenderer()
 std::shared_ptr<IInput> Engine::GetInput()
 {
 	return m_input;
+}
+
+std::shared_ptr<ImguiManager> Engine::GetImGuiManager()
+{
+	return m_imguiManager;
 }

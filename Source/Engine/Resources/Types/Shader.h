@@ -46,9 +46,7 @@ public:
 	MaterialPropertyHash BindToHash;
 	Array<ShaderBindingField> Fields;
 
-public:
-	const int UniformPaddingAlignment = 16;
-
+public:	
 	int GetUniformBufferSize() const;
 	int GetUniformBufferFieldOffset(int fieldIndex) const;
 
@@ -69,14 +67,17 @@ class Shader
 private:
 	Array<ShaderStage> m_stages;
 	Array<ShaderBinding> m_bindings;
+	GraphicsPipelineSettings m_pipelineDescription;
 
 public:
 	static const char* Tag;
 
-	Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings);
+	Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription);
 
 	bool GetStage(GraphicsPipelineStage stage, const ShaderStage** result);
 	const Array<ShaderStage>& GetStages();
 	const Array<ShaderBinding>& GetBindings();
+
+	const GraphicsPipelineSettings& GetPipelineDescription();
 
 };

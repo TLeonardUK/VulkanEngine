@@ -21,6 +21,7 @@ private:
 
 	int m_memorySize;
 	int m_indexSize;
+	int m_capacity;
 
 	VkDevice m_device;
 	VulkanAllocation m_stagingBuffer;
@@ -48,5 +49,7 @@ public:
 	virtual ~VulkanIndexBuffer();
 
 	virtual bool Stage(void* buffer, int offset, int length);
+
+	virtual int GetCapacity();
 
 };

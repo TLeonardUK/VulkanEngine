@@ -9,9 +9,10 @@ enum_end_implementation(ShaderVertexStreamBinding)
 
 const char* Shader::Tag = "Shader";
 
-Shader::Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings)
+Shader::Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription)
 	: m_stages(stages)
 	, m_bindings(bindings)
+	, m_pipelineDescription(pipelineDescription)
 {
 
 }
@@ -43,25 +44,46 @@ const Array<ShaderBinding>& Shader::GetBindings()
 int ShaderBinding::GetUniformBufferSize() const
 {
 	int size = 0;
+	int baseAlignment = 0;
+
 	for (auto& field : Fields)
 	{
+		int alignment = GetAlignmentForGraphicsBindingFormat(field.Format);
+		if (baseAlignment == 0)
+		{
+			baseAlignment = alignment;
+		}
+
+		size += (size % alignment);
 		size += GetByteSizeForGraphicsBindingFormat(field.Format);
-		size += (size % UniformPaddingAlignment);
 	}
+	
+	size += (size % baseAlignment);
+
 	return size;
 }
 
 int ShaderBinding::GetUniformBufferFieldOffset(int fieldIndex) const
 {
-	int offset = 0;
+	int size = 0;
 	for (int i = 0; i < Fields.size(); i++)
 	{
+		auto& field = Fields[i];
+
+		int alignment = GetAlignmentForGraphicsBindingFormat(field.Format);
+		size += (size % alignment);
+
 		if (i == fieldIndex)
 		{
-			return offset;
+			return size;
 		}
-		offset += GetByteSizeForGraphicsBindingFormat(Fields[i].Format);
-		offset += (offset % UniformPaddingAlignment);
+
+		size += GetByteSizeForGraphicsBindingFormat(field.Format);
 	}
-	return offset;
+	return size;
+}
+
+const GraphicsPipelineSettings& Shader::GetPipelineDescription()
+{
+	return m_pipelineDescription;
 }

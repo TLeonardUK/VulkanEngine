@@ -24,7 +24,8 @@ class RenderView;
 
 enum class RenderCommandStage
 {
-	PreRender
+	PreRender,
+	PostViewsRendered
 };
 
 struct RenderCommand
@@ -97,6 +98,8 @@ public:
 	MaterialPropertyCollection& GetGlobalMaterialProperties();
 	int GetSwapChainWidth();
 	int GetSwapChainHeight();
+
+	std::shared_ptr<IGraphicsFramebuffer> GetCurrentFramebuffer();
 
 	void TmpAddModelToRender(ResourcePtr<Model> model);
 

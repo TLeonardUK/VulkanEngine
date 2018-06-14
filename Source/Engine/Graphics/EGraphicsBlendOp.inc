@@ -1,0 +1,5 @@
+enum_entry(Add)
+enum_entry(Subtract)
+enum_entry(ReverseSubtract)
+enum_entry(Min)
+enum_entry(Max)

@@ -54,13 +54,8 @@ private:
 	friend class Mesh;
 	friend class MaterialResourceLoader;
 
-	void UpdateResources();
 	void RecreateResources();
 	void UpdateBindings();
-
-	std::shared_ptr<IGraphicsRenderPass> GetRenderPass();
-	std::shared_ptr<IGraphicsPipeline> GetPipeline();
-	std::shared_ptr<IGraphicsResourceSet> GetResourceSet();
 
 	bool FillUniformBuffer(std::shared_ptr<IGraphicsUniformBuffer> buffer, const ShaderBinding& binding);
 
@@ -69,7 +64,15 @@ public:
 
 	Material(std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer, std::shared_ptr<Logger> logger, const String& name, ResourcePtr<Shader> shader, MaterialPropertyCollection& properties);
 
+	void UpdateResources();
+
+	std::shared_ptr<IGraphicsRenderPass> GetRenderPass();
+	std::shared_ptr<IGraphicsPipeline> GetPipeline();
+	std::shared_ptr<IGraphicsResourceSet> GetResourceSet();
+
 	bool GetVertexBufferFormat(VertexBufferBindingDescription& format);
+
+	MaterialPropertyCollection& GetProperties();
 
 	ResourcePtr<Shader> GetShader();
 

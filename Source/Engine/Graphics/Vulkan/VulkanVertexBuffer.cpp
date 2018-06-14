@@ -54,6 +54,7 @@ bool VulkanVertexBuffer::Build(const VertexBufferBindingDescription& binding, in
 		return false;
 	}
 
+	m_capacity = vertexCount;
 	m_memorySize = binding.vertexSize * vertexCount;
 
 	if (!m_memoryAllocator->CreateBuffer(
@@ -129,4 +130,9 @@ bool GraphicsBindingDescriptionToVulkan(const VertexBufferBindingDescription& de
 	}
 
 	return true;
+}
+
+int VulkanVertexBuffer::GetCapacity()
+{
+	return m_capacity;
 }

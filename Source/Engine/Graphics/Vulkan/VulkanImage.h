@@ -28,9 +28,11 @@ private:
 	VkImage m_image;
 	VkFormat m_format;
 	VkExtent3D m_extents;
+	int m_layers;
 	bool m_isDepth;
 
 	int m_memorySize;
+	int m_layerSize;
 	
 private:
 	friend class VulkanGraphics;
@@ -38,8 +40,9 @@ private:
 	friend class VulkanCommandBuffer;
 
 	void FreeResources();
-	bool Build(int width, int height, GraphicsFormat format, bool generateMips);
+	bool Build(int width, int height, int layers, GraphicsFormat format, bool generateMips);
 
+	int GetLayerSize();
 	VkBuffer GetStagingBuffer();
 	VkImage GetVkImage();
 	VkFormat GetVkFormat();
@@ -64,10 +67,11 @@ public:
 	virtual int GetWidth();
 	virtual int GetHeight();
 	virtual int GetMipLevels();
+	virtual int GetLayers();
 	virtual GraphicsFormat GetFormat();
 	virtual bool IsDepth();
 
-	virtual bool Stage(void* buffer, int offset, int length);
+	virtual bool Stage(int layer, void* buffer, int offset, int length);
 
 	virtual ~VulkanImage();
 

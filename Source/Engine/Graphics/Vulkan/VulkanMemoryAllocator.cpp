@@ -61,8 +61,6 @@ bool VulkanMemoryAllocator::CreateImage(const VkImageCreateInfo& createInfo, Vma
 
 void VulkanMemoryAllocator::FreeBuffer(VulkanAllocation& allocation)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Freed block of device memory.");
-
 	vmaDestroyBuffer(m_allocator, allocation.Buffer, allocation.Allocation);
 	allocation.Buffer = nullptr;
 	allocation.Allocation = nullptr;

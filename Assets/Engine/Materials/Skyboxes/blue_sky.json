@@ -1,0 +1,12 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/skybox.json",    
+    "Bindings":
+    {        
+        "DiffuseTexture":
+        {   
+            "Format": "Texture",          
+            "Value": "Engine/Textures/Skyboxes/blue_sky.json"   
+        }
+    }
+}

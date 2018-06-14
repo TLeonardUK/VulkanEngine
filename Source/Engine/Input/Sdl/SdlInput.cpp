@@ -1,5 +1,6 @@
 #include "Engine/Input/Sdl/SdlInput.h"
 #include "Engine/Windowing/Sdl/SdlWindow.h"
+#include "Engine/Platform/Sdl/SdlPlatform.h"
 #include "Engine/Engine/Logging.h"
 
 #include <memory>
@@ -141,10 +142,32 @@ int InputKeyToSdlScancode[(int)InputKey::COUNT] = {
 	0
 };
 
-SdlInput::SdlInput(std::shared_ptr<Logger> logger, std::shared_ptr<IWindow> window)
+SdlInput::SdlInput(std::shared_ptr<Logger> logger, std::shared_ptr<IWindow> window, std::shared_ptr<IPlatform> platform)
 	: m_logger(logger)
 	, m_window(window)
 {
+	m_platform = std::dynamic_pointer_cast<SdlPlatform>(platform);
+	assert(m_platform != nullptr);
+
+	m_platform->RegisterSdlEventCallback([=](SDL_Event& event) -> bool {
+		switch (event.type)
+		{
+		case SDL_TEXTINPUT:
+			{
+				m_pendingInput += event.text.text;
+				return true;
+			}
+		case SDL_MOUSEWHEEL:
+			{
+				if (event.wheel.x > 0) m_mouseWheelH += 1;
+				if (event.wheel.x < 0) m_mouseWheelH -= 1;
+				if (event.wheel.y > 0) m_mouseWheel += 1;
+				if (event.wheel.y < 0) m_mouseWheel -= 1;
+				return true;
+			}
+		}
+		return false;
+	});
 }
 
 SdlInput::~SdlInput()
@@ -154,12 +177,34 @@ SdlInput::~SdlInput()
 
 void SdlInput::Dispose()
 {
+	for (int i = 0; i < (int)InputCursor::COUNT; i++)
+	{
+		SDL_Cursor* cursor = m_mouseCursors[i];
+		if (cursor != nullptr)
+		{
+			SDL_FreeCursor(cursor);
+			m_mouseCursors[i] = nullptr;
+		}
+	}
 }
 
 bool SdlInput::Setup()
 {
-	SDL_CaptureMouse(SDL_TRUE);
-	SDL_ShowCursor(SDL_FALSE);
+//	SDL_CaptureMouse(SDL_TRUE);
+//	SDL_ShowCursor(SDL_FALSE);
+	memset(m_mouseCursors, 0, sizeof(m_mouseCursors));
+	m_mouseCursors[(int)InputCursor::Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+	m_mouseCursors[(int)InputCursor::IBeam] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+	m_mouseCursors[(int)InputCursor::Wait] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
+	m_mouseCursors[(int)InputCursor::Crosshair] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+	m_mouseCursors[(int)InputCursor::WaitArrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAITARROW);
+	m_mouseCursors[(int)InputCursor::SizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+	m_mouseCursors[(int)InputCursor::SizeNESW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+	m_mouseCursors[(int)InputCursor::SizeWE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+	m_mouseCursors[(int)InputCursor::SizeNS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+	m_mouseCursors[(int)InputCursor::SizeAll] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+	m_mouseCursors[(int)InputCursor::No] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
+	m_mouseCursors[(int)InputCursor::Hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 
 	return true;
 }
@@ -252,12 +297,85 @@ bool SdlInput::WasKeyReleased(InputKey key)
 	return (m_keyStates[(int)key] & (int)KeyStateFlags::Released) != 0;
 }
 
+String SdlInput::GetClipboardText()
+{
+	char* data = SDL_GetClipboardText();
+	String result = data;
+	SDL_free(data);
+
+	return result;
+}
+
+void SdlInput::SetClipboardText(const String& value)
+{
+	SDL_SetClipboardText(value.data());
+}
+
+bool SdlInput::IsModifierActive(InputModifier modifier)
+{
+	int mod = 0;
+
+	switch (modifier)
+	{
+	case InputModifier::Shift: mod = KMOD_SHIFT; break;
+	case InputModifier::Ctrl: mod = KMOD_CTRL; break;
+	case InputModifier::Alt: mod = KMOD_ALT; break;
+	case InputModifier::GUI: mod = KMOD_GUI; break;
+	default: assert(false); break;
+	}
+
+	return (SDL_GetModState() & mod) != 0;
+}
+
+String SdlInput::GetInput()
+{
+	String result = m_pendingInput;
+	m_pendingInput = "";
+	return result;
+}
+
+int SdlInput::GetMouseWheel(bool horizontal)
+{
+	int result = 0;
+	if (horizontal)
+	{
+		result = m_mouseWheelH;
+		m_mouseWheelH = 0;
+	}
+	else
+	{
+		result = m_mouseWheel;
+		m_mouseWheel = 0;
+	}
+	return result;
+}
+
+void SdlInput::SetMouseCursor(InputCursor cursorIndex)
+{
+	SDL_Cursor* cursor = m_mouseCursors[(int)cursorIndex];
+	if (cursor != nullptr)
+	{
+		SDL_SetCursor(cursor);
+	}
+}
+
+void SdlInput::SetMouseCapture(bool capture)
+{
+	SDL_CaptureMouse(capture ? SDL_TRUE : SDL_FALSE);
+}
+
+void SdlInput::SetMouseHidden(bool hidden)
+{
+	SDL_ShowCursor(!hidden);
+}
+
 std::shared_ptr<IInput> SdlInput::Create(
 	std::shared_ptr<Logger> logger,
-	std::shared_ptr<IWindow> window
+	std::shared_ptr<IWindow> window, 
+	std::shared_ptr<IPlatform> platform
 	)
 {
-	std::shared_ptr<SdlInput> handle = std::make_shared<SdlInput>(logger, window);
+	std::shared_ptr<SdlInput> handle = std::make_shared<SdlInput>(logger, window, platform);
 
 	if (!handle->Setup())
 	{

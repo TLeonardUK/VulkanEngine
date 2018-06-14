@@ -1,39 +1,28 @@
 #include "Engine/Graphics/GraphicsPipeline.h"
 
 GraphicsPipelineSettings::GraphicsPipelineSettings()
-	: hasVertexFormatDescription(false)
-	, depthTestEnabled(false)
-	, depthWriteEnabled(false)
-{
-}
-
-void GraphicsPipelineSettings::SetShaderStage(GraphicsPipelineStage stage, std::shared_ptr<IGraphicsShader> shader)
-{
-	this->shaderStages[(int)stage] = shader;
-}
-
-void GraphicsPipelineSettings::SetRenderPass(std::shared_ptr<IGraphicsRenderPass> renderPass)
-{
-	this->renderPass = renderPass;
-}
-
-void GraphicsPipelineSettings::AddResourceSet(std::shared_ptr<IGraphicsResourceSet> set)
-{
-	this->resourceSets.push_back(set);
-}
-
-void GraphicsPipelineSettings::SetVertexFormat(const VertexBufferBindingDescription& format)
-{
-	this->vertexFormatDescription = format;
-	this->hasVertexFormatDescription = true;
-}
-
-void GraphicsPipelineSettings::SetDepthTestEnabled(bool bValue)
-{
-	this->depthTestEnabled = bValue;
-}
-
-void GraphicsPipelineSettings::SetDepthWriteEnabled(bool bValue)
-{
-	this->depthWriteEnabled = bValue;
+	: RenderPass(nullptr)
+	, HasVertexFormatDescription(false)
+	, PolygonMode(GraphicsPolygonMode::Fill)
+	, CullMode(GraphicsCullMode::Back)
+	, FaceWindingOrder(GraphicsFaceWindingOrder::CounterClockwise)
+	, DepthTestEnabled(true)
+	, DepthWriteEnabled(true)
+	, DepthCompareOp(GraphicsDepthCompareOp::Less)
+	, StencilTestEnabled(false)
+	, StencilTestReference(0)
+	, StencilTestReadMask(0)
+	, StencilTestWriteMask(0)
+	, StencilTestCompareOp(GraphicsStencilTestCompareOp::Always)
+	, StencilTestPassOp(GraphicsStencilTestOp::Keep)
+	, StencilTestFailOp(GraphicsStencilTestOp::Keep)
+	, StencilTestZFailOp(GraphicsStencilTestOp::Keep)
+	, BlendEnabled(false)
+	, SrcColorBlendFactor(GraphicsBlendFactor::SrcAlpha)
+	, DstColorBlendFactor(GraphicsBlendFactor::OneMinusSrcAlpha)
+	, ColorBlendOp(GraphicsBlendOp::Add)
+	, SrcAlphaBlendFactor(GraphicsBlendFactor::OneMinusSrcAlpha)
+	, DstAlphaBlendFactor(GraphicsBlendFactor::Zero)
+	, AlphaBlendOp(GraphicsBlendOp::Add)
+{	
 }

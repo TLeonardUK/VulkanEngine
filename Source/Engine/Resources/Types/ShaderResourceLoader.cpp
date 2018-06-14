@@ -195,6 +195,14 @@ bool ShaderResourceLoader::LoadStageStreams(ShaderStage& stage, const String& st
 		stage.Streams.push_back(stream);
 	}
 
+	// Sort by location in struct.
+	std::sort(stage.Streams.begin(), stage.Streams.end(),
+		[](const ShaderVertexStream& a, const ShaderVertexStream& b) -> bool
+	{
+		return a.Location < b.Location;
+	});
+
+
 	return true;
 }
 
@@ -298,6 +306,169 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 			return nullptr;
 		}
 	}
+	
+	// Parse pipeline description.
+	GraphicsPipelineSettings pipelineDescription;
 
-	return std::make_shared<Shader>(shaderStages, shaderBindings);
+	for (auto& stage : shaderStages)
+	{
+		pipelineDescription.ShaderStages[(int)stage.Stage] = stage.Shader;
+	}
+
+	if (jsonValue.count("PolygonMode"))
+	{
+		String value = jsonValue["PolygonMode"];
+		if (!StringToEnum<GraphicsPolygonMode>(value, pipelineDescription.PolygonMode))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised polygon mode.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("CullMode"))
+	{
+		String value = jsonValue["CullMode"];
+		if (!StringToEnum<GraphicsCullMode>(value, pipelineDescription.CullMode))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised culling mode.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("FaceWindingOrder"))
+	{
+		String value = jsonValue["FaceWindingOrder"];
+		if (!StringToEnum<GraphicsFaceWindingOrder>(value, pipelineDescription.FaceWindingOrder))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised face winding order.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("DepthTestEnabled"))
+	{
+		pipelineDescription.DepthTestEnabled = jsonValue["DepthTestEnabled"];
+	}
+	if (jsonValue.count("DepthWriteEnabled"))
+	{
+		pipelineDescription.DepthTestEnabled = jsonValue["DepthWriteEnabled"];
+	}
+	if (jsonValue.count("DepthCompareOp"))
+	{
+		String value = jsonValue["DepthCompareOp"];
+		if (!StringToEnum<GraphicsDepthCompareOp>(value, pipelineDescription.DepthCompareOp))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised depth compare op.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("StencilTestEnabled"))
+	{
+		pipelineDescription.StencilTestEnabled = jsonValue["StencilTestEnabled"];
+	}
+	if (jsonValue.count("StencilTestReference"))
+	{
+		pipelineDescription.StencilTestReference = jsonValue["StencilTestReference"];
+	}
+	if (jsonValue.count("StencilTestReadMask"))
+	{
+		pipelineDescription.StencilTestReadMask = jsonValue["StencilTestReadMask"];
+	}
+	if (jsonValue.count("StencilTestWriteMask"))
+	{
+		pipelineDescription.StencilTestWriteMask = jsonValue["StencilTestWriteMask"];
+	}
+	if (jsonValue.count("StencilTestCompareOp"))
+	{
+		String value = jsonValue["StencilTestCompareOp"];
+		if (!StringToEnum<GraphicsStencilTestCompareOp>(value, pipelineDescription.StencilTestCompareOp))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised stencil test compare op.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("StencilTestPassOp"))
+	{
+		String value = jsonValue["StencilTestPassOp"];
+		if (!StringToEnum<GraphicsStencilTestOp>(value, pipelineDescription.StencilTestPassOp))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised stencil test op.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("StencilTestFailOp"))
+	{
+		String value = jsonValue["StencilTestFailOp"];
+		if (!StringToEnum<GraphicsStencilTestOp>(value, pipelineDescription.StencilTestFailOp))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised stencil test op.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("StencilTestZFailOp"))
+	{
+		String value = jsonValue["StencilTestZFailOp"];
+		if (!StringToEnum<GraphicsStencilTestOp>(value, pipelineDescription.StencilTestZFailOp))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised stencil test op.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("BlendEnabled"))
+	{
+		pipelineDescription.BlendEnabled = jsonValue["BlendEnabled"];
+	}
+	if (jsonValue.count("SrcColorBlendFactor"))
+	{
+		String value = jsonValue["SrcColorBlendFactor"];
+		if (!StringToEnum<GraphicsBlendFactor>(value, pipelineDescription.SrcColorBlendFactor))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised blend factor.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("DstColorBlendFactor"))
+	{
+		String value = jsonValue["DstColorBlendFactor"];
+		if (!StringToEnum<GraphicsBlendFactor>(value, pipelineDescription.DstColorBlendFactor))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised blend factor.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("SrcAlphaBlendFactor"))
+	{
+		String value = jsonValue["SrcAlphaBlendFactor"];
+		if (!StringToEnum<GraphicsBlendFactor>(value, pipelineDescription.SrcAlphaBlendFactor))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised blend factor.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("DstAlphaBlendFactor"))
+	{
+		String value = jsonValue["DstAlphaBlendFactor"];
+		if (!StringToEnum<GraphicsBlendFactor>(value, pipelineDescription.DstAlphaBlendFactor))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised blend factor.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("ColorBlendOp"))
+	{
+		String value = jsonValue["ColorBlendOp"];
+		if (!StringToEnum<GraphicsBlendOp>(value, pipelineDescription.ColorBlendOp))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised blend op.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+	if (jsonValue.count("AlphaBlendOp"))
+	{
+		String value = jsonValue["AlphaBlendOp"];
+		if (!StringToEnum<GraphicsBlendOp>(value, pipelineDescription.AlphaBlendOp))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised blend op.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+
+	return std::make_shared<Shader>(shaderStages, shaderBindings, pipelineDescription);
 }

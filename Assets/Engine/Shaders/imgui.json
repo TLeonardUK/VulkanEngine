@@ -1,0 +1,93 @@
+{
+    "Type": "Shader",    
+
+    "PolygonMode": "Fill",
+    "CullMode": "None",
+    "FaceWindingOrder": "CounterClockwise",
+    
+    "DepthTestEnabled": false,
+    "DepthWriteEnabled": false,
+    "DepthCompareOp": "Less",
+    
+    "StencilTestEnabled": false,
+    "StencilTestReference": 0,
+    "StencilTestReadMask": 0,
+    "StencilTestWriteMask": 0,
+    "StencilTestCompareOp": "Equal",
+    "StencilTestPassOp": "Keep",
+    "StencilTestFailOp": "Keep",
+    "StencilTestZFailOp": "Keep",
+    
+    "BlendEnabled": true,
+    "SrcColorBlendFactor": "SrcAlpha",
+    "DstColorBlendFactor": "OneMinusSrcAlpha",
+    "ColorBlendOp": "Add",
+    "SrcAlphaBlendFactor": "OneMinusSrcAlpha",
+    "DstAlphaBlendFactor": "Zero",
+    "AlphaBlendOp": "Add",
+        
+    "Stages":
+    {
+        "Vertex":
+        {
+            "ShaderPath": "Engine/Shaders/imgui.vert",
+            "EntryPoint": "main",
+            "VertexStreams":
+            {
+                "inPosition":
+                {
+                    "Format": "Float2",
+                    "Location": 0,
+                    "BindTo": "Internal"
+                },
+                "inTexCoord":
+                {
+                    "Format": "Float2",
+                    "Location": 1,
+                    "BindTo": "Internal"
+                },
+                "inColor":
+                {
+                    "Format": "Float4",
+                    "Location": 2,
+                    "BindTo": "Internal"
+                }
+            }
+        },
+        "Fragment":
+        {
+            "ShaderPath": "Engine/Shaders/imgui.frag",
+            "EntryPoint": "main"
+        }
+    },
+    
+    "Bindings":
+    {   
+        "ubo":
+        {
+            "Type": "UniformBufferObject",
+            "Binding": 0,
+            "Fields":
+            {                       
+                "scale":
+                {
+                    "Format": "Float2",
+                    "Location": 0,
+                    "BindTo": "ImGuiScale"
+                },
+                "translation":
+                {
+                    "Format": "Float2",
+                    "Location": 1,
+                    "BindTo": "ImGuiTranslation"
+                }
+            }
+        },
+        "texSampler":
+        {
+            "Type": "Sampler",
+            "Binding": 1,
+            "BindTo": "ImGuiTexture"
+        }
+    }
+}

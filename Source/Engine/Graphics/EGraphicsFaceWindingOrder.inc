@@ -1,0 +1,2 @@
+enum_entry(Clockwise)
+enum_entry(CounterClockwise)

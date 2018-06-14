@@ -10,6 +10,8 @@ public:
 	Matrix4 ViewMatrix;
 	Matrix4 ProjectionMatrix;
 
+	Vector3 Location;
+
 	Rectangle Viewport;
 
 };

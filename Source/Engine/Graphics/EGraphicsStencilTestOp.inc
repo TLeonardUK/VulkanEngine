@@ -1,0 +1,8 @@
+enum_entry(Keep)
+enum_entry(Zero)
+enum_entry(Replace)
+enum_entry(IncrementAndClamp)
+enum_entry(DecrementAndClamp)
+enum_entry(Invert)
+enum_entry(IncrementAndWrap)
+enum_entry(DecrementAndWrap)

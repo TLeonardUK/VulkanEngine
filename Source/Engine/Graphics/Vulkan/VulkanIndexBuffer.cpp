@@ -48,6 +48,7 @@ bool VulkanIndexBuffer::Build(int indexSize, int vertexCount)
 
 	assert(indexSize == 2 || indexSize == 4);
 
+	m_capacity = vertexCount;
 	m_memorySize = indexSize * vertexCount;
 	m_indexSize = indexSize;
 
@@ -105,4 +106,9 @@ int VulkanIndexBuffer::GetDataSize()
 int VulkanIndexBuffer::GetIndexSize()
 {
 	return m_indexSize;
+}
+
+int VulkanIndexBuffer::GetCapacity()
+{
+	return m_capacity;
 }

@@ -217,10 +217,12 @@ public:
 	virtual std::shared_ptr<IGraphicsUniformBuffer> CreateUniformBuffer(const String& name, int dataSize);
 	virtual std::shared_ptr<IGraphicsResourceSetPool> CreateResourceSetPool(const String& name);
 	virtual std::shared_ptr<IGraphicsCommandBufferPool> CreateCommandBufferPool(const String& name);
-	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, GraphicsFormat format, bool generateMips);
+	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips);
 	virtual std::shared_ptr<IGraphicsSampler> CreateSampler(const String& name, const SamplerDescription& settings);
 
 	virtual void Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer);
+
+	virtual void WaitForDeviceIdle();
 
 	virtual GraphicsFormat GetSwapChainFormat();
 	virtual Array<std::shared_ptr<IGraphicsImageView>> GetSwapChainViews();

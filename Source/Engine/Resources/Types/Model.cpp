@@ -219,6 +219,11 @@ void Mesh::UpdateResources()
 				sourceData = dataExists ? m_texCoords[3].data() : nullptr;
 				break;
 			}
+		case ShaderVertexStreamBinding::Internal:
+			{	
+				m_logger->WriteWarning(LogCategory::Resources, "[%-30s ] Binding %s has internal format, model cannot bind it.", m_name.c_str(), stream.Name.c_str());
+				break;
+			}
 		}
 
 		if (streamFormat != stream.Format)

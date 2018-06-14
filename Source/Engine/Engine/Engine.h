@@ -20,6 +20,7 @@ class IInput;
 class Logger;
 class IGameInstance;
 class ResourceManager;
+class ImguiManager;
 
 class Engine
 {
@@ -39,6 +40,8 @@ private:
 	std::shared_ptr<Renderer> m_renderer;
 	std::shared_ptr<ResourceManager> m_resourceManager;
 
+	std::shared_ptr<ImguiManager> m_imguiManager;
+
 	bool InitPlatform();
 	bool InitLogger();
 	bool InitWindow();
@@ -46,6 +49,7 @@ private:
 	bool InitInput();
 	bool InitRenderer();
 	bool InitResourceManager();
+	bool InitImguiManager();
 
 	void TermPlatform();
 	void TermLogger();
@@ -54,6 +58,7 @@ private:
 	void TermInput();
 	void TermRenderer();
 	void TermResourceManager();
+	void TermImguiManager();
 
 	void UpdateFrameTime();
 
@@ -78,6 +83,7 @@ public:
 	std::shared_ptr<ResourceManager> GetResourceManager();
 	std::shared_ptr<Renderer> GetRenderer();
 	std::shared_ptr<IInput> GetInput();
+	std::shared_ptr<ImguiManager> GetImGuiManager();
 
 
 };

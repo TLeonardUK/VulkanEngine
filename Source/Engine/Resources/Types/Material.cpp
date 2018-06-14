@@ -64,6 +64,7 @@ bool Material::GetVertexBufferFormat(VertexBufferBindingDescription& vertexBuffe
 		case ShaderVertexStreamBinding::TexCoord2:	vertexSize += sizeof(Vector2); break;
 		case ShaderVertexStreamBinding::TexCoord3:	vertexSize += sizeof(Vector2); break;
 		case ShaderVertexStreamBinding::TexCoord4:	vertexSize += sizeof(Vector2); break;
+		case ShaderVertexStreamBinding::Internal:	vertexSize += GetByteSizeForGraphicsBindingFormat(stream.Format); break;
 		}
 	}
 	vertexBufferFormat.SetVertexSize(vertexSize);
@@ -120,6 +121,12 @@ bool Material::GetVertexBufferFormat(VertexBufferBindingDescription& vertexBuffe
 		{
 			streamFormat = GraphicsBindingFormat::Float2;
 			streamSize = sizeof(Vector2);
+			break;
+		}
+		case ShaderVertexStreamBinding::Internal:
+		{
+			streamFormat = stream.Format;
+			streamSize = GetByteSizeForGraphicsBindingFormat(stream.Format);
 			break;
 		}
 		}
@@ -212,17 +219,6 @@ bool Material::FillUniformBuffer(std::shared_ptr<IGraphicsUniformBuffer> buffer,
 
 	buffer->Upload(uboData.data(), 0, uboData.size());
 
-	struct UniformBufferObject
-	{
-		glm::mat4 model;
-		glm::mat4 view;
-		glm::mat4 proj;
-		float value;
-	};
-
-	UniformBufferObject* obj = reinterpret_cast<UniformBufferObject*>(uboData.data());
-
-
 	return true;
 }
 
@@ -304,6 +300,8 @@ void Material::RecreateResources()
 	GraphicsResourceSetDescription resourceSetDescription = {};
 	const Array<ShaderBinding>& bindings = shader->GetBindings();
 
+	m_uniformBuffers.clear();
+
 	for (const ShaderBinding& binding : bindings)
 	{
 		resourceSetDescription.AddBinding(binding.Name, binding.Binding, binding.Type);
@@ -312,7 +310,7 @@ void Material::RecreateResources()
 		{
 			int dataSize = binding.GetUniformBufferSize();
 
-			std::shared_ptr<IGraphicsUniformBuffer> uniformBuffer = m_graphics->CreateUniformBuffer(StringFormat("%s (%s)", m_name.c_str(), binding.Name.c_str()), dataSize);
+			std::shared_ptr<IGraphicsUniformBuffer> uniformBuffer = m_graphics->CreateUniformBuffer(StringFormat("%s (%s - %i)", m_name.c_str(), binding.Name.c_str(), binding.Fields.size()), dataSize);
 
 			std::pair<String, std::shared_ptr<IGraphicsUniformBuffer>> pair(binding.Name, uniformBuffer);
 
@@ -323,19 +321,16 @@ void Material::RecreateResources()
 	m_resourceSet = m_renderer->AllocateResourceSet(resourceSetDescription);
 
 	// Create pipeline.
-	GraphicsPipelineSettings pipelineSettings;
-	pipelineSettings.SetRenderPass(m_renderPass);
-	pipelineSettings.SetVertexFormat(vertexBufferFormat);
-	pipelineSettings.SetDepthTestEnabled(true);
-	pipelineSettings.SetDepthWriteEnabled(true);
-
-	const Array<ShaderStage>& shaderStages = shader->GetStages();
-	for (const ShaderStage& stage : shaderStages)
-	{
-		pipelineSettings.SetShaderStage(stage.Stage, stage.Shader);
-	}
-
-	pipelineSettings.AddResourceSet(m_resourceSet);
+	GraphicsPipelineSettings pipelineSettings = shader->GetPipelineDescription();
+	pipelineSettings.RenderPass = m_renderPass;
+	pipelineSettings.VertexFormatDescription = vertexBufferFormat;
+	pipelineSettings.HasVertexFormatDescription = true;
+	pipelineSettings.ResourceSets.push_back(m_resourceSet);
 
 	m_pipeline = m_graphics->CreatePipeline(StringFormat("%s Pipeline", m_name.c_str()), pipelineSettings);
+}
+
+MaterialPropertyCollection& Material::GetProperties()
+{
+	return m_properties;
 }

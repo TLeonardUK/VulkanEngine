@@ -39,6 +39,7 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 	}
 
 	ResourcePtr<Shader> shader = manager->Load<Shader>(jsonValue["ShaderPath"]);
+	manager->AddResourceDependency(resource, shader);
 
 	MaterialPropertyCollection properties;
 

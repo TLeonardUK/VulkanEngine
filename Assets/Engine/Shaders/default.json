@@ -1,5 +1,6 @@
 {
-    "Type": "Shader",    
+   "Type": "Shader",    
+   
     "Stages":
     {
         "Vertex":

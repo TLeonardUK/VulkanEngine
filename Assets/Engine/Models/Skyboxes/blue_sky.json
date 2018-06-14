@@ -1,0 +1,8 @@
+{
+    "Type": "Model",    
+    "ModelPath": "Engine/Models/Skyboxes/blue_sky.obj",    
+    "MaterialMapping":
+    {
+        "cube": "Engine/Materials/Skyboxes/blue_sky.json"
+    }
+}
