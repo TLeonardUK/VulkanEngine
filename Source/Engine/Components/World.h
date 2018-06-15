@@ -1,5 +1,6 @@
 #pragma once
 
+/*
 typedef unsigned int Entity;
 
 struct TransformComponent
@@ -48,6 +49,7 @@ public:
 	void Tick();
 
 };
+*/
 
 // Always updating data a state from the previous frame, allows parallel updating easily.
 

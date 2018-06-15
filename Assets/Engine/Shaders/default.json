@@ -1,6 +1,8 @@
 {
-   "Type": "Shader",    
+    "Type": "Shader",    
    
+    "FrameBuffer": "GBuffer",
+    
     "Stages":
     {
         "Vertex":
@@ -15,7 +17,13 @@
                     "Location": 0,
                     "BindTo": "Position"
                 },
-                "inTexCoord":
+                "inNormal":
+                {
+                    "Format": "Float3",
+                    "Location": 1,
+                    "BindTo": "Normal"
+                },
+                "inTexCoord1":
                 {
                     "Format": "Float2",
                     "Location": 2,
@@ -31,7 +39,7 @@
     },
     "Bindings":
     {   
-        "ubo":
+        "properties":
         {
             "Type": "UniformBufferObject",
             "Binding": 0,
@@ -57,11 +65,11 @@
                 }
             }
         },
-        "texSampler":
+        "albedoTextureSampler":
         {
             "Type": "Sampler",
             "Binding": 1,
-            "BindTo": "DiffuseTexture"
+            "BindTo": "AlbedoTexture"
         }
     }
 }

@@ -26,6 +26,8 @@
     "DstAlphaBlendFactor": "Zero",
     "AlphaBlendOp": "Add",
         
+    "FrameBuffer": "SwapChain",
+        
     "Stages":
     {
         "Vertex":

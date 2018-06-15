@@ -2,6 +2,7 @@
 
 #include "Engine/Graphics/Vulkan/VulkanFramebuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanEnums.h"
+#include "Engine/Graphics/Vulkan/VulkanExtensions.h"
 #include "Engine/Graphics/Vulkan/VulkanRenderPass.h"
 #include "Engine/Graphics/Vulkan/VulkanImageView.h"
 
@@ -72,6 +73,8 @@ bool VulkanFramebuffer::Build(const GraphicsFramebufferSettings& settings)
 	m_height = settings.height;
 
 	CheckVkResultReturnOnFail(vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_framebuffer));
+
+	SetVulkanMarkerName(m_device, VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT, (uint64_t)m_framebuffer, m_name);
 
 	return true;
 }

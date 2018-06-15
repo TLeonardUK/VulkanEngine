@@ -126,6 +126,41 @@ bool ImguiManager::LoadFontTextures()
 	return true;
 }
 
+ImguiCallbackToken ImguiManager::RegisterCallback(ImguiCallback type, ImguiCallbackFunction_t function)
+{
+	Callback callback;
+	callback.function = function;
+	callback.type = type;
+	callback.token = (ImguiCallbackToken)m_callbackId++;
+	m_callbacks.push_back(callback);
+
+	return callback.token;
+}
+
+void ImguiManager::UnregisterCallback(ImguiCallbackToken token)
+{
+	for (auto iter = m_callbacks.begin(); iter != m_callbacks.end(); iter++)
+	{
+		if ((*iter).token == token)
+		{
+			m_callbacks.erase(iter);
+			break;
+		}
+	}
+}
+
+void ImguiManager::RunCallbacks(ImguiCallback type)
+{
+	for (auto iter = m_callbacks.begin(); iter != m_callbacks.end(); iter++)
+	{
+		auto callback = *iter;
+		if (callback.type == type)
+		{
+			callback.function();
+		}
+	}
+}
+
 void ImguiManager::Dispose()
 {
 	m_graphics->WaitForDeviceIdle();
@@ -194,6 +229,8 @@ void ImguiManager::StartFrame(const FrameTime& time)
 	m_mouseRequired = m_mouseRequiredFlagged;
 	m_mouseRequiredFlagged = false;
 
+	m_storedImages.clear();
+
 	UpdateInput();
 
 	ImGui::NewFrame();
@@ -215,15 +252,8 @@ void ImguiManager::UpdateDebugMenu()
 
 	if (ImGui::BeginMainMenuBar())
 	{
-		if (ImGui::BeginMenu("File"))
-		{
-			if (ImGui::MenuItem("Exit"))
-			{
-				// todo: exit
-			}
+		RunCallbacks(ImguiCallback::MainMenu);
 
-			ImGui::EndMenu();
-		}
 		ImGui::EndMainMenuBar();
 	}
 }
@@ -236,6 +266,18 @@ void ImguiManager::FlagMouseControlRequired()
 bool ImguiManager::IsMouseControlRequired()
 {
 	return m_mouseRequired;
+}
+
+ImTextureID ImguiManager::StoreImage(std::shared_ptr<IGraphicsImageView> view)
+{
+	StoredImage storedImage;
+	storedImage.view = view;
+
+	ImTextureID id = (ImTextureID)(m_storedImages.size() + 1);
+
+	m_storedImages.insert(std::pair<ImTextureID, StoredImage>(id, storedImage));
+
+	return id;
 }
 
 void ImguiManager::EndFrame()
@@ -331,10 +373,12 @@ void ImguiManager::EndFrame()
 		material->GetProperties().Set(ImGuiTexture, m_fontTexture);
 		material->UpdateResources();
 
+		// Create material instance for each individual 
+
 		buffer->Upload(m_vertexBuffer);
 		buffer->Upload(m_indexBuffer);
 
-		buffer->BeginPass(material->GetRenderPass(), m_renderer->GetCurrentFramebuffer());
+		buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 		buffer->BeginSubPass();
 
 		buffer->SetPipeline(material->GetPipeline());
@@ -344,14 +388,38 @@ void ImguiManager::EndFrame()
 		buffer->SetVertexBuffer(m_vertexBuffer);
 		buffer->SetResourceSets({ material->GetResourceSet() });
 
+		ImTextureID lastTextureId = 0;
+
 		for (int cmdListIndex = 0; cmdListIndex < drawData->CmdListsCount; cmdListIndex++)
 		{
 			const ImDrawList* cmdList = drawData->CmdLists[cmdListIndex];
 			for (int cmdIndex = 0; cmdIndex < cmdList->CmdBuffer.size(); cmdIndex++)
 			{
-				// todo: handle texture-id (we only use fonts right now so not much of an issue).
-
 				const ImDrawCmd* cmd = &cmdList->CmdBuffer[cmdIndex];
+			
+				// Update descriptor set with new texture.
+				if (cmd->TextureId != lastTextureId)
+				{
+					if (cmd->TextureId == 0)
+					{
+						material->GetProperties().Set(ImGuiTexture, m_fontTexture);
+					}
+					else
+					{
+						auto iter = m_storedImages.find(cmd->TextureId);
+						if (iter != m_storedImages.end())
+						{
+							material->GetProperties().Set(ImGuiTexture, iter->second.view, m_fontTexture.Get()->GetSampler());
+						}
+					}
+					material->UpdateResources();
+
+					buffer->SetResourceSets({ material->GetResourceSet() });
+
+					lastTextureId = cmd->TextureId;
+				}
+
+				// Perform actual draw.
 				if (cmd->UserCallback != nullptr)
 				{
 					cmd->UserCallback(cmdList, cmd);

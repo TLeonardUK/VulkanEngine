@@ -37,9 +37,16 @@ VkRenderPass VulkanRenderPass::GetRenderPass()
 	return m_renderPass;
 }
 
+GraphicsRenderPassSettings VulkanRenderPass::GetSettings()
+{
+	return m_settings;
+}
+
 bool VulkanRenderPass::Build(const GraphicsRenderPassSettings& settings)
 {
 	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new render pass: %s", m_name.c_str());
+
+	m_settings = settings;
 
 	Array<VkAttachmentDescription> attachmentDescriptions;
 	Array<VkAttachmentReference> colorAttachmentsRefs;

@@ -3,7 +3,7 @@
     "ShaderPath": "Engine/Shaders/default.json",    
     "Bindings":
     {        
-        "DiffuseTexture":
+        "AlbedoTexture":
         {   
             "Format": "Texture",          
             "Value": "Engine/Textures/Sponza/chain_texture_mask.json"   

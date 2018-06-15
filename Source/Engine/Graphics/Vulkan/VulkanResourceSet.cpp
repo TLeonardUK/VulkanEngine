@@ -53,8 +53,20 @@ VkDescriptorSetLayout VulkanResourceSet::GetLayout()
 
 VkDescriptorSet VulkanResourceSet::GetSet()
 {
+	// increment generation, furture bindings (if they cause changes) should go to next set/offset.
+	// reset to 0 when frame finishes? (Buffer per frame as well?)
+
+	// when happens if gpu uploads vertex/index buffer while cpu is staging new one? We should triple
+	// buffer the staging buffer
+
+	// todo: cannot touch material uniforms betwen set and when the command is run ont the shader. Need some way 
+	//		 to buffer them - dynamic uniforms? Make each object have their own uniform buffer?
+
 	return m_set;
 }
+
+// todo: all of the following is a race condition - we don't know the gpu is finished with the descriptor set when 
+// we update it.
 
 bool VulkanResourceSet::UpdateBinding(int location, int arrayIndex, std::shared_ptr<IGraphicsUniformBuffer> buffer)
 {

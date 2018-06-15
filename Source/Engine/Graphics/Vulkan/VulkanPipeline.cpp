@@ -192,6 +192,8 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 {
 	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new pipeline: %s", m_name.c_str());
 
+	std::shared_ptr<VulkanRenderPass> vulkanRenderPass = std::dynamic_pointer_cast<VulkanRenderPass>(settings.RenderPass);
+
 	Array<VkPipelineShaderStageCreateInfo> shaderStages;
 
 	for (int i = 0; i < (int)GraphicsPipelineStage::Count; i++)
@@ -283,22 +285,43 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 	multisampling.alphaToCoverageEnable = VK_FALSE;
 	multisampling.alphaToOneEnable = VK_FALSE;
 
-	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = settings.BlendEnabled ? VK_TRUE : VK_FALSE;
-	colorBlendAttachment.srcColorBlendFactor = GraphicsBlendFactorToVk(settings.SrcColorBlendFactor);
-	colorBlendAttachment.dstColorBlendFactor = GraphicsBlendFactorToVk(settings.DstColorBlendFactor);
-	colorBlendAttachment.colorBlendOp = GraphicsBlendOpToVk(settings.ColorBlendOp);
-	colorBlendAttachment.srcAlphaBlendFactor = GraphicsBlendFactorToVk(settings.SrcAlphaBlendFactor);
-	colorBlendAttachment.dstAlphaBlendFactor = GraphicsBlendFactorToVk(settings.DstAlphaBlendFactor);
-	colorBlendAttachment.alphaBlendOp = GraphicsBlendOpToVk(settings.AlphaBlendOp);
+	GraphicsRenderPassSettings renderPassSettings = vulkanRenderPass->GetSettings();
+
+	Array<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+	for (int i = 0; i < renderPassSettings.attachments.size(); i++)
+	{
+		GraphicsRenderPassAttachment& attachment = renderPassSettings.attachments[i];
+		if (!attachment.bIsDepthStencil)
+		{
+			VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+			colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+			if (settings.BlendEnabled && colorBlendAttachments.empty()) // Only blend first attachment (color), rest have no blend applied.
+			{
+				colorBlendAttachment.blendEnable = VK_TRUE;
+			}
+			else
+			{
+				colorBlendAttachment.blendEnable = VK_FALSE;
+			}
+
+			colorBlendAttachment.srcColorBlendFactor = GraphicsBlendFactorToVk(settings.SrcColorBlendFactor);
+			colorBlendAttachment.dstColorBlendFactor = GraphicsBlendFactorToVk(settings.DstColorBlendFactor);
+			colorBlendAttachment.colorBlendOp = GraphicsBlendOpToVk(settings.ColorBlendOp);
+			colorBlendAttachment.srcAlphaBlendFactor = GraphicsBlendFactorToVk(settings.SrcAlphaBlendFactor);
+			colorBlendAttachment.dstAlphaBlendFactor = GraphicsBlendFactorToVk(settings.DstAlphaBlendFactor);
+			colorBlendAttachment.alphaBlendOp = GraphicsBlendOpToVk(settings.AlphaBlendOp);
+
+			colorBlendAttachments.push_back(colorBlendAttachment);
+		}
+	}
 
 	VkPipelineColorBlendStateCreateInfo colorBlending = {};
 	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	colorBlending.logicOpEnable = VK_FALSE;
 	colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
-	colorBlending.attachmentCount = 1;
-	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.attachmentCount = colorBlendAttachments.size();
+	colorBlending.pAttachments = colorBlendAttachments.data();
 	colorBlending.blendConstants[0] = 0.0f; // Optional
 	colorBlending.blendConstants[1] = 0.0f; // Optional
 	colorBlending.blendConstants[2] = 0.0f; // Optional
@@ -354,7 +377,7 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = m_pipelineLayout;
-	pipelineInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(settings.RenderPass)->GetRenderPass();
+	pipelineInfo.renderPass = vulkanRenderPass->GetRenderPass();
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional

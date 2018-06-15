@@ -1,9 +1,9 @@
 {
     "Type": "Material",    
-    "ShaderPath": "Engine/Shaders/default.json",    
+    "ShaderPath": "Engine/Shaders/default.json",  
     "Bindings":
     {        
-        "DiffuseTexture":
+        "AlbedoTexture":
         {   
             "Format": "Texture",          
             "Value": "Engine/Textures/Sponza/sponza_column_c_diff.json"   

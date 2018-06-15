@@ -470,5 +470,17 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 		}
 	}
 
-	return std::make_shared<Shader>(shaderStages, shaderBindings, pipelineDescription);
+	// Parse frame buffer target.
+	FrameBufferTarget target = FrameBufferTarget::GBuffer;
+	if (jsonValue.count("FrameBuffer"))
+	{
+		String value = jsonValue["FrameBuffer"];
+		if (!StringToEnum<FrameBufferTarget>(value, target))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised frame buffer target.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
+
+	return std::make_shared<Shader>(shaderStages, shaderBindings, pipelineDescription, target);
 }

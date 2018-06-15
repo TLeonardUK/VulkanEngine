@@ -146,6 +146,7 @@
     <ClCompile Include="Input\Sdl\SdlInput.cpp" />
     <ClCompile Include="Platform\Sdl\SdlPlatform.cpp" />
     <ClCompile Include="Rendering\Renderer.cpp" />
+    <ClCompile Include="Rendering\RendererEnums.cpp" />
     <ClCompile Include="Rendering\RenderView.cpp" />
     <ClCompile Include="Resources\ResourceManager.cpp" />
     <ClCompile Include="Resources\Types\Material.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="Components\EntityManager.h" />
     <ClInclude Include="Components\Rendering\MeshComponent.h" />
     <ClInclude Include="Components\Transform\TransformComponent.h" />
+    <ClInclude Include="Components\World.h" />
     <ClInclude Include="Engine\Engine.h" />
     <ClInclude Include="Engine\FrameTime.h" />
     <ClInclude Include="Engine\GameInstance.h" />
@@ -222,6 +224,7 @@
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\Sdl\SdlPlatform.h" />
     <ClInclude Include="Rendering\Renderer.h" />
+    <ClInclude Include="Rendering\RendererEnums.h" />
     <ClInclude Include="Rendering\RenderView.h" />
     <ClInclude Include="Resources\Resource.h" />
     <ClInclude Include="Resources\ResourceLoader.h" />
@@ -272,6 +275,7 @@
     <None Include="Graphics\EGraphicsPresentMode.inc" />
     <None Include="Graphics\EGraphicsStencilTestCompareOp.inc" />
     <None Include="Graphics\EGraphicsStencilTestOp.inc" />
+    <None Include="Rendering\EFrameBufferTarget.inc" />
     <None Include="Resources\Types\EShaderVertexStreamBinding.inc" />
   </ItemGroup>
   <ItemGroup>

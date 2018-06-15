@@ -45,6 +45,8 @@ bool VulkanShader::LoadFromArray(const Array<char>& data)
 	createInfo.codeSize = data.size();
 	createInfo.pCode = reinterpret_cast<const uint32_t*>(data.data());
 
+	m_logger->WriteInfo(LogCategory::Vulkan, "Loading shader '%s'", m_name.c_str());
+
 	CheckVkResultReturnOnFail(vkCreateShaderModule(m_device, &createInfo, nullptr, &m_module));
 
 	m_logger->WriteSuccess(LogCategory::Vulkan, "Loaded shader '%s' successfully.", m_name.c_str());

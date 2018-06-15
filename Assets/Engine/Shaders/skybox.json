@@ -1,6 +1,7 @@
 {
     "Type": "Shader",    
     
+    "FrameBuffer": "GBuffer",
     "FaceWindingOrder": "Clockwise",
     
     "Stages":
@@ -17,17 +18,17 @@
                     "Location": 0,
                     "BindTo": "Position"
                 },
-                "inTexCoord":
-                {
-                    "Format": "Float2",
-                    "Location": 1,
-                    "BindTo": "TexCoord1"
-                },
                 "inNormal":
                 {
                     "Format": "Float3",
-                    "Location": 2,
+                    "Location": 1,
                     "BindTo": "Normal"
+                },
+                "inTexCoord1":
+                {
+                    "Format": "Float2",
+                    "Location": 2,
+                    "BindTo": "TexCoord1"
                 }
             }
         },
@@ -39,7 +40,7 @@
     },
     "Bindings":
     {   
-        "ubo":
+        "properties":
         {
             "Type": "UniformBufferObject",
             "Binding": 0,
@@ -71,11 +72,11 @@
                 }
             }
         },
-        "skyboxSampler":
+        "albedoTextureSampler":
         {
             "Type": "Sampler",
             "Binding": 1,
-            "BindTo": "DiffuseTexture"
+            "BindTo": "AlbedoTexture"
         }
     }
 }

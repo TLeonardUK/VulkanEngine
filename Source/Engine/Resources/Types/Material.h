@@ -10,6 +10,8 @@
 
 #include "Engine/Graphics/GraphicsEnums.h"
 
+#include "Engine/Rendering/RendererEnums.h"
+
 #include "Engine/Types/Math.h"
 #include "Engine/Types/Array.h"
 #include "Engine/Utilities/Enum.h"
@@ -20,6 +22,7 @@ class Binding;
 class IGraphics;
 class IGraphicsRenderPass;
 class IGraphicsPipeline;
+class IGraphicsFramebuffer;
 class Logger;
 class Renderer;
 struct ShaderBindingField;
@@ -37,7 +40,6 @@ private:
 	std::shared_ptr<Renderer> m_renderer;
 	String m_name;
 
-	std::shared_ptr<IGraphicsRenderPass> m_renderPass;
 	std::shared_ptr<IGraphicsPipeline> m_pipeline;
 
 	std::shared_ptr<IGraphicsResourceSet> m_resourceSet;
@@ -67,6 +69,8 @@ public:
 	void UpdateResources();
 
 	std::shared_ptr<IGraphicsRenderPass> GetRenderPass();
+	std::shared_ptr<IGraphicsFramebuffer> GetFrameBuffer();
+
 	std::shared_ptr<IGraphicsPipeline> GetPipeline();
 	std::shared_ptr<IGraphicsResourceSet> GetResourceSet();
 

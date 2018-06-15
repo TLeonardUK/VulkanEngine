@@ -69,6 +69,9 @@ bool VulkanUniformBuffer::Upload(void* buffer, int offset, int length)
 {
 	assert(offset >= 0 && offset + length <= m_memorySize);
 
+	// todo: each upload progress to next offset etc to ensure we don't
+	// tread on uniforms while update in progress?
+
 	void* deviceData;
 
 	vmaMapMemory(m_gpuBuffer.Allocator, m_gpuBuffer.Allocation, &deviceData);

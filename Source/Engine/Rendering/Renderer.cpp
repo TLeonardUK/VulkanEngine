@@ -1,8 +1,11 @@
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Rendering/RenderView.h"
+#include "Engine/Rendering/RendererEnums.h"
 
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsResourceSet.h"
+
+#include "Engine/UI/ImguiManager.h"
 
 // batch everything using same material
 
@@ -62,8 +65,32 @@ bool Renderer::Init()
 	return true;
 }
 
+void Renderer::InitDebugMenus(std::shared_ptr<ImguiManager> manager)
+{
+	m_imguiManager = manager;
+	
+	m_debugMenuCallbackToken = m_imguiManager->RegisterCallback(ImguiCallback::MainMenu, [=] {
+
+		static bool drawGBufferEnabled = false;
+
+		if (ImGui::BeginMenu("Visualization"))
+		{
+			ImGui::MenuItem("Draw G-Buffer", nullptr, &drawGBufferEnabled);
+			ImGui::EndMenu();
+		}
+
+		if (drawGBufferEnabled)
+		{
+			ImTextureID textureId = manager->StoreImage(m_gbufferViews[0]);
+			ImGui::Image(textureId, ImVec2(200, 200), ImVec2(200, 200));
+		}
+	});
+}
+
 void Renderer::Dispose()
 {
+	m_imguiManager->UnregisterCallback(m_debugMenuCallbackToken);
+	
 	FreeResources();
 }
 
@@ -87,9 +114,16 @@ void Renderer::FreeSwapChainDependentResources()
 {
 	m_depthBufferImage = nullptr;
 	m_depthBufferView = nullptr;
-	m_renderPass = nullptr;
+	m_resolveToSwapChainRenderPass = nullptr;
 	m_swapChainFramebuffers.clear();
 	m_commandBuffers.clear();
+
+	for (int i = 0; i < GBufferImageCount; i++)
+	{
+		m_gbufferImages[i] = nullptr;
+		m_gbufferViews[i] = nullptr;
+	}
+	m_gbufferFrameBuffer = nullptr;
 }
 
 void Renderer::CreateSwapChainDependentResources()
@@ -102,7 +136,7 @@ void Renderer::CreateSwapChainDependentResources()
 	GraphicsSubPassIndex subPass1 = renderPassSettings.AddSubPass();
 	renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
 
-	m_renderPass = m_graphics->CreateRenderPass("Main Render Pass", renderPassSettings);
+	m_resolveToSwapChainRenderPass = m_graphics->CreateRenderPass("Swap Chain Render Pass", renderPassSettings);
 
 	m_swapChainViews = m_graphics->GetSwapChainViews();
 	m_swapChainWidth = m_swapChainViews[0]->GetWidth();
@@ -121,7 +155,7 @@ void Renderer::CreateSwapChainDependentResources()
 		GraphicsFramebufferSettings frameBufferSettings;
 		frameBufferSettings.width = imageView->GetWidth();
 		frameBufferSettings.height = imageView->GetHeight();
-		frameBufferSettings.renderPass = m_renderPass;
+		frameBufferSettings.renderPass = m_resolveToSwapChainRenderPass;
 		frameBufferSettings.attachments.push_back(imageView);
 		frameBufferSettings.attachments.push_back(m_depthBufferView);
 
@@ -134,6 +168,45 @@ void Renderer::CreateSwapChainDependentResources()
 	{
 		m_commandBuffers[i] = m_commandBufferPool->Allocate();
 	}
+
+	CreateGBufferResources();
+}
+
+void Renderer::CreateGBufferResources()
+{
+	// Create render pass.
+	GraphicsRenderPassSettings renderPassSettings;
+	renderPassSettings.AddColorAttachment(GraphicsFormat::UNORM_R8G8B8A8, false);
+	renderPassSettings.AddColorAttachment(GraphicsFormat::UNORM_R8G8B8A8, false);
+	renderPassSettings.AddColorAttachment(GraphicsFormat::UNORM_R8G8B8A8, false);
+	renderPassSettings.AddDepthAttachment(GraphicsFormat::UNORM_D24_UINT_S8);
+
+	GraphicsSubPassIndex subPass1 = renderPassSettings.AddSubPass();
+	renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
+
+	m_gbufferRenderPass = m_graphics->CreateRenderPass("GBuffer Render Pass", renderPassSettings);
+
+	// Create our G-Buffer.
+	m_gbufferImages[0] = m_graphics->CreateImage("GBuffer 0 - RGB:Diffuse A:Unused", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::UNORM_R8G8B8A8, false);
+	m_gbufferImages[1] = m_graphics->CreateImage("GBuffer 1 - RGB:World Normal A:Unused", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::UNORM_R8G8B8A8, false);
+	m_gbufferImages[2] = m_graphics->CreateImage("GBuffer 2 - RGB:World Position A:Unused", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::UNORM_R8G8B8A8, false);
+
+	for (int i = 0; i < GBufferImageCount; i++)
+	{
+		m_gbufferViews[i] = m_graphics->CreateImageView(StringFormat("GBuffer %i View", i), m_gbufferImages[i]);
+	}
+
+	GraphicsFramebufferSettings gbufferFrameBufferSettings;
+	gbufferFrameBufferSettings.width = m_swapChainWidth;
+	gbufferFrameBufferSettings.height = m_swapChainHeight;
+	gbufferFrameBufferSettings.renderPass = m_gbufferRenderPass;
+	for (int i = 0; i < GBufferImageCount; i++)
+	{
+		gbufferFrameBufferSettings.attachments.push_back(m_gbufferViews[i]);
+	}
+	gbufferFrameBufferSettings.attachments.push_back(m_depthBufferView);
+
+	m_gbufferFrameBuffer = m_graphics->CreateFramebuffer("GBuffer FrameBuffer", gbufferFrameBufferSettings);
 }
 
 void Renderer::SwapChainModified()
@@ -157,20 +230,26 @@ void Renderer::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer
 	buffer->Clear(m_swapChainViews[m_frameIndex]->GetImage(), Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
 	buffer->Clear(m_depthBufferImage, Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
 
-	std::shared_ptr<IGraphicsFramebuffer> framebuffer = m_swapChainFramebuffers[m_frameIndex];
+	// TODO: Z Pre Pass
 
-	// Draw each view.
+	// Render all views to gbuffer.
 	for (auto& view : m_renderViews)
 	{
-		BuildViewCommandBuffer(view, framebuffer, buffer);
+		BuildViewCommandBuffer(view, buffer);
 	}
+
+	// pipeline sync here.
+
+	// TODO: Light accumulation.
+
+	// TODO: Resolve to framebuffer.
 
 	RunQueuedCommands(RenderCommandStage::PostViewsRendered, buffer);
 
 	buffer->End();
 }
 
-void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsFramebuffer> framebuffer, std::shared_ptr<IGraphicsCommandBuffer> buffer)
+void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
 	Matrix4 identityMatrix = Matrix4(1.0);
 
@@ -192,7 +271,7 @@ void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::sha
 			{
 				std::shared_ptr<Material> material = mesh->GetMaterial().Get();
 
-				buffer->BeginPass(material->GetRenderPass(), framebuffer);
+				buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 				buffer->BeginSubPass();
 
 				buffer->SetPipeline(material->GetPipeline());
@@ -261,5 +340,35 @@ void Renderer::RemoveView(std::shared_ptr<RenderView> view)
 	if (iter != m_renderViews.end())
 	{
 		m_renderViews.erase(iter);
+	}
+}
+
+std::shared_ptr<IGraphicsRenderPass> Renderer::GetRenderPassForTarget(FrameBufferTarget target)
+{
+	switch (target)
+	{
+	case FrameBufferTarget::GBuffer:
+		{
+			return m_gbufferRenderPass;
+		}
+	case FrameBufferTarget::SwapChain:
+		{
+			return m_resolveToSwapChainRenderPass;
+		}
+	}
+}
+
+std::shared_ptr<IGraphicsFramebuffer> Renderer::GetFramebufferForTarget(FrameBufferTarget target)
+{
+	switch (target)
+	{
+	case FrameBufferTarget::GBuffer:
+		{
+			return m_gbufferFrameBuffer;
+		}
+	case FrameBufferTarget::SwapChain:
+		{
+			return GetCurrentFramebuffer();
+		}
 	}
 }

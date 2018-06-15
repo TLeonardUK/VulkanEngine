@@ -22,11 +22,6 @@ ResourcePtr<Shader> Material::GetShader()
 	return m_shader;
 }
 
-std::shared_ptr<IGraphicsRenderPass> Material::GetRenderPass()
-{
-	return m_renderPass;
-}
-
 std::shared_ptr<IGraphicsPipeline> Material::GetPipeline()
 {
 	return m_pipeline;
@@ -268,7 +263,15 @@ void Material::UpdateBindings()
 				}
 
 				std::shared_ptr<Texture> texture = matBinding->Value_Texture.Get();
-				m_resourceSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
+				if (matBinding->Value_ImageSampler == nullptr &&
+					matBinding->Value_ImageView == nullptr)
+				{
+					m_resourceSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
+				}
+				else
+				{
+					m_resourceSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
+				}
 
 				break;
 			}
@@ -279,16 +282,6 @@ void Material::UpdateBindings()
 void Material::RecreateResources()
 {
 	std::shared_ptr<Shader> shader = m_shader.Get();
-
-	// Create render pass.
-	GraphicsRenderPassSettings renderPassSettings;
-	renderPassSettings.AddColorAttachment(m_graphics->GetSwapChainFormat(), true);
-	renderPassSettings.AddDepthAttachment(GraphicsFormat::UNORM_D24_UINT_S8);
-
-	GraphicsSubPassIndex subPass1 = renderPassSettings.AddSubPass();
-	renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
-
-	m_renderPass = m_graphics->CreateRenderPass(StringFormat("%s Render Pass", m_name.c_str()), renderPassSettings);
 
 	VertexBufferBindingDescription vertexBufferFormat;
 	if (!GetVertexBufferFormat(vertexBufferFormat))
@@ -322,7 +315,7 @@ void Material::RecreateResources()
 
 	// Create pipeline.
 	GraphicsPipelineSettings pipelineSettings = shader->GetPipelineDescription();
-	pipelineSettings.RenderPass = m_renderPass;
+	pipelineSettings.RenderPass = GetRenderPass();
 	pipelineSettings.VertexFormatDescription = vertexBufferFormat;
 	pipelineSettings.HasVertexFormatDescription = true;
 	pipelineSettings.ResourceSets.push_back(m_resourceSet);
@@ -333,4 +326,14 @@ void Material::RecreateResources()
 MaterialPropertyCollection& Material::GetProperties()
 {
 	return m_properties;
+}
+
+std::shared_ptr<IGraphicsRenderPass> Material::GetRenderPass()
+{
+	return  m_renderer->GetRenderPassForTarget(m_shader.Get()->GetTarget());
+}
+
+std::shared_ptr<IGraphicsFramebuffer> Material::GetFrameBuffer()
+{
+	return  m_renderer->GetFramebufferForTarget(m_shader.Get()->GetTarget());
 }

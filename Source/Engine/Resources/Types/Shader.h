@@ -3,6 +3,7 @@
 #include "Engine/Resources/Types/MaterialPropertyCollection.h"
 #include "Engine/Resources/ResourceLoader.h"
 #include "Engine/Resources/Resource.h"
+#include "Engine/Rendering/RendererEnums.h"
 
 #include "Engine/Graphics/GraphicsPipeline.h"
 
@@ -69,14 +70,18 @@ private:
 	Array<ShaderBinding> m_bindings;
 	GraphicsPipelineSettings m_pipelineDescription;
 
+	FrameBufferTarget m_target;
+
 public:
 	static const char* Tag;
 
-	Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription);
+	Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription, FrameBufferTarget target);
 
 	bool GetStage(GraphicsPipelineStage stage, const ShaderStage** result);
 	const Array<ShaderStage>& GetStages();
 	const Array<ShaderBinding>& GetBindings();
+
+	FrameBufferTarget GetTarget();
 
 	const GraphicsPipelineSettings& GetPipelineDescription();
 

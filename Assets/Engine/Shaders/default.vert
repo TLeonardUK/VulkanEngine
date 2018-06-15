@@ -5,14 +5,21 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
     mat4 proj;
-} ubo;
+} properties;
 
 layout(location = 0) in vec3 inPosition;
-layout(location = 2) in vec2 inTexCoord;
+layout(location = 1) in vec3 inNormal;
+layout(location = 2) in vec2 inTexCoord1;
 
-layout(location = 0) out vec2 fragTexCoord;
+layout(location = 0) out vec3 outWorldPosition;
+layout(location = 1) out vec3 outWorldNormal;
+layout(location = 2) out vec2 outTexCoord0;
 
-void main() {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
-    fragTexCoord = inTexCoord;
+void main() 
+{
+    outTexCoord0 = inTexCoord1;
+    outWorldNormal = normalize(properties.model * vec4(inNormal, 1.0)).xyz;
+    outWorldPosition = normalize(properties.model * vec4(inPosition, 1.0)).xyz;
+
+    gl_Position = properties.proj * properties.view * properties.model * vec4(inPosition, 1.0);
 }

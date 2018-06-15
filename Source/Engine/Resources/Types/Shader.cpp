@@ -9,10 +9,11 @@ enum_end_implementation(ShaderVertexStreamBinding)
 
 const char* Shader::Tag = "Shader";
 
-Shader::Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription)
+Shader::Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription, FrameBufferTarget target)
 	: m_stages(stages)
 	, m_bindings(bindings)
 	, m_pipelineDescription(pipelineDescription)
+	, m_target(target)
 {
 
 }
@@ -86,4 +87,9 @@ int ShaderBinding::GetUniformBufferFieldOffset(int fieldIndex) const
 const GraphicsPipelineSettings& Shader::GetPipelineDescription()
 {
 	return m_pipelineDescription;
+}
+
+FrameBufferTarget Shader::GetTarget()
+{
+	return m_target;
 }

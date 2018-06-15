@@ -7,7 +7,7 @@ layout(binding = 0) uniform UniformBufferObject {
 } ubo;
 
 layout(location = 0) in vec2 inPosition;
-layout(location = 1) in vec2 inTexCoord;
+layout(location = 1) in vec2 inTexCoord1;
 layout(location = 2) in vec4 inColor;
 
 layout(location = 0) out struct{
@@ -16,7 +16,7 @@ layout(location = 0) out struct{
 } Out;
 
 void main() {
-    Out.UV = inTexCoord;
+    Out.UV = inTexCoord1;
     Out.Color = inColor;
     gl_Position = vec4(inPosition * ubo.scale + ubo.translation, 0.0, 1.0);
 }

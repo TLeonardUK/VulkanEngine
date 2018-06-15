@@ -17,6 +17,8 @@ private:
 	VkDevice m_device;
 	VkRenderPass m_renderPass;
 
+	GraphicsRenderPassSettings m_settings;
+
 private:
 	friend class VulkanGraphics;
 	friend class VulkanPipeline;
@@ -27,6 +29,7 @@ private:
 	void FreeResources();
 
 	VkRenderPass GetRenderPass();
+	GraphicsRenderPassSettings GetSettings();
 
 public:
 	VulkanRenderPass(

@@ -1,5 +1,6 @@
 {
-    "Type": "Shader",    
+    "Type": "Shader",   
+    "FrameBuffer": "GBuffer",
     "Stages":
     {
         "Vertex":

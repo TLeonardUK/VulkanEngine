@@ -1,4 +1,4 @@
-- Resource freeing in vulkan
+- Resource freeing in vulkan (ref counted, defered for x frames)
 - cube maps
 - gbuffer
 - shadows
@@ -7,3 +7,17 @@
 - environment maps
 - ddebug menu
 - entity system
+
+- don't update descriptor sets that haven't changed
+- shared descriptor sets if they have the same layout and are boudn to the same things
+- vertex/index staging buffers need double buffering to deal with staging while cpu is updating them.
+- uniform buffers need to be made dynamic in some way so we can update as we draw each instance.
+
+
+
+
+- per frame uniform stack allocator
+- dynamic offset
+- descriptor set pooled by uniform offsets / samplers
+
+- change uniform owner to mesh not material

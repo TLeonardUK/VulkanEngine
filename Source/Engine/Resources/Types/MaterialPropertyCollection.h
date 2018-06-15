@@ -11,6 +11,9 @@
 #include "Engine/Types/Math.h"
 #include "Engine/Types/Array.h"
 
+class IGraphicsImageView;
+class IGraphicsSampler;
+
 typedef int MaterialPropertyHash;
 
 MaterialPropertyHash CalculateMaterialPropertyHash(const String& name);
@@ -55,6 +58,9 @@ public:
 	};
 
 	ResourcePtr<Texture> Value_Texture;
+
+	std::shared_ptr<IGraphicsImageView> Value_ImageView;
+	std::shared_ptr<IGraphicsSampler> Value_ImageSampler;
 
 	void ParseJsonValue(Array<json>& value);
 
@@ -103,5 +109,6 @@ public:
 	void Set(MaterialPropertyHash name, Matrix4 value);
 
 	void Set(MaterialPropertyHash name, ResourcePtr<Texture> value);
+	void Set(MaterialPropertyHash name, std::shared_ptr<IGraphicsImageView> imageView, std::shared_ptr<IGraphicsSampler> sampler);
 
 };

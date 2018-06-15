@@ -3,7 +3,7 @@
     "ShaderPath": "Engine/Shaders/default.json",    
     "Bindings":
     {        
-        "DiffuseTexture":
+        "AlbedoTexture":
         {   
             "Format": "Texture",          
             "Value": "Engine/Textures/Sponza/sponza_column_b_diff.json"   

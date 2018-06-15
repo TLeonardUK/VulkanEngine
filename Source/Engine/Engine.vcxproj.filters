@@ -321,6 +321,9 @@
     <ClCompile Include="UI\ImguiManager.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
+    <ClCompile Include="Rendering\RendererEnums.cpp">
+      <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Engine.h">
@@ -575,6 +578,12 @@
     <ClInclude Include="UI\ImguiManager.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
+    <ClInclude Include="Components\World.h">
+      <Filter>Header Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\RendererEnums.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Graphics\EGraphicsAccessMask.inc">
@@ -633,6 +642,9 @@
     </None>
     <None Include="Graphics\EGraphicsStencilTestOp.inc">
       <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Rendering\EFrameBufferTarget.inc">
+      <Filter>Header Files\Rendering</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

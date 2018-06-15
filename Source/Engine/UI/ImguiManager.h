@@ -5,6 +5,9 @@
 #include "Engine/Resources/ResourceManager.h"
 #include "Engine/Resources/Types/Material.h"
 #include "Engine/Engine/FrameTime.h"
+#include "Engine/Types/Array.h"
+
+#include "Engine/ThirdParty/imgui/imgui.h"
 
 class Logger;
 class IGraphics;
@@ -17,9 +20,29 @@ class IInput;
 
 struct SDL_Window;
 
+typedef std::function<void()> ImguiCallbackFunction_t;
+typedef int ImguiCallbackToken;
+
+enum class ImguiCallback
+{
+	MainMenu,
+};
+
 class ImguiManager
 {
 private:
+	struct Callback
+	{
+		ImguiCallbackToken token;
+		ImguiCallback type;
+		ImguiCallbackFunction_t function;
+	};
+
+	struct StoredImage
+	{
+		std::shared_ptr<IGraphicsImageView> view;
+	};
+
 	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<IGraphics> m_graphics;
 	std::shared_ptr<IInput> m_input;
@@ -31,7 +54,11 @@ private:
 	std::shared_ptr<IGraphicsIndexBuffer> m_indexBuffer;
 	std::shared_ptr<IGraphicsVertexBuffer> m_vertexBuffer;
 
+	Array<Callback> m_callbacks;
+	int m_callbackId;
+
 	ResourcePtr<Texture> m_fontTexture;
+	Dictionary<ImTextureID, StoredImage> m_storedImages;
 
 	bool m_mouseRequired;
 	bool m_mouseRequiredFlagged;
@@ -50,6 +77,8 @@ private:
 
 	void UpdateDebugMenu();
 
+	void RunCallbacks(ImguiCallback callback);
+
 public:
 	ImguiManager(std::shared_ptr<Logger> logger);
 	~ImguiManager();
@@ -60,7 +89,12 @@ public:
 	void StartFrame(const FrameTime& time);
 	void EndFrame();
 
+	ImTextureID StoreImage(std::shared_ptr<IGraphicsImageView> view);
+
 	void FlagMouseControlRequired();
 	bool IsMouseControlRequired();
+
+	ImguiCallbackToken RegisterCallback(ImguiCallback type, ImguiCallbackFunction_t function);
+	void UnregisterCallback(ImguiCallbackToken token);
 
 };

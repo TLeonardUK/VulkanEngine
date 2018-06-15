@@ -209,6 +209,16 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, ResourcePtr<Text
 	MaterialProperty* prop = GetOrCreate(name);
 	prop->Format = GraphicsBindingFormat::Texture;
 	prop->Value_Texture = value;
+	prop->Value_ImageView = nullptr;
+	prop->Value_ImageSampler = nullptr;
+}
+
+void MaterialPropertyCollection::Set(MaterialPropertyHash name, std::shared_ptr<IGraphicsImageView> imageView, std::shared_ptr<IGraphicsSampler> sampler)
+{
+	MaterialProperty* prop = GetOrCreate(name);
+	prop->Format = GraphicsBindingFormat::Texture;
+	prop->Value_ImageView = imageView;
+	prop->Value_ImageSampler = sampler;
 }
 
 void MaterialProperty::ParseJsonValue(Array<json>& values)

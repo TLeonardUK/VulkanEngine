@@ -8,16 +8,22 @@ layout(binding = 0) uniform UniformBufferObject {
     vec3 camPosition;
 } ubo;
 
-layout(binding = 1) uniform samplerCube skyboxSampler;
+layout(binding = 1) uniform samplerCube albedoTextureSampler;
 
-layout(location = 0) in vec3 fragPosition;
-layout(location = 3) in vec3 fragNormal;
+layout(location = 0) in vec3 inWorldPosition;
+layout(location = 1) in vec3 inWorldNormal;
+layout(location = 2) in vec2 inTexCoord1;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 gbuffer0;
+layout(location = 1) out vec4 gbuffer1;
+layout(location = 2) out vec4 gbuffer2;
 
 void main() 
 {
-    vec3 I = normalize(fragPosition - ubo.camPosition);
-    vec3 R = reflect(I, normalize(fragNormal));
-    outColor = vec4(texture(skyboxSampler, I).rgb, 1.0);
+    vec3 I = normalize(inWorldPosition - ubo.camPosition);
+    vec3 R = reflect(I, normalize(inWorldNormal));
+    
+    gbuffer0.rgba = vec4(texture(albedoTextureSampler, I).rgb, 1.0);
+    gbuffer1.rgba = vec4(inWorldNormal.rgb, 1.0);
+    gbuffer2.rgba = vec4(inWorldPosition.rgb, 1.0);
 }

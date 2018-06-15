@@ -1,9 +1,9 @@
 {
     "Type": "Material",    
-    "ShaderPath": "Engine/Shaders/skybox.json",    
+    "ShaderPath": "Engine/Shaders/skybox.json",  
     "Bindings":
     {        
-        "DiffuseTexture":
+        "AlbedoTexture":
         {   
             "Format": "Texture",          
             "Value": "Engine/Textures/Skyboxes/blue_sky.json"   

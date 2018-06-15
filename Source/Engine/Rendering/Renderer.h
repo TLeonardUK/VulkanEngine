@@ -6,6 +6,10 @@
 #include "Engine/Resources/Types/MaterialPropertyCollection.h"
 #include "Engine/Resources/Types/Model.h"
 
+#include "Engine/UI/ImguiManager.h"
+
+#include "Engine/ThirdParty/imgui/imgui.h"
+
 #include <memory>
 #include <functional>
 
@@ -40,13 +44,16 @@ class Renderer
 {
 private:
 	std::shared_ptr<IGraphics> m_graphics;
+	std::shared_ptr<ImguiManager> m_imguiManager;
 	int m_frameIndex;
 
 	std::shared_ptr<IGraphicsCommandBufferPool> m_commandBufferPool;
 	std::shared_ptr<IGraphicsResourceSetPool> m_resourceSetPool;
 	Array<std::shared_ptr<IGraphicsCommandBuffer>> m_commandBuffers;
 
-	std::shared_ptr<IGraphicsRenderPass> m_renderPass;
+	std::shared_ptr<IGraphicsRenderPass> m_resolveToSwapChainRenderPass;
+
+	std::shared_ptr<IGraphicsRenderPass> m_gbufferRenderPass;
 
 	Array<std::shared_ptr<IGraphicsFramebuffer>> m_swapChainFramebuffers;
 	Array<std::shared_ptr<IGraphicsImageView>> m_swapChainViews;
@@ -65,6 +72,13 @@ private:
 
 	Array<std::shared_ptr<RenderView>> m_renderViews;
 
+	static const int GBufferImageCount = 3;
+	std::shared_ptr<IGraphicsImage> m_gbufferImages[GBufferImageCount];
+	std::shared_ptr<IGraphicsImageView> m_gbufferViews[GBufferImageCount];
+	std::shared_ptr<IGraphicsFramebuffer> m_gbufferFrameBuffer;
+
+	ImguiCallbackToken m_debugMenuCallbackToken;
+
 private:
 	friend class Material;
 
@@ -73,20 +87,26 @@ private:
 
 	void FreeSwapChainDependentResources();
 	void CreateSwapChainDependentResources();
+	void CreateGBufferResources();
 
 	void SwapChainModified();
 
 	void BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer);
-	void BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsFramebuffer> frameBuffer, std::shared_ptr<IGraphicsCommandBuffer> buffer);
+	void BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer);
 
 	std::shared_ptr<IGraphicsResourceSet> AllocateResourceSet(const GraphicsResourceSetDescription& set);
 
 	void RunQueuedCommands(RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer> buffer);
 
+	std::shared_ptr<IGraphicsRenderPass> GetRenderPassForTarget(FrameBufferTarget target);
+	std::shared_ptr<IGraphicsFramebuffer> GetFramebufferForTarget(FrameBufferTarget target);
+
 public:
 	Renderer(std::shared_ptr<IGraphics> graphics);
 
 	void QueueRenderCommand(RenderCommandStage stage, RenderCommand::CommandSignature_t callback);
+
+	void InitDebugMenus(std::shared_ptr<ImguiManager> manager);
 
 	bool Init();
 	void Dispose();

@@ -314,6 +314,8 @@ bool Engine::InitImguiManager()
 		return false;
 	}
 
+	m_renderer->InitDebugMenus(m_imguiManager);
+
 	return true;
 }
 

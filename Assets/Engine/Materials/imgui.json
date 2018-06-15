@@ -1,7 +1,6 @@
 {
     "Type": "Material",    
     "ShaderPath": "Engine/Shaders/imgui.json",  
-
     "Bindings":
     {        
         "ImGuiTexture":
