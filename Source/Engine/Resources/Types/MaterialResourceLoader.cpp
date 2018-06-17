@@ -62,7 +62,7 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 
 			if (bindingJson.count("Format") == 0)
 			{
-				m_logger->WriteError(LogCategory::Resources, "[%-30s] Material binding '%s' does not include required paramater 'Type'.", resource->Path.c_str(), binding.Name.c_str());
+				m_logger->WriteError(LogCategory::Resources, "[%-30s] Material binding '%s' does not include required paramater 'Format'.", resource->Path.c_str(), binding.Name.c_str());
 				return nullptr;
 			}
 
