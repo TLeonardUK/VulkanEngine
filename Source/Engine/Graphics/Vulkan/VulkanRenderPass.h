@@ -5,10 +5,13 @@
 
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
-class VulkanRenderPass : public IGraphicsRenderPass
+class VulkanRenderPass 
+	: public IGraphicsRenderPass
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -26,7 +29,6 @@ private:
 	friend class VulkanCommandBuffer;
 
 	bool Build(const GraphicsRenderPassSettings& settings);
-	void FreeResources();
 
 	VkRenderPass GetRenderPass();
 	GraphicsRenderPassSettings GetSettings();
@@ -38,5 +40,8 @@ public:
 		const String& name);
 
 	virtual ~VulkanRenderPass();
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

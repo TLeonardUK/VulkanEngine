@@ -5,10 +5,13 @@
 
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
-class VulkanFramebuffer : public IGraphicsFramebuffer
+class VulkanFramebuffer 
+	: public IGraphicsFramebuffer
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -25,7 +28,6 @@ private:
 	friend class VulkanCommandBuffer;
 
 	bool Build(const GraphicsFramebufferSettings& settings);
-	void FreeResources();
 
 	int GetWidth();
 	int GetHeight();
@@ -39,5 +41,8 @@ public:
 		const String& name);
 
 	virtual ~VulkanFramebuffer();
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

@@ -14,12 +14,14 @@ VulkanVertexBuffer::VulkanVertexBuffer(
 	VkDevice device,
 	std::shared_ptr<Logger> logger,
 	const String& name,
-	std::shared_ptr<VulkanMemoryAllocator> memoryAllocator
+	std::shared_ptr<VulkanMemoryAllocator> memoryAllocator,
+	std::shared_ptr<VulkanGraphics> graphics
 )
 	: m_device(device)
 	, m_logger(logger)
 	, m_name(name)
 	, m_memoryAllocator(memoryAllocator)
+	, m_graphics(graphics)
 {
 }
 
@@ -30,16 +32,22 @@ VulkanVertexBuffer::~VulkanVertexBuffer()
 
 void VulkanVertexBuffer::FreeResources()
 {
-	if (m_stagingBuffer.Allocation != nullptr)
+	for (auto& buffer : m_stagingBuffers)
 	{
-		m_memoryAllocator->FreeBuffer(m_stagingBuffer);
-		m_stagingBuffer.Allocation = nullptr;
+		m_graphics->ReleaseStagingBuffer(buffer);
 	}
+	m_stagingBuffers.clear();
+
 	if (m_gpuBuffer.Allocation != nullptr)
 	{
 		m_memoryAllocator->FreeBuffer(m_gpuBuffer);
 		m_gpuBuffer.Allocation = nullptr;
 	}
+}
+
+String VulkanVertexBuffer::GetName()
+{
+	return m_name;
 }
 
 bool VulkanVertexBuffer::Build(const VertexBufferBindingDescription& binding, int vertexCount)
@@ -59,16 +67,7 @@ bool VulkanVertexBuffer::Build(const VertexBufferBindingDescription& binding, in
 
 	if (!m_memoryAllocator->CreateBuffer(
 		m_memorySize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VMA_MEMORY_USAGE_CPU_TO_GPU,
-		m_stagingBuffer))
-	{
-		return false;
-	}
-
-	if (!m_memoryAllocator->CreateBuffer(
-		m_memorySize,
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT |VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VMA_MEMORY_USAGE_GPU_ONLY,
 		m_gpuBuffer))
 	{
@@ -82,13 +81,15 @@ bool VulkanVertexBuffer::Stage(void* buffer, int offset, int length)
 {
 	assert(offset >= 0 && offset + length <= m_memorySize);
 
-	void* deviceData;
-	
-	vmaMapMemory(m_stagingBuffer.Allocator, m_stagingBuffer.Allocation, &deviceData);
+	VulkanStagingBuffer stagingBuffer;
+	if (!m_graphics->AllocateStagingBuffer(m_gpuBuffer, offset, length, stagingBuffer))
+	{
+		return false;
+	}
 
-	memcpy((char*)deviceData + offset, buffer, length);
-	
-	vmaUnmapMemory(m_stagingBuffer.Allocator, m_stagingBuffer.Allocation);
+	memcpy((char*)stagingBuffer.MappedData, buffer, length);
+
+	m_stagingBuffers.push_back(stagingBuffer);
 
 	return true;
 }
@@ -98,9 +99,11 @@ VulkanAllocation VulkanVertexBuffer::GetGpuBuffer()
 	return m_gpuBuffer;
 }
 
-VulkanAllocation VulkanVertexBuffer::GetStagingBuffer()
+Array<VulkanStagingBuffer> VulkanVertexBuffer::ConsumeStagingBuffers()
 {
-	return m_stagingBuffer;
+	Array<VulkanStagingBuffer> buffers = m_stagingBuffers;
+	m_stagingBuffers.clear();
+	return buffers;
 }
 
 int VulkanVertexBuffer::GetDataSize()

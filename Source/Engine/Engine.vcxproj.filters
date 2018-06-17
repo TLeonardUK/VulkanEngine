@@ -584,6 +584,9 @@
     <ClInclude Include="Rendering\RendererEnums.h">
       <Filter>Header Files\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanResource.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Graphics\EGraphicsAccessMask.inc">

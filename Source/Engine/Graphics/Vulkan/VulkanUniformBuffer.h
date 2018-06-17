@@ -7,12 +7,15 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsUniformBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
 class VulkanMemoryAllocator;
 
-class VulkanUniformBuffer : public IGraphicsUniformBuffer
+class VulkanUniformBuffer 
+	: public IGraphicsUniformBuffer
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -28,9 +31,9 @@ private:
 	friend class VulkanGraphics;
 	friend class VulkanCommandBuffer;
 	friend class VulkanResourceSet;
+	friend class VulkanResourceSetPool;
 
 	bool Build(int bufferSize);
-	void FreeResources();
 
 	VulkanAllocation GetGpuBuffer();
 	int GetDataSize();
@@ -45,5 +48,8 @@ public:
 	virtual ~VulkanUniformBuffer();
 
 	virtual bool Upload(void* buffer, int offset, int length);
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

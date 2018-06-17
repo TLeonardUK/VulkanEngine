@@ -26,6 +26,7 @@ typedef int ImguiCallbackToken;
 enum class ImguiCallback
 {
 	MainMenu,
+	PostMainMenu,
 };
 
 class ImguiManager

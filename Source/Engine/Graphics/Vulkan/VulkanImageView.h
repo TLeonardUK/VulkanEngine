@@ -7,10 +7,13 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsImage.h"
 #include "Engine/Graphics/GraphicsImageView.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
-class VulkanImageView : public IGraphicsImageView
+class VulkanImageView
+	: public IGraphicsImageView
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -25,9 +28,9 @@ private:
 	friend class VulkanGraphics;
 	friend class VulkanFramebuffer;
 	friend class VulkanResourceSet;
+	friend class VulkanResourceSetPool;
 
 	bool Build(std::shared_ptr<IGraphicsImage> image);
-	void FreeResources();
 
 	VkImageView GetImageView();
 
@@ -42,5 +45,8 @@ public:
 	virtual int GetWidth();
 	virtual int GetHeight();
 	virtual std::shared_ptr<IGraphicsImage> GetImage();
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

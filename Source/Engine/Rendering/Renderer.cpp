@@ -13,6 +13,9 @@ static const MaterialPropertyHash ModelMatrixHash = CalculateMaterialPropertyHas
 static const MaterialPropertyHash ViewMatrixHash = CalculateMaterialPropertyHash("ViewMatrix");
 static const MaterialPropertyHash ProjectionMatrixHash = CalculateMaterialPropertyHash("ProjectionMatrix");
 static const MaterialPropertyHash CameraPositionHash = CalculateMaterialPropertyHash("CameraPosition");
+static const MaterialPropertyHash GBuffer0Hash = CalculateMaterialPropertyHash("GBuffer0");
+static const MaterialPropertyHash GBuffer1Hash = CalculateMaterialPropertyHash("GBuffer1");
+static const MaterialPropertyHash GBuffer2Hash = CalculateMaterialPropertyHash("GBuffer2");
 
 Renderer::Renderer(std::shared_ptr<IGraphics> graphics)
 	: m_graphics(graphics)
@@ -58,8 +61,10 @@ void Renderer::RunQueuedCommands(RenderCommandStage stage, std::shared_ptr<IGrap
 	}
 }
 
-bool Renderer::Init()
+bool Renderer::Init(std::shared_ptr<ResourceManager> resourceManager)
 {
+	m_resourceManager = resourceManager;
+
 	CreateResources();
 
 	return true;
@@ -67,23 +72,38 @@ bool Renderer::Init()
 
 void Renderer::InitDebugMenus(std::shared_ptr<ImguiManager> manager)
 {
+	static bool drawGBufferEnabled = false;
+
 	m_imguiManager = manager;
 	
 	m_debugMenuCallbackToken = m_imguiManager->RegisterCallback(ImguiCallback::MainMenu, [=] {
 
-		static bool drawGBufferEnabled = false;
-
-		if (ImGui::BeginMenu("Visualization"))
+		if (ImGui::BeginMenu("Rendering"))
 		{
-			ImGui::MenuItem("Draw G-Buffer", nullptr, &drawGBufferEnabled);
+			ImGui::MenuItem("Show G-Buffer", nullptr, &drawGBufferEnabled);
 			ImGui::EndMenu();
 		}
+	});
+
+	m_debugMenuCallbackToken = m_imguiManager->RegisterCallback(ImguiCallback::PostMainMenu, [=] {
 
 		if (drawGBufferEnabled)
 		{
-			ImTextureID textureId = manager->StoreImage(m_gbufferViews[0]);
-			ImGui::Image(textureId, ImVec2(200, 200), ImVec2(200, 200));
+			int imageSize = 300;
+		
+			ImGui::Begin("G-Buffer", &drawGBufferEnabled, ImGuiWindowFlags_NoResize);
+
+			for (int i = 0; i < GBufferImageCount; i++)
+			{
+				ImTextureID textureId = manager->StoreImage(m_gbufferViews[i]);
+
+				ImGui::Image(textureId, ImVec2(static_cast<float>(imageSize), static_cast<float>(imageSize)));
+				ImGui::SameLine();
+			}
+
+			ImGui::End();
 		}
+
 	});
 }
 
@@ -99,12 +119,47 @@ void Renderer::CreateResources()
 	m_commandBufferPool = m_graphics->CreateCommandBufferPool("Main Command Buffer Pool");
 	m_resourceSetPool = m_graphics->CreateResourceSetPool("Main Resource Set Pool");
 
+	// todo: we should abstract this all into rendering-task classes.
+	m_resolveToSwapchainMaterial = m_resourceManager->Load<Material>("Engine/Materials/resolve_to_swapchain.json");
+	m_resolveToSwapchainMaterial.WaitUntilLoaded();
+
+	VertexBufferBindingDescription description;
+	m_resolveToSwapchainMaterial.Get()->GetVertexBufferFormat(description);
+	m_fullscreenQuadVertexBuffer = m_graphics->CreateVertexBuffer("Full Screen Quad Vertex Buffer", description, 4);
+	m_fullscreenQuadIndexBuffer = m_graphics->CreateIndexBuffer("Full Screen Quad Index Buffer", sizeof(uint16_t), 6);
+	m_fullscreenQuadsUploaded = false;
+
+	// todo: I do not like this manual vertex binding, may cause issues with
+	// renderers with non-c style packing. We should just create a model out of the 
+	// data and allow that to deal with platform-specific issues.
+	struct Vertex
+	{
+		Vector2 position;
+		Vector2 uv;
+	};
+
+	Array<Vertex> fullscreenQuadVerts;
+	fullscreenQuadVerts.push_back({ Vector2(-1.0f, -1.0f), Vector2(0.0f, 0.0f) }); // Top Left
+	fullscreenQuadVerts.push_back({ Vector2( 1.0f, -1.0f), Vector2(1.0f, 0.0f) }); // Top Right
+	fullscreenQuadVerts.push_back({ Vector2(-1.0f,  1.0f), Vector2(0.0f, 1.0f) }); // Bottom Left
+	fullscreenQuadVerts.push_back({ Vector2( 1.0f,  1.0f), Vector2(1.0f, 1.0f) }); // Bottom Right
+
+	Array<uint16_t> fullscreenQuadIndices;
+	fullscreenQuadIndices.push_back(2);
+	fullscreenQuadIndices.push_back(1);
+	fullscreenQuadIndices.push_back(0);
+	fullscreenQuadIndices.push_back(3);
+	fullscreenQuadIndices.push_back(1);
+	fullscreenQuadIndices.push_back(2);
+
+	m_fullscreenQuadVertexBuffer->Stage(fullscreenQuadVerts.data(), 0, sizeof(Vertex) * fullscreenQuadVerts.size());
+	m_fullscreenQuadIndexBuffer->Stage(fullscreenQuadIndices.data(), 0, sizeof(uint16_t) * fullscreenQuadIndices.size());
+
 	CreateSwapChainDependentResources();
 }
 
 void Renderer::FreeResources()
 {
-	m_resourceSetPool = nullptr;
 	m_commandBufferPool = nullptr;
 
 	FreeSwapChainDependentResources();
@@ -194,6 +249,9 @@ void Renderer::CreateGBufferResources()
 	for (int i = 0; i < GBufferImageCount; i++)
 	{
 		m_gbufferViews[i] = m_graphics->CreateImageView(StringFormat("GBuffer %i View", i), m_gbufferImages[i]);
+
+		SamplerDescription description;
+		m_gbufferSamplers[i] = m_graphics->CreateSampler(StringFormat("GBuffer %i Sampler", i), description);
 	}
 
 	GraphicsFramebufferSettings gbufferFrameBufferSettings;
@@ -207,6 +265,11 @@ void Renderer::CreateGBufferResources()
 	gbufferFrameBufferSettings.attachments.push_back(m_depthBufferView);
 
 	m_gbufferFrameBuffer = m_graphics->CreateFramebuffer("GBuffer FrameBuffer", gbufferFrameBufferSettings);
+
+	// Global properties.
+	m_globalMaterialProperties.Set(GBuffer0Hash, m_gbufferViews[0], m_gbufferSamplers[0]);
+	m_globalMaterialProperties.Set(GBuffer1Hash, m_gbufferViews[1], m_gbufferSamplers[1]);
+	m_globalMaterialProperties.Set(GBuffer2Hash, m_gbufferViews[2], m_gbufferSamplers[2]);
 }
 
 void Renderer::SwapChainModified()
@@ -242,11 +305,41 @@ void Renderer::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer
 
 	// TODO: Light accumulation.
 
-	// TODO: Resolve to framebuffer.
+	// resolve gbuffer layouts to read access?
+
+	// Resolve to framebuffer.
+	DrawFullScreenQuad(buffer, m_resolveToSwapchainMaterial.Get());
 
 	RunQueuedCommands(RenderCommandStage::PostViewsRendered, buffer);
 
 	buffer->End();
+}
+
+void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material)
+{
+	material->UpdateResources();
+
+	if (!m_fullscreenQuadsUploaded)
+	{
+		buffer->Upload(m_fullscreenQuadVertexBuffer);
+		buffer->Upload(m_fullscreenQuadIndexBuffer);
+		m_fullscreenQuadsUploaded = true;
+	}
+
+	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
+	buffer->BeginSubPass();
+
+	buffer->SetPipeline(material->GetPipeline());
+	buffer->SetViewport(0, 0, m_swapChainWidth, m_swapChainHeight);
+
+	buffer->SetIndexBuffer(m_fullscreenQuadIndexBuffer);
+	buffer->SetVertexBuffer(m_fullscreenQuadVertexBuffer);
+	buffer->SetResourceSets({ material->GetResourceSet() });
+
+	buffer->DrawIndexedElements(6, 1, 0, 0, 0);
+
+	buffer->EndSubPass();
+	buffer->EndPass();
 }
 
 void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer)
@@ -275,8 +368,18 @@ void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::sha
 				buffer->BeginSubPass();
 
 				buffer->SetPipeline(material->GetPipeline());
-				buffer->SetScissor(view->Viewport.x, view->Viewport.y, view->Viewport.width, view->Viewport.height);
-				buffer->SetViewport(view->Viewport.x, view->Viewport.y, view->Viewport.width, view->Viewport.height);
+				buffer->SetScissor(
+					static_cast<int>(view->Viewport.x),
+					static_cast<int>(view->Viewport.y),
+					static_cast<int>(view->Viewport.width),
+					static_cast<int>(view->Viewport.height)
+				);
+				buffer->SetViewport(
+					static_cast<int>(view->Viewport.x), 
+					static_cast<int>(view->Viewport.y),
+					static_cast<int>(view->Viewport.width),
+					static_cast<int>(view->Viewport.height)
+				);
 
 				buffer->SetIndexBuffer(mesh->GetIndexBuffer());
 				buffer->SetVertexBuffer(mesh->GetVertexBuffer());
@@ -356,6 +459,8 @@ std::shared_ptr<IGraphicsRenderPass> Renderer::GetRenderPassForTarget(FrameBuffe
 			return m_resolveToSwapChainRenderPass;
 		}
 	}
+
+	return nullptr;
 }
 
 std::shared_ptr<IGraphicsFramebuffer> Renderer::GetFramebufferForTarget(FrameBufferTarget target)
@@ -371,4 +476,6 @@ std::shared_ptr<IGraphicsFramebuffer> Renderer::GetFramebufferForTarget(FrameBuf
 			return GetCurrentFramebuffer();
 		}
 	}
+
+	return nullptr;
 }

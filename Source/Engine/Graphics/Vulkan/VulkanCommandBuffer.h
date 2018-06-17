@@ -6,10 +6,15 @@
 
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsCommandBuffer.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
-class VulkanCommandBuffer : public IGraphicsCommandBuffer
+class VulkanGraphics;
+
+class VulkanCommandBuffer 
+	: public IGraphicsCommandBuffer
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -23,11 +28,11 @@ private:
 
 	std::shared_ptr<VulkanPipeline> m_activePipeline;
 
+	std::shared_ptr<VulkanGraphics> m_graphics;
+
 private:
 	friend class VulkanGraphics;
 	friend class VulkanCommandBufferPool;
-
-	void FreeResources();
 
 	VkCommandBuffer GetCommandBuffer();
 
@@ -39,7 +44,8 @@ public:
 		std::shared_ptr<Logger> logger,
 		const String& name,
 		VkCommandBuffer buffer,
-		VkCommandPool pool);
+		VkCommandPool pool,
+		std::shared_ptr<VulkanGraphics> graphics);
 
 	virtual ~VulkanCommandBuffer();
 
@@ -71,4 +77,8 @@ public:
 	virtual void Upload(std::shared_ptr<IGraphicsIndexBuffer> buffer);
 	virtual void Upload(std::shared_ptr<IGraphicsImage> buffer);
 
+	void UploadStagingBuffers(Array<VulkanStagingBuffer> buffers);
+
+	virtual void FreeResources();
+	virtual String GetName();
 };

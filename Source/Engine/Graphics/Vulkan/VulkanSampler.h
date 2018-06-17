@@ -7,10 +7,13 @@
 #include "Engine/Graphics/GraphicsPipeline.h"
 #include "Engine/Graphics/GraphicsSampler.h"
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
-class VulkanSampler : public IGraphicsSampler
+class VulkanSampler 
+	: public IGraphicsSampler
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -23,9 +26,9 @@ private:
 	friend class VulkanGraphics;
 	friend class VulkanPipeline;
 	friend class VulkanResourceSet;
+	friend class VulkanResourceSetPool;
 
 	bool Build(const SamplerDescription& description);
-	void FreeResources();
 
 	VkSampler GetSampler();
 
@@ -36,5 +39,8 @@ public:
 		const String& name);
 
 	virtual ~VulkanSampler();
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

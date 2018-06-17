@@ -213,6 +213,7 @@
     <ClInclude Include="Graphics\Vulkan\VulkanMemoryAllocator.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanPipeline.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanRenderPass.h" />
+    <ClInclude Include="Graphics\Vulkan\VulkanResource.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanResourceSet.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanResourceSetPool.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanSampler.h" />

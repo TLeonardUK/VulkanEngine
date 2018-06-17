@@ -21,3 +21,5 @@
 - descriptor set pooled by uniform offsets / samplers
 
 - change uniform owner to mesh not material
+
+- add material instances

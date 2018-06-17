@@ -74,7 +74,8 @@ bool VulkanUniformBuffer::Upload(void* buffer, int offset, int length)
 {
 	assert(offset >= 0 && offset + length <= m_memorySize);
 
-	// todo: allocate new buffer, copy data into it, and mark old one as free for recycling.
+	// todo: each upload progress to next offset etc to ensure we don't
+	// tread on uniforms while update in progress?
 
 	void* deviceData;
 

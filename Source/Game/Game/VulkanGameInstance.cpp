@@ -53,8 +53,8 @@ InputSystem VulkanGameInstance::GetInputSystem()
 
 void VulkanGameInstance::GetWindowSettings(int& width, int& height, int& rate, WindowMode& mode)
 {
-	width = 960;
-	height = 720;
+	width = 1280;
+	height = 960;
 	rate = 60;
 	mode = WindowMode::Windowed;
 }

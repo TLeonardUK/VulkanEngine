@@ -5,10 +5,13 @@
 
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
-class VulkanPipeline : public IGraphicsPipeline
+class VulkanPipeline 
+	: public IGraphicsPipeline
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -23,7 +26,6 @@ private:
 	friend class VulkanCommandBuffer;
 
 	bool Build(const GraphicsPipelineSettings& settings);
-	void FreeResources();
 
 	VkPipeline GetPipeline();
 	VkPipelineLayout GetPipelineLayout();
@@ -35,5 +37,8 @@ public:
 		const String& name);
 
 	virtual ~VulkanPipeline();
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

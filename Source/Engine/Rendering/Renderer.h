@@ -5,6 +5,7 @@
 
 #include "Engine/Resources/Types/MaterialPropertyCollection.h"
 #include "Engine/Resources/Types/Model.h"
+#include "Engine/Resources/Types/Material.h"
 
 #include "Engine/UI/ImguiManager.h"
 
@@ -22,6 +23,7 @@ class IGraphicsCommandBuffer;
 class IGraphicsRenderPass;
 class IGraphicsFramebuffer;
 class IGraphicsImageView;
+class IGraphicsSampler;
 class IGraphicsImage;
 struct GraphicsResourceSetDescription;
 class RenderView;
@@ -44,6 +46,7 @@ class Renderer
 {
 private:
 	std::shared_ptr<IGraphics> m_graphics;
+	std::shared_ptr<ResourceManager> m_resourceManager;
 	std::shared_ptr<ImguiManager> m_imguiManager;
 	int m_frameIndex;
 
@@ -75,7 +78,13 @@ private:
 	static const int GBufferImageCount = 3;
 	std::shared_ptr<IGraphicsImage> m_gbufferImages[GBufferImageCount];
 	std::shared_ptr<IGraphicsImageView> m_gbufferViews[GBufferImageCount];
+	std::shared_ptr<IGraphicsSampler> m_gbufferSamplers[GBufferImageCount];
 	std::shared_ptr<IGraphicsFramebuffer> m_gbufferFrameBuffer;
+
+	ResourcePtr<Material> m_resolveToSwapchainMaterial;
+	std::shared_ptr<IGraphicsVertexBuffer> m_fullscreenQuadVertexBuffer;
+	std::shared_ptr<IGraphicsIndexBuffer> m_fullscreenQuadIndexBuffer;
+	bool m_fullscreenQuadsUploaded;
 
 	ImguiCallbackToken m_debugMenuCallbackToken;
 
@@ -101,6 +110,8 @@ private:
 	std::shared_ptr<IGraphicsRenderPass> GetRenderPassForTarget(FrameBufferTarget target);
 	std::shared_ptr<IGraphicsFramebuffer> GetFramebufferForTarget(FrameBufferTarget target);
 
+	void DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material);
+
 public:
 	Renderer(std::shared_ptr<IGraphics> graphics);
 
@@ -108,7 +119,7 @@ public:
 
 	void InitDebugMenus(std::shared_ptr<ImguiManager> manager);
 
-	bool Init();
+	bool Init(std::shared_ptr<ResourceManager> resourceManager);
 	void Dispose();
 	void Present();
 

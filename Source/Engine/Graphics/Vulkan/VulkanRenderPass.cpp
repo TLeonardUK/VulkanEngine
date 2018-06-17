@@ -32,6 +32,11 @@ void VulkanRenderPass::FreeResources()
 	}
 }
 
+String VulkanRenderPass::GetName()
+{
+	return m_name;
+}
+
 VkRenderPass VulkanRenderPass::GetRenderPass()
 {
 	return m_renderPass;

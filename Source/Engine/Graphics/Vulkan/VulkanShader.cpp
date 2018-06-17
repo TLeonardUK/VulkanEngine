@@ -33,6 +33,11 @@ void VulkanShader::FreeResources()
 	}
 }
 
+String VulkanShader::GetName()
+{
+	return m_name;
+}
+
 VkShaderModule VulkanShader::GetModule()
 {
 	return m_module;

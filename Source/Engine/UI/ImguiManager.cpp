@@ -256,6 +256,8 @@ void ImguiManager::UpdateDebugMenu()
 
 		ImGui::EndMainMenuBar();
 	}
+
+	RunCallbacks(ImguiCallback::PostMainMenu);
 }
 
 void ImguiManager::FlagMouseControlRequired()
@@ -290,6 +292,9 @@ void ImguiManager::EndFrame()
 		return;
 	}
 
+	// todo: I do not like this manual vertex binding, may cause issues with
+	// renderers with non-c style packing. We should just create a model out of the 
+	// data and allow that to deal with platform-specific issues.
 	struct Vertex
 	{
 		Vector2 position;
@@ -372,8 +377,6 @@ void ImguiManager::EndFrame()
 		material->GetProperties().Set(ImGuiTranslation, translation);
 		material->GetProperties().Set(ImGuiTexture, m_fontTexture);
 		material->UpdateResources();
-
-		// Create material instance for each individual 
 
 		buffer->Upload(m_vertexBuffer);
 		buffer->Upload(m_indexBuffer);

@@ -34,6 +34,11 @@ void VulkanImageView::FreeResources()
 	}
 }
 
+String VulkanImageView::GetName()
+{
+	return m_name;
+}
+
 VkImageView VulkanImageView::GetImageView()
 {
 	return m_imageView;

@@ -26,6 +26,8 @@ public:
 public:
 	void AddBinding(const String& name, int location, GraphicsBindingType type, int arrayLength = 1);
 
+	bool EqualTo(const GraphicsResourceSetDescription& other);
+
 };
 
 class IGraphicsResourceSetPool

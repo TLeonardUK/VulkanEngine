@@ -9,12 +9,16 @@
 #include "Engine/Graphics/GraphicsCommandBuffer.h"
 
 #include "Engine/Graphics/Vulkan/VulkanDeviceInfo.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
+class VulkanGraphics;
 class VulkanCommandBuffer;
 
-class VulkanCommandBufferPool : public IGraphicsCommandBufferPool
+class VulkanCommandBufferPool 
+	: public IGraphicsCommandBufferPool
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -25,13 +29,14 @@ private:
 	VkDevice m_device;
 	VkCommandPool m_commandBufferPool;
 
+	std::shared_ptr<VulkanGraphics> m_graphics;
+
 	VulkanDeviceInfo m_deviceInfo;
 
 private:
 	friend class VulkanGraphics;
 	friend class VulkanImageView;
 
-	void FreeResources();
 	bool Build();
 
 	VkCommandPool GetCommandBufferPool();
@@ -41,10 +46,14 @@ public:
 		VkDevice device,
 		const VulkanDeviceInfo& deviceInfo,
 		std::shared_ptr<Logger> logger,
-		const String& name);
+		const String& name,
+		std::shared_ptr<VulkanGraphics> graphics);
 
 	virtual ~VulkanCommandBufferPool();
 
 	virtual std::shared_ptr<IGraphicsCommandBuffer> Allocate();
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

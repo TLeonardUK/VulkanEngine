@@ -258,10 +258,6 @@ void Engine::TermInput()
 bool Engine::InitRenderer()
 {
 	m_renderer = std::make_shared<Renderer>(m_graphics);
-	if (!m_renderer->Init())
-	{
-		return false;
-	}
 
 	return true;
 }
@@ -293,6 +289,12 @@ bool Engine::InitResourceManager()
 	m_resourceManager->AddLoader(std::make_shared<MaterialResourceLoader>(m_logger, m_graphics, m_renderer));
 	m_resourceManager->AddLoader(std::make_shared<ModelResourceLoader>(m_logger, m_graphics, m_renderer));
 	m_resourceManager->LoadDefaults();
+
+	// Load renderer now resource manager is available.
+	if (!m_renderer->Init(m_resourceManager))
+	{
+		return false;
+	}
 
 	return true;
 }

@@ -8,10 +8,14 @@
 #include "Engine/Graphics/GraphicsImage.h"
 
 #include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
+#include "Engine/Graphics/Vulkan/VulkanGraphics.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
-class VulkanImage : public IGraphicsImage
+class VulkanImage 
+	: public IGraphicsImage
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -19,7 +23,6 @@ private:
 	std::shared_ptr<VulkanMemoryAllocator> m_memoryAllocator;
 	bool m_isOwner;
 
-	VulkanAllocation m_stagingBuffer;
 	VulkanAllocation m_mainImage;
 
 	uint32_t m_mipLevels;
@@ -33,17 +36,21 @@ private:
 
 	int m_memorySize;
 	int m_layerSize;
-	
+
+	Array<VulkanStagingBuffer> m_stagingBuffers;
+
+	std::shared_ptr<VulkanGraphics> m_graphics;
+
 private:
 	friend class VulkanGraphics;
 	friend class VulkanImageView;
 	friend class VulkanCommandBuffer;
 
-	void FreeResources();
 	bool Build(int width, int height, int layers, GraphicsFormat format, bool generateMips);
 
 	int GetLayerSize();
-	VkBuffer GetStagingBuffer();
+	Array<VulkanStagingBuffer> ConsumeStagingBuffers();
+
 	VkImage GetVkImage();
 	VkFormat GetVkFormat();
 	VkExtent3D GetVkExtents();
@@ -56,13 +63,15 @@ public:
 		VkImage image,
 		VkFormat format,
 		VkExtent3D extents,
-		bool isOwner);
+		bool isOwner,
+		std::shared_ptr<VulkanGraphics> graphics);
 
 	VulkanImage(
 		VkDevice device,
 		std::shared_ptr<Logger> logger,
 		const String& name,
-		std::shared_ptr<VulkanMemoryAllocator> allocator);
+		std::shared_ptr<VulkanMemoryAllocator> allocator,
+		std::shared_ptr<VulkanGraphics> graphics);
 
 	virtual int GetWidth();
 	virtual int GetHeight();
@@ -74,5 +83,8 @@ public:
 	virtual bool Stage(int layer, void* buffer, int offset, int length);
 
 	virtual ~VulkanImage();
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

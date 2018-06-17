@@ -6,10 +6,13 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsPipeline.h"
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
-class VulkanShader : public IGraphicsShader
+class VulkanShader 
+	: public IGraphicsShader
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -25,7 +28,6 @@ private:
 	friend class VulkanPipeline;
 
 	bool LoadFromArray(const Array<char>& data);
-	void FreeResources();
 
 	VkShaderModule GetModule();
 
@@ -38,5 +40,8 @@ public:
 		GraphicsPipelineStage stage);
 
 	virtual ~VulkanShader();
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

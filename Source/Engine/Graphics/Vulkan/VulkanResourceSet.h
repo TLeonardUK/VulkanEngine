@@ -7,9 +7,14 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsResourceSet.h"
 
+#include "Engine/Graphics/Vulkan/VulkanResourceSetPool.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
+
 #include <vulkan/vulkan.h>
 
-class VulkanResourceSet : public IGraphicsResourceSet
+class VulkanResourceSet
+	: public IGraphicsResourceSet
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -17,8 +22,10 @@ private:
 
 	VkDevice m_device;
 	VkDescriptorSetLayout m_layout;
-	VkDescriptorSet m_set;
-	VkDescriptorPool m_pool;
+
+	std::shared_ptr<VulkanResourceSetPool> m_pool;
+
+	Array<VulkanResourceSetBinding> m_currentBindings;
 
 private:
 	friend class VulkanGraphics;
@@ -26,23 +33,25 @@ private:
 	friend class VulkanPipeline;
 	friend class VulkanCommandBuffer;
 
-	void FreeResources();
-	
 	VkDescriptorSetLayout GetLayout();
-	VkDescriptorSet GetSet();
+	VkDescriptorSet ConsumeSet();
+
+	VulkanResourceSetBinding& GetBinding(int location, int arrayIndex);
 
 public:
 	VulkanResourceSet(
 		VkDevice device,
 		std::shared_ptr<Logger> logger,
 		const String& name,
-		VkDescriptorSetLayout layout,
-		VkDescriptorSet set,
-		VkDescriptorPool pool);
+		std::shared_ptr<VulkanResourceSetPool> pool,
+		VkDescriptorSetLayout layout);
 
 	virtual ~VulkanResourceSet();
 
 	virtual bool UpdateBinding(int location, int arrayIndex, std::shared_ptr<IGraphicsUniformBuffer> buffer);
 	virtual bool UpdateBinding(int location, int arrayIndex, std::shared_ptr<IGraphicsSampler> sampler, std::shared_ptr<IGraphicsImageView> imageView);
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

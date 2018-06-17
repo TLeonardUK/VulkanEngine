@@ -7,12 +7,17 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsIndexBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
+#include "Engine/Graphics/Vulkan/VulkanGraphics.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
 class VulkanMemoryAllocator;
+class VulkanGraphics;
 
-class VulkanIndexBuffer : public IGraphicsIndexBuffer
+class VulkanIndexBuffer
+	: public IGraphicsIndexBuffer
+	, public IVulkanResource
 {
 private:
 	String m_name;
@@ -24,18 +29,20 @@ private:
 	int m_capacity;
 
 	VkDevice m_device;
-	VulkanAllocation m_stagingBuffer;
 	VulkanAllocation m_gpuBuffer;
+
+	Array<VulkanStagingBuffer> m_stagingBuffers;
+
+	std::shared_ptr<VulkanGraphics> m_graphics;
 
 private:
 	friend class VulkanGraphics;
 	friend class VulkanCommandBuffer;
 
 	bool Build(int indexSize, int indexCount);
-	void FreeResources();
 
 	VulkanAllocation GetGpuBuffer();
-	VulkanAllocation GetStagingBuffer();
+	Array<VulkanStagingBuffer> ConsumeStagingBuffers();
 	int GetDataSize();
 	int GetIndexSize();
 
@@ -44,12 +51,16 @@ public:
 		VkDevice device,
 		std::shared_ptr<Logger> logger,
 		const String& name,
-		std::shared_ptr<VulkanMemoryAllocator> memoryAllocator);
+		std::shared_ptr<VulkanMemoryAllocator> memoryAllocator,
+		std::shared_ptr<VulkanGraphics> graphics);
 
 	virtual ~VulkanIndexBuffer();
 
 	virtual bool Stage(void* buffer, int offset, int length);
 
 	virtual int GetCapacity();
+
+	virtual void FreeResources();
+	virtual String GetName();
 
 };

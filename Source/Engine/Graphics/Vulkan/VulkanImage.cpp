@@ -17,7 +17,8 @@ VulkanImage::VulkanImage(
 	VkImage image,
 	VkFormat format,
 	VkExtent3D extents,
-	bool isOwner
+	bool isOwner,
+	std::shared_ptr<VulkanGraphics> graphics
 )
 	: m_device(device)
 	, m_logger(logger)
@@ -29,6 +30,7 @@ VulkanImage::VulkanImage(
 	, m_isDepth(false)
 	, m_mipLevels(1)
 	, m_layers(1)
+	, m_graphics(graphics)
 {
 }
 
@@ -36,7 +38,8 @@ VulkanImage::VulkanImage(
 	VkDevice device,
 	std::shared_ptr<Logger> logger,
 	const String& name,
-	std::shared_ptr<VulkanMemoryAllocator> allocator
+	std::shared_ptr<VulkanMemoryAllocator> allocator,
+	std::shared_ptr<VulkanGraphics> graphics
 )
 	: m_device(device)
 	, m_logger(logger)
@@ -47,6 +50,7 @@ VulkanImage::VulkanImage(
 	, m_isDepth(false)
 	, m_mipLevels(1)
 	, m_layers(1)
+	, m_graphics(graphics)
 {
 }
 
@@ -57,12 +61,13 @@ VulkanImage::~VulkanImage()
 
 void VulkanImage::FreeResources()
 {
-	if (m_stagingBuffer.Allocation != nullptr)
+	for (auto& buffer : m_stagingBuffers)
 	{
-		m_memoryAllocator->FreeBuffer(m_stagingBuffer);
-		m_stagingBuffer.Allocation = nullptr;
+		m_graphics->ReleaseStagingBuffer(buffer);
 	}
-	else if (m_image != nullptr)
+	m_stagingBuffers.clear();
+
+	if (m_image != nullptr)
 	{
 		if (m_isOwner)
 		{
@@ -70,6 +75,11 @@ void VulkanImage::FreeResources()
 		}
 		m_image = nullptr;
 	}
+}
+
+String VulkanImage::GetName()
+{
+	return m_name;
 }
 
 bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format, bool generateMips)
@@ -112,18 +122,6 @@ bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageInfo.flags = 0;
 
-	if (!m_isDepth)
-	{
-		if (!m_memoryAllocator->CreateBuffer(
-			m_memorySize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VMA_MEMORY_USAGE_CPU_TO_GPU,
-			m_stagingBuffer))
-		{
-			return false;
-		}
-	}
-
 	if (!m_memoryAllocator->CreateImage(
 		imageInfo,
 		VMA_MEMORY_USAGE_GPU_ONLY,
@@ -137,9 +135,11 @@ bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format
 	return true;
 }
 
-VkBuffer VulkanImage::GetStagingBuffer()
+Array<VulkanStagingBuffer> VulkanImage::ConsumeStagingBuffers()
 {
-	return m_stagingBuffer.Buffer;
+	Array<VulkanStagingBuffer> buffers = m_stagingBuffers;
+	m_stagingBuffers.clear();
+	return buffers;
 }
 
 VkImage VulkanImage::GetVkImage()
@@ -196,6 +196,28 @@ bool VulkanImage::Stage(int layer, void* buffer, int offset, int length)
 {
 	assert(!m_isDepth);
 	assert(offset >= 0 && offset + length <= m_memorySize);
+	
+	VulkanStagingBuffer stagingBuffer;
+	if (m_stagingBuffers.size() == 0)
+	{
+		if (!m_graphics->AllocateStagingBuffer(m_memorySize, stagingBuffer))
+		{
+			return false;
+		}
+
+		m_stagingBuffers.push_back(stagingBuffer);
+	}
+	else
+	{
+		stagingBuffer = m_stagingBuffers[0];
+	}
+
+	memcpy((char*)stagingBuffer.MappedData + offset + (layer * m_layerSize), (char*)buffer, length);
+
+	return true;
+/*
+	assert(!m_isDepth);
+	assert(offset >= 0 && offset + length <= m_memorySize);
 
 	void* deviceData;
 
@@ -206,4 +228,5 @@ bool VulkanImage::Stage(int layer, void* buffer, int offset, int length)
 	vmaUnmapMemory(m_stagingBuffer.Allocator, m_stagingBuffer.Allocation);
 
 	return true;
+*/
 }

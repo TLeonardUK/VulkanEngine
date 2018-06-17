@@ -19,13 +19,15 @@ VulkanCommandBuffer::VulkanCommandBuffer(
 	std::shared_ptr<Logger> logger,
 	const String& name,
 	VkCommandBuffer buffer,
-	VkCommandPool pool
+	VkCommandPool pool,
+	std::shared_ptr<VulkanGraphics> graphics
 )
 	: m_device(device)
 	, m_logger(logger)
 	, m_name(name)
 	, m_commandBuffer(buffer)
 	, m_commandPool(pool)
+	, m_graphics(graphics)
 {
 }
 
@@ -41,6 +43,11 @@ void VulkanCommandBuffer::FreeResources()
 		vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffer);
 		m_commandBuffer = nullptr;
 	}
+}
+
+String VulkanCommandBuffer::GetName()
+{
+	return m_name;
 }
 
 VkCommandBuffer VulkanCommandBuffer::GetCommandBuffer()
@@ -206,7 +213,7 @@ void VulkanCommandBuffer::SetResourceSets(Array<std::shared_ptr<IGraphicsResourc
 	for (int i = 0; i < resourceSets.size(); i++)
 	{
 		std::shared_ptr<VulkanResourceSet> vulkanBuffer = std::dynamic_pointer_cast<VulkanResourceSet>(resourceSets[i]);
-		sets[i] = vulkanBuffer->GetSet();
+		sets[i] = vulkanBuffer->ConsumeSet();
 	}
 
 	vkCmdBindDescriptorSets(
@@ -234,31 +241,30 @@ void VulkanCommandBuffer::DrawIndexedElements(int indexCount, int instanceCount,
 void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsVertexBuffer> buffer)
 {
 	std::shared_ptr<VulkanVertexBuffer> vulkanBuffer = std::dynamic_pointer_cast<VulkanVertexBuffer>(buffer);
-
-	VulkanAllocation gpuBuffer = vulkanBuffer->GetGpuBuffer();
-	VulkanAllocation stagingBuffer = vulkanBuffer->GetStagingBuffer();
-	
-	VkBufferCopy copyRegion = {};
-	copyRegion.srcOffset = 0;
-	copyRegion.dstOffset = 0;
-	copyRegion.size = vulkanBuffer->GetDataSize();
-
-	vkCmdCopyBuffer(m_commandBuffer, stagingBuffer.Buffer, gpuBuffer.Buffer, 1, &copyRegion);
+	UploadStagingBuffers(vulkanBuffer->ConsumeStagingBuffers());
 }
 
 void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsIndexBuffer> buffer)
 {
 	std::shared_ptr<VulkanIndexBuffer> vulkanBuffer = std::dynamic_pointer_cast<VulkanIndexBuffer>(buffer);
+	UploadStagingBuffers(vulkanBuffer->ConsumeStagingBuffers());
+}
 
-	VulkanAllocation gpuBuffer = vulkanBuffer->GetGpuBuffer();
-	VulkanAllocation stagingBuffer = vulkanBuffer->GetStagingBuffer();
+void VulkanCommandBuffer::UploadStagingBuffers(Array<VulkanStagingBuffer> buffers)
+{		
+	for (int i = 0; i < buffers.size(); i++)
+	{
+		VulkanStagingBuffer& stagingBuffer = buffers[i];
 
-	VkBufferCopy copyRegion = {};
-	copyRegion.srcOffset = 0;
-	copyRegion.dstOffset = 0;
-	copyRegion.size = vulkanBuffer->GetDataSize();
+		VkBufferCopy copyRegion = {};
+		copyRegion.srcOffset = stagingBuffer.SourceOffset;
+		copyRegion.dstOffset = stagingBuffer.DestinationOffset;
+		copyRegion.size = stagingBuffer.Length;
 
-	vkCmdCopyBuffer(m_commandBuffer, stagingBuffer.Buffer, gpuBuffer.Buffer, 1, &copyRegion);
+		vkCmdCopyBuffer(m_commandBuffer, stagingBuffer.Source.Buffer, stagingBuffer.Destination.Buffer, 1, &copyRegion);
+
+		m_graphics->ReleaseStagingBuffer(stagingBuffer);
+	}
 }
 
 void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout)
@@ -335,7 +341,14 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
 	int layerCount = vulkanImage->GetLayers();
 
 	VkImage image = vulkanImage->GetVkImage();
-	VkBuffer stagingBuffer = vulkanImage->GetStagingBuffer();
+
+	Array<VulkanStagingBuffer> buffers = vulkanImage->ConsumeStagingBuffers();
+	if (buffers.size() == 0)
+	{
+		return;
+	}
+
+	VulkanStagingBuffer& stagingBuffer = buffers[0];
 
 	// Copy base data into image.
 	Array<VkBufferImageCopy> regions;
@@ -344,7 +357,7 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
 	for (int i = 0; i < layerCount; i++)
 	{
 		VkBufferImageCopy region = {};
-		region.bufferOffset = offset;
+		region.bufferOffset = stagingBuffer.SourceOffset + offset;
 		region.bufferRowLength = 0;
 		region.bufferImageHeight = 0;
 
@@ -365,7 +378,7 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
 
 	vkCmdCopyBufferToImage(
 		m_commandBuffer,
-		stagingBuffer,
+		stagingBuffer.Source.Buffer,
 		image,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		static_cast<uint32_t>(regions.size()),
@@ -484,4 +497,7 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
 		nullptr,
 		1, 
 		&barrier);
+
+	// Release staging buffers.
+	m_graphics->ReleaseStagingBuffer(stagingBuffer);
 }

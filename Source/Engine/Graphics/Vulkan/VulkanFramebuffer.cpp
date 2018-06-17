@@ -35,6 +35,11 @@ void VulkanFramebuffer::FreeResources()
 	}
 }
 
+String VulkanFramebuffer::GetName()
+{
+	return m_name;
+}
+
 VkFramebuffer VulkanFramebuffer::GetFramebuffer()
 {
 	return m_framebuffer;

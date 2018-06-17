@@ -19,7 +19,7 @@ void main()
 {
     outTexCoord0 = inTexCoord1;
     outWorldNormal = normalize(properties.model * vec4(inNormal, 1.0)).xyz;
-    outWorldPosition = normalize(properties.model * vec4(inPosition, 1.0)).xyz;
+    outWorldPosition = (properties.model * vec4(inPosition, 1.0)).xyz;
 
     gl_Position = properties.proj * properties.view * properties.model * vec4(inPosition, 1.0);
 }

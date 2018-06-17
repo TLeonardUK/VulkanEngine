@@ -8,7 +8,9 @@
 #include "Engine/Types/Array.h"
 
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Graphics/Vulkan/VulkanResource.h"
 #include "Engine/Graphics/Vulkan/VulkanDeviceInfo.h"
+#include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
 #include "Engine/Graphics/Vulkan/VulkanExtensionInfo.h"
 #include "Engine/Graphics/Vulkan/VulkanShader.h"
 
@@ -65,10 +67,35 @@ class VulkanSampler;
 		return value; \
 	} \
 } 
+
+struct VulkanStagingBuffer
+{
+	void* MappedData;
+
+	VulkanAllocation Source;
+	int SourceOffset;
+
+	bool HasDesination;
+	VulkanAllocation Destination;
+	int DestinationOffset; 
+
+	int Length;
+};
+
+struct QueuedDisposal
+{
+	typedef std::function<void()> DisposalFunction_t;
+
+	int frameIndex;
+	DisposalFunction_t function;
+};
+
 class VulkanGraphics 
 	: public IGraphics
 	, public std::enable_shared_from_this<VulkanGraphics>
 {
+public:
+
 private:
 	static const Array<const char*> InstanceExtensionsToRequest;
 	static const Array<const char*> InstanceLayersToRequest;
@@ -115,6 +142,8 @@ private:
 	VkExtent2D m_swapChainExtent;
 	bool m_swapChainRegeneratedThisFrame;
 
+	Array<QueuedDisposal> m_queuedDisposal;
+
 	std::shared_ptr<IWindow> m_window;
 
 	std::shared_ptr<VulkanMemoryAllocator> m_memoryAllocator;
@@ -124,18 +153,7 @@ private:
 	// with them.
 	std::mutex m_resourcesMutex;
 
-	Array<std::shared_ptr<VulkanShader>> m_shaders;
-	Array<std::shared_ptr<VulkanRenderPass>> m_renderPasses;
-	Array<std::shared_ptr<VulkanPipeline>> m_pipelines;
-	Array<std::shared_ptr<VulkanFramebuffer>> m_framebuffers;
-	Array<std::shared_ptr<VulkanImageView>> m_imageViews;
-	Array<std::shared_ptr<VulkanCommandBufferPool>> m_commandBufferPools;	
-	Array<std::shared_ptr<VulkanVertexBuffer>> m_vertexBuffers;
-	Array<std::shared_ptr<VulkanIndexBuffer>> m_indexBuffers;
-	Array<std::shared_ptr<VulkanUniformBuffer>> m_uniformBuffers;
-	Array<std::shared_ptr<VulkanResourceSetPool>> m_resourceSetPools;
-	Array<std::shared_ptr<VulkanImage>> m_images;
-	Array<std::shared_ptr<VulkanSampler>> m_samplers;
+	Array<std::shared_ptr<IVulkanResource>> m_resources;
 
 	Array<std::shared_ptr<VulkanCommandBuffer>> m_pendingCommandBuffers;
 	
@@ -190,6 +208,11 @@ private:
 
 	void CancelPresent();
 
+	void PurgeQueuedDisposals();
+	void UpdateQueuedDisposals();
+
+	void CollectGarbage();
+
 public:
 	VulkanGraphics(
 		std::shared_ptr<Logger> logger, 
@@ -231,7 +254,17 @@ public:
 
 	const VulkanExtensionInfo& GetExtensionInfo() const;
 
+	void QueueDisposal(QueuedDisposal::DisposalFunction_t function);
+
 	VkInstance GetInstance() const;
+
+	int GetFrameIndex();
+	int GetMaxFramesInFlight();
+	int GetSafeRecycleFrameIndex();
+
+	bool AllocateStagingBuffer(VulkanAllocation target, int offset, int length, VulkanStagingBuffer& result);
+	bool AllocateStagingBuffer(int length, VulkanStagingBuffer& result);
+	void ReleaseStagingBuffer(VulkanStagingBuffer buffer);
 
 	static std::shared_ptr<IGraphics> Create(
 		std::shared_ptr<Logger> logger, 

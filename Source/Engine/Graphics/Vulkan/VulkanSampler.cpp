@@ -41,6 +41,11 @@ void VulkanSampler::FreeResources()
 	}
 }
 
+String VulkanSampler::GetName()
+{
+	return m_name;
+}
+
 bool VulkanSampler::Build(const SamplerDescription& description)
 {
 	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new sampler: %s", m_name.c_str());

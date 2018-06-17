@@ -1,0 +1,4 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/resolve_to_swapchain.json"
+}

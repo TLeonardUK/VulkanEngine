@@ -1,0 +1,55 @@
+{
+    "Type": "Shader",    
+           
+    "FrameBuffer": "SwapChain",
+    
+    "Stages":
+    {
+        "Vertex":
+        {
+            "ShaderPath": "Engine/Shaders/resolve_to_swapchain.vert",
+            "EntryPoint": "main",
+            "VertexStreams":
+            {
+                "inPosition":
+                {
+                    "Format": "Float2",
+                    "Location": 0,
+                    "BindTo": "Internal"
+                },
+                "inTexCoord":
+                {
+                    "Format": "Float2",
+                    "Location": 1,
+                    "BindTo": "Internal"
+                }
+            }
+        },
+        "Fragment":
+        {
+            "ShaderPath": "Engine/Shaders/resolve_to_swapchain.frag",
+            "EntryPoint": "main"
+        }
+    },
+    "Bindings":
+    {     
+        "gbuffer0":
+        {
+            "Type": "Sampler",
+            "Binding": 1,
+            "BindTo": "GBuffer0"
+        },
+        "gbuffer1":
+        {
+            "Type": "Sampler",
+            "Binding": 2,
+            "BindTo": "GBuffer1"
+        },
+        "gbuffer2":
+        {
+            "Type": "Sampler",
+            "Binding": 3,
+            "BindTo": "GBuffer2"
+        }
+    }
+}

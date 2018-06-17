@@ -544,7 +544,7 @@ bool VulkanGraphics::CreateSwapChain()
 	{
 		VkExtent3D extent { m_swapChainExtent.width, m_swapChainExtent.height, 1 };
 
-		std::shared_ptr<VulkanImage> image = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, "Swap Chain Buffer", swapChainImages[i], m_swapChainFormat.format, extent, false);
+		std::shared_ptr<VulkanImage> image = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, "Swap Chain Buffer", swapChainImages[i], m_swapChainFormat.format, extent, false, shared_from_this());
 		m_swapChainImages[i] = image;
 		m_swapChainImageViews[i] = std::dynamic_pointer_cast<VulkanImageView>(CreateImageView(StringFormat("Swap Chain Buffer Image View %i", i), image));
 	}
@@ -697,9 +697,16 @@ void VulkanGraphics::Dispose()
 		vkDeviceWaitIdle(m_logicalDevice);
 	}
 
+	PurgeQueuedDisposals();
+
 	DisposeSwapChain();
 
-	for (const std::shared_ptr<VulkanIndexBuffer>& buffer : m_indexBuffers)
+	for (const std::shared_ptr<IVulkanResource>& resource : m_resources)
+	{
+		resource->FreeResources();
+	}
+
+	/*for (const std::shared_ptr<VulkanIndexBuffer>& buffer : m_indexBuffers)
 	{
 		buffer->FreeResources();
 	}
@@ -743,7 +750,12 @@ void VulkanGraphics::Dispose()
 	{
 		pass->FreeResources();
 	}	
+	for (const std::shared_ptr<VulkanShader>& shader : m_shaders)
+	{
+		shader->FreeResources();
+	}
 
+	m_shaders.clear();	
 	m_samplers.clear();
 	m_images.clear();
 	m_framebuffers.clear();
@@ -755,6 +767,8 @@ void VulkanGraphics::Dispose()
 	m_indexBuffers.clear();
 	m_uniformBuffers.clear();
 	m_resourceSetPools.clear();
+
+	*/
 
 	for (VkFence& fence : m_frameFences)
 	{
@@ -768,13 +782,6 @@ void VulkanGraphics::Dispose()
 	{
 		vkDestroySemaphore(m_logicalDevice, semaphore, nullptr);
 	}
-	
-	for (const std::shared_ptr<VulkanShader>& shader : m_shaders)
-	{
-		shader->FreeResources();
-	}
-	m_shaders.clear();
-
 	m_frameFences.clear();
 	m_imageAvailableSemaphores.clear();
 	m_renderFinishedSemaphores.clear();
@@ -831,14 +838,19 @@ bool VulkanGraphics::Present()
 		CancelPresent();
 		return true;
 	}
+	
+	int swapChainIndex = m_currentFrame % m_swapChainImages.size();
 
 	// Wait for previous frame using this swap buffer image to finish.
-	vkWaitForFences(m_logicalDevice, 1, &m_frameFences[m_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-	vkResetFences(m_logicalDevice, 1, &m_frameFences[m_currentFrame]);
+	vkWaitForFences(m_logicalDevice, 1, &m_frameFences[swapChainIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	vkResetFences(m_logicalDevice, 1, &m_frameFences[swapChainIndex]);
+
+	// Dispose of any resourses we can.
+	CollectGarbage();
 
 	// Acquire next swap chain image.
 	uint32_t imageIndex;
-	VkResult result = vkAcquireNextImageKHR(m_logicalDevice, m_swapChain, std::numeric_limits<uint64_t>::max(), m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(m_logicalDevice, m_swapChain, std::numeric_limits<uint64_t>::max(), m_imageAvailableSemaphores[swapChainIndex], VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		m_logger->WriteWarning(LogCategory::Vulkan, "Swap chain format out of date, recreating.");
@@ -858,8 +870,8 @@ bool VulkanGraphics::Present()
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = { m_imageAvailableSemaphores[m_currentFrame] };
-	VkSemaphore signalSemaphores[] = { m_renderFinishedSemaphores[m_currentFrame] };
+	VkSemaphore waitSemaphores[] = { m_imageAvailableSemaphores[swapChainIndex] };
+	VkSemaphore signalSemaphores[] = { m_renderFinishedSemaphores[swapChainIndex] };
 
 	Array<VkCommandBuffer> buffers;
 	for (std::shared_ptr<VulkanCommandBuffer> buffer : m_pendingCommandBuffers)
@@ -878,7 +890,7 @@ bool VulkanGraphics::Present()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	CheckVkResultReturnOnFail(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_frameFences[m_currentFrame]));
+	CheckVkResultReturnOnFail(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_frameFences[swapChainIndex]));
 
 	// Push image back into swap chain.
 	VkPresentInfoKHR presentInfo = {};
@@ -907,7 +919,7 @@ bool VulkanGraphics::Present()
 		return false;
 	}
 
-	m_currentFrame = (m_currentFrame + 1) % m_swapChainImages.size();
+	m_currentFrame++;
 	return false;
 }
 
@@ -921,7 +933,9 @@ std::shared_ptr<IGraphicsShader> VulkanGraphics::CreateShader(const String& name
 		return nullptr;
 	}
 
-	m_shaders.push_back(shader);
+	m_resources.push_back(shader);
+	//m_shaders.push_back(shader);
+
 	return shader;
 }
 
@@ -935,7 +949,8 @@ std::shared_ptr<IGraphicsRenderPass> VulkanGraphics::CreateRenderPass(const Stri
 		return nullptr;
 	}
 
-	m_renderPasses.push_back(pass);
+	m_resources.push_back(pass);
+	//m_renderPasses.push_back(pass);
 	return pass;
 }
 
@@ -949,7 +964,8 @@ std::shared_ptr<IGraphicsPipeline> VulkanGraphics::CreatePipeline(const String& 
 		return nullptr;
 	}
 
-	m_pipelines.push_back(pass);
+	m_resources.push_back(pass);
+	//m_pipelines.push_back(pass);
 	return pass;
 }
 
@@ -963,7 +979,8 @@ std::shared_ptr<IGraphicsFramebuffer> VulkanGraphics::CreateFramebuffer(const St
 		return nullptr;
 	}
 
-	m_framebuffers.push_back(pass);
+	m_resources.push_back(pass);
+	//m_framebuffers.push_back(pass);
 	return pass;
 }
 
@@ -977,7 +994,8 @@ std::shared_ptr<IGraphicsImageView> VulkanGraphics::CreateImageView(const String
 		return nullptr;
 	}
 
-	m_imageViews.push_back(pass);
+	m_resources.push_back(pass);
+	//m_imageViews.push_back(pass);
 	return pass;
 }
 
@@ -985,13 +1003,14 @@ std::shared_ptr<IGraphicsCommandBufferPool> VulkanGraphics::CreateCommandBufferP
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanCommandBufferPool> pass = std::make_shared<VulkanCommandBufferPool>(m_logicalDevice, m_physicalDeviceInfo, m_logger, name);
+	std::shared_ptr<VulkanCommandBufferPool> pass = std::make_shared<VulkanCommandBufferPool>(m_logicalDevice, m_physicalDeviceInfo, m_logger, name, shared_from_this());
 	if (!pass->Build())
 	{
 		return nullptr;
 	}
 
-	m_commandBufferPools.push_back(pass);
+	m_resources.push_back(pass);
+	//m_commandBufferPools.push_back(pass);
 	return pass;
 }
 
@@ -999,13 +1018,14 @@ std::shared_ptr<IGraphicsVertexBuffer> VulkanGraphics::CreateVertexBuffer(const 
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanVertexBuffer> pass = std::make_shared<VulkanVertexBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator);
+	std::shared_ptr<VulkanVertexBuffer> pass = std::make_shared<VulkanVertexBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator, shared_from_this());
 	if (!pass->Build(binding, vertexCount))
 	{
 		return nullptr;
 	}
 
-	m_vertexBuffers.push_back(pass);
+	m_resources.push_back(pass);
+	//m_vertexBuffers.push_back(pass);
 	return pass;
 }
 
@@ -1013,13 +1033,14 @@ std::shared_ptr<IGraphicsIndexBuffer> VulkanGraphics::CreateIndexBuffer(const St
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanIndexBuffer> pass = std::make_shared<VulkanIndexBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator);
+	std::shared_ptr<VulkanIndexBuffer> pass = std::make_shared<VulkanIndexBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator, shared_from_this());
 	if (!pass->Build(indexSize, indexCount))
 	{
 		return nullptr;
 	}
 
-	m_indexBuffers.push_back(pass);
+	m_resources.push_back(pass);
+	//m_indexBuffers.push_back(pass);
 	return pass;
 }
 
@@ -1033,7 +1054,8 @@ std::shared_ptr<IGraphicsUniformBuffer> VulkanGraphics::CreateUniformBuffer(cons
 		return nullptr;
 	}
 
-	m_uniformBuffers.push_back(pass);
+	m_resources.push_back(pass);
+	//m_uniformBuffers.push_back(pass);
 	return pass;
 }
 
@@ -1041,13 +1063,14 @@ std::shared_ptr<IGraphicsResourceSetPool> VulkanGraphics::CreateResourceSetPool(
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanResourceSetPool> pass = std::make_shared<VulkanResourceSetPool>(m_logicalDevice, m_logger, name);
+	std::shared_ptr<VulkanResourceSetPool> pass = std::make_shared<VulkanResourceSetPool>(m_logicalDevice, m_logger, name, shared_from_this());
 	if (!pass->Build())
 	{
 		return nullptr;
 	}
 
-	m_resourceSetPools.push_back(pass);
+	m_resources.push_back(pass);
+	//m_resourceSetPools.push_back(pass);
 	return pass;
 }
 
@@ -1055,13 +1078,14 @@ std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, 
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanImage> pass = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, name, m_memoryAllocator);
+	std::shared_ptr<VulkanImage> pass = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, name, m_memoryAllocator, shared_from_this());
 	if (!pass->Build(width, height, layers, format, generateMips))
 	{
 		return nullptr;
 	}
 
-	m_images.push_back(pass);
+	m_resources.push_back(pass);
+	//m_images.push_back(pass);
 	return pass;
 }
 
@@ -1077,7 +1101,8 @@ std::shared_ptr<IGraphicsSampler> VulkanGraphics::CreateSampler(const String& na
 		return nullptr;
 	}
 
-	m_samplers.push_back(pass);
+	m_resources.push_back(pass);
+	//m_samplers.push_back(pass);
 	return pass;
 }
 
@@ -1094,6 +1119,21 @@ void VulkanGraphics::WaitForDeviceIdle()
 GraphicsFormat VulkanGraphics::GetSwapChainFormat()
 {
 	return VkFormatToGraphicsFormat(m_swapChainFormat.format);
+}
+
+int VulkanGraphics::GetFrameIndex()
+{
+	return m_currentFrame;
+}
+
+int VulkanGraphics::GetMaxFramesInFlight()
+{
+	return static_cast<int>(m_swapChainImages.size());
+}
+
+int VulkanGraphics::GetSafeRecycleFrameIndex()
+{
+	return GetFrameIndex() - (GetMaxFramesInFlight() + 1);
 }
 
 Array<std::shared_ptr<IGraphicsImageView>> VulkanGraphics::GetSwapChainViews()
@@ -1119,6 +1159,127 @@ bool VulkanGraphics::AttachToWindow(std::shared_ptr<IWindow> window)
 	}
 
 	return true;
+}
+
+bool VulkanGraphics::AllocateStagingBuffer(VulkanAllocation target, int offset, int length, VulkanStagingBuffer& result)
+{
+	// todo: change to permanently mapped memory.
+
+	VulkanAllocation allocation;
+
+	VulkanStagingBuffer buffer;
+	buffer.Length = length;
+	buffer.HasDesination = true;
+	buffer.Destination = target;
+	buffer.DestinationOffset = offset;
+	buffer.SourceOffset = 0;
+
+	if (!m_memoryAllocator->CreateBuffer(
+		length,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VMA_MEMORY_USAGE_CPU_TO_GPU,
+		buffer.Source))
+	{
+		return false;
+	}
+
+	vmaMapMemory(buffer.Source.Allocator, buffer.Source.Allocation, &buffer.MappedData);
+
+	result = buffer;
+
+	return true;
+}
+
+bool VulkanGraphics::AllocateStagingBuffer(int length, VulkanStagingBuffer& result)
+{
+	// todo: change to permanently mapped memory.
+
+	VulkanAllocation allocation;
+
+	VulkanStagingBuffer buffer;
+	buffer.Length = length;
+	buffer.HasDesination = false;
+	buffer.DestinationOffset = 0;
+	buffer.SourceOffset = 0;
+
+	if (!m_memoryAllocator->CreateBuffer(
+		length,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VMA_MEMORY_USAGE_CPU_TO_GPU,
+		buffer.Source))
+	{
+		return false;
+	}
+
+	vmaMapMemory(buffer.Source.Allocator, buffer.Source.Allocation, &buffer.MappedData);
+
+	result = buffer;
+
+	return true;
+}
+
+void VulkanGraphics::ReleaseStagingBuffer(VulkanStagingBuffer buffer)
+{
+	vmaUnmapMemory(buffer.Source.Allocator, buffer.Source.Allocation);
+
+	QueueDisposal([=]() mutable {
+		m_memoryAllocator->FreeBuffer(buffer.Source);
+	});
+}
+
+void VulkanGraphics::QueueDisposal(QueuedDisposal::DisposalFunction_t function)
+{
+	QueuedDisposal disposal;
+	disposal.function = function;
+	disposal.frameIndex = m_currentFrame;
+	m_queuedDisposal.push_back(disposal);
+}
+
+void VulkanGraphics::PurgeQueuedDisposals()
+{
+	for (auto iter = m_queuedDisposal.begin(); iter != m_queuedDisposal.end(); iter++)
+	{
+		QueuedDisposal& disposal = *iter;
+		disposal.function();
+	}
+
+	m_queuedDisposal.clear();
+}
+
+void VulkanGraphics::UpdateQueuedDisposals()
+{
+	for (auto iter = m_queuedDisposal.begin(); iter != m_queuedDisposal.end(); iter++)
+	{
+		QueuedDisposal& disposal = *iter;
+		if (disposal.frameIndex <= GetSafeRecycleFrameIndex())
+		{
+			disposal.function();
+
+			iter = m_queuedDisposal.erase(iter);
+		}
+	}
+}
+
+void VulkanGraphics::CollectGarbage()
+{
+	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+
+	for (auto iter = m_resources.begin(); iter != m_resources.end(); )
+	{
+		std::shared_ptr<IVulkanResource>& resource = *iter;
+
+		if (resource.use_count() == 1)
+		{
+			m_logger->WriteInfo(LogCategory::Vulkan, "[%-30s] Unloading, no longer referenced.", resource->GetName().c_str());
+			iter = m_resources.erase(iter);
+		}
+		else
+		{
+			iter++;
+		}
+	}
+
+	UpdateQueuedDisposals();
 }
 
 std::shared_ptr<IGraphics> VulkanGraphics::Create(std::shared_ptr<Logger> logger, const String& gameName, int gameVersionMajor, int gameVersionMinor, int gameVersionBuild)
