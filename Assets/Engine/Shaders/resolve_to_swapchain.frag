@@ -11,5 +11,5 @@ layout(location = 0) out vec4 outColor;
 
 void main() 
 {
-	outColor.rgba = texture(gbuffer0, inTexCoord1);
+	outColor.rgba = vec4(texture(gbuffer0, inTexCoord1).rgb, 1.0f);
 }

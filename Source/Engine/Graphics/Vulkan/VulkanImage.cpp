@@ -125,6 +125,7 @@ bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format
 	if (!m_memoryAllocator->CreateImage(
 		imageInfo,
 		VMA_MEMORY_USAGE_GPU_ONLY,
+		0,
 		m_mainImage))
 	{
 		return false;

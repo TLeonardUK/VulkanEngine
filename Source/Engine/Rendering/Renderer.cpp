@@ -20,6 +20,8 @@ static const MaterialPropertyHash GBuffer2Hash = CalculateMaterialPropertyHash("
 Renderer::Renderer(std::shared_ptr<IGraphics> graphics)
 	: m_graphics(graphics)
 	, m_frameIndex(0)
+	, m_drawGBufferEnabled(false)
+	, m_drawWireframeEnabled(false)
 {
 	// Fill various global properties with dummies, saves showing errors on initial resource binding. 
 	Matrix4 identityMatrix = Matrix4(1.0);
@@ -72,26 +74,25 @@ bool Renderer::Init(std::shared_ptr<ResourceManager> resourceManager)
 
 void Renderer::InitDebugMenus(std::shared_ptr<ImguiManager> manager)
 {
-	static bool drawGBufferEnabled = false;
-
 	m_imguiManager = manager;
 	
 	m_debugMenuCallbackToken = m_imguiManager->RegisterCallback(ImguiCallback::MainMenu, [=] {
 
 		if (ImGui::BeginMenu("Rendering"))
 		{
-			ImGui::MenuItem("Show G-Buffer", nullptr, &drawGBufferEnabled);
+			ImGui::MenuItem("Show G-Buffer", nullptr, &m_drawGBufferEnabled);
+			ImGui::MenuItem("Toggle Wireframe", nullptr, &m_drawWireframeEnabled);
 			ImGui::EndMenu();
 		}
 	});
 
 	m_debugMenuCallbackToken = m_imguiManager->RegisterCallback(ImguiCallback::PostMainMenu, [=] {
 
-		if (drawGBufferEnabled)
+		if (m_drawGBufferEnabled)
 		{
 			int imageSize = 300;
 		
-			ImGui::Begin("G-Buffer", &drawGBufferEnabled, ImGuiWindowFlags_NoResize);
+			ImGui::Begin("G-Buffer", &m_drawGBufferEnabled, ImGuiWindowFlags_NoResize);
 
 			for (int i = 0; i < GBufferImageCount; i++)
 			{
@@ -122,6 +123,8 @@ void Renderer::CreateResources()
 	// todo: we should abstract this all into rendering-task classes.
 	m_resolveToSwapchainMaterial = m_resourceManager->Load<Material>("Engine/Materials/resolve_to_swapchain.json");
 	m_resolveToSwapchainMaterial.WaitUntilLoaded();
+	m_clearGBufferMaterial = m_resourceManager->Load<Material>("Engine/Materials/clear_gbuffer.json");
+	m_clearGBufferMaterial.WaitUntilLoaded();
 
 	VertexBufferBindingDescription description;
 	m_resolveToSwapchainMaterial.Get()->GetVertexBufferFormat(description);
@@ -293,6 +296,9 @@ void Renderer::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer
 	buffer->Clear(m_swapChainViews[m_frameIndex]->GetImage(), Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
 	buffer->Clear(m_depthBufferImage, Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
 
+	// Clear G-Buffer
+	DrawFullScreenQuad(buffer, m_clearGBufferMaterial.Get());
+
 	// TODO: Z Pre Pass
 
 	// Render all views to gbuffer.
@@ -331,6 +337,7 @@ void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer
 
 	buffer->SetPipeline(material->GetPipeline());
 	buffer->SetViewport(0, 0, m_swapChainWidth, m_swapChainHeight);
+	buffer->SetScissor(0, 0, m_swapChainWidth, m_swapChainHeight);
 
 	buffer->SetIndexBuffer(m_fullscreenQuadIndexBuffer);
 	buffer->SetVertexBuffer(m_fullscreenQuadVertexBuffer);
@@ -350,7 +357,7 @@ void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::sha
 	m_globalMaterialProperties.Set(ViewMatrixHash, view->ViewMatrix);
 	m_globalMaterialProperties.Set(ProjectionMatrixHash, view->ProjectionMatrix);
 	m_globalMaterialProperties.Set(CameraPositionHash, view->Location);
-	
+
 	// Draw each model to view.
 	for (auto& modelResource : m_tmpModelToRender)
 	{
@@ -360,6 +367,7 @@ void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::sha
 			model->UpdateResources();
 
 			Array<std::shared_ptr<Mesh>> meshes = model->GetMeshes();
+
 			for (auto& mesh : meshes)
 			{
 				std::shared_ptr<Material> material = mesh->GetMaterial().Get();
@@ -367,7 +375,14 @@ void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::sha
 				buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 				buffer->BeginSubPass();
 
-				buffer->SetPipeline(material->GetPipeline());
+				if (m_drawWireframeEnabled)
+				{
+					buffer->SetPipeline(material->GetWireframePipeline());
+				}
+				else
+				{
+					buffer->SetPipeline(material->GetPipeline());
+				}
 				buffer->SetScissor(
 					static_cast<int>(view->Viewport.x),
 					static_cast<int>(view->Viewport.y),

@@ -27,8 +27,13 @@ struct VulkanResourceSetBinding
 	std::shared_ptr<VulkanSampler> sampler;
 	std::shared_ptr<VulkanImageView> samplerImageView;
 
+	VkBuffer vkUniformBuffer;
+	VkSampler vkSampler;
+	VkImageView vkSamplerImageView;
+
 	bool EqualTo(const VulkanResourceSetBinding& other) const;
 	static bool BindingsEqualTo(const Array<VulkanResourceSetBinding>& first, const Array<VulkanResourceSetBinding>& second);
+	static void UpdateVulkanObjects(Array<VulkanResourceSetBinding>& objects);
 };
 
 class VulkanResourceSetPool

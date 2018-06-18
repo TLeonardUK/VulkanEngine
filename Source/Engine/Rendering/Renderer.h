@@ -80,13 +80,18 @@ private:
 	std::shared_ptr<IGraphicsImageView> m_gbufferViews[GBufferImageCount];
 	std::shared_ptr<IGraphicsSampler> m_gbufferSamplers[GBufferImageCount];
 	std::shared_ptr<IGraphicsFramebuffer> m_gbufferFrameBuffer;
-
+	
 	ResourcePtr<Material> m_resolveToSwapchainMaterial;
+	ResourcePtr<Material> m_clearGBufferMaterial;
 	std::shared_ptr<IGraphicsVertexBuffer> m_fullscreenQuadVertexBuffer;
 	std::shared_ptr<IGraphicsIndexBuffer> m_fullscreenQuadIndexBuffer;
 	bool m_fullscreenQuadsUploaded;
 
 	ImguiCallbackToken m_debugMenuCallbackToken;
+
+	// Debug functionality.
+	bool m_drawGBufferEnabled;
+	bool m_drawWireframeEnabled;
 
 private:
 	friend class Material;

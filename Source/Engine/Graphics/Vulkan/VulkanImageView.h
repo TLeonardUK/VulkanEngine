@@ -29,6 +29,7 @@ private:
 	friend class VulkanFramebuffer;
 	friend class VulkanResourceSet;
 	friend class VulkanResourceSetPool;
+	friend struct VulkanResourceSetBinding;
 
 	bool Build(std::shared_ptr<IGraphicsImage> image);
 

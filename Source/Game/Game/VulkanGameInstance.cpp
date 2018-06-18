@@ -65,10 +65,10 @@ void VulkanGameInstance::Initialize()
 	std::shared_ptr<ResourceManager> resourceManager = engine->GetResourceManager();
 	std::shared_ptr<Renderer> renderer = engine->GetRenderer();
 
-	/*{
-		ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
-		renderer->TmpAddModelToRender(model);
-	}*/
+	{
+	//	ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
+	//	renderer->TmpAddModelToRender(model);
+	}
 	{
 		ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Skyboxes/blue_sky.json");
 		renderer->TmpAddModelToRender(model);
@@ -179,7 +179,7 @@ void VulkanGameInstance::Tick(const FrameTime& time)
 	Vector3 right(1.0f, 0.0f, 0.0f);
 
 	Matrix4 viewMatrix = glm::lookAt(m_viewPosition, m_viewPosition + (forward * m_viewRotation), -up); // negative to correct for vulkans flipped y.
-	Matrix4 projectionMatrix = glm::perspective(glm::radians(65.0f), swapWidth / swapHeight, 0.1f, 10000.0f);
+	Matrix4 projectionMatrix = glm::perspective(glm::radians(65.0f), swapWidth / swapHeight, 0.1f, 1000000.0f);
 
 	if (!imGuiManager->IsMouseControlRequired())
 	{

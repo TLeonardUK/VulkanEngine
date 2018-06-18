@@ -10,6 +10,7 @@
 #include "Engine/Engine/Logging.h"
 
 #include <cassert>
+#include <algorithm>
 
 VulkanResourceSet::VulkanResourceSet(
 	VkDevice device,
@@ -47,6 +48,9 @@ VkDescriptorSetLayout VulkanResourceSet::GetLayout()
 
 VkDescriptorSet VulkanResourceSet::ConsumeSet()
 {
+	// todo: If we know we haven't been updated, keep previous descriptor set?
+	// todo: If uniforms are shared, don't duplicate them.
+
 	return m_pool->RequestDescriptorSetForThisFrame(m_layout, m_currentBindings);
 }
 
@@ -64,8 +68,18 @@ VulkanResourceSetBinding& VulkanResourceSet::GetBinding(int location, int arrayI
 	newBinding.arrayIndex = arrayIndex;
 	newBinding.location = location;
 	
-	m_currentBindings.push_back(newBinding);
+	// Insert to keep location value in order.
+	for (int i = 0; i < m_currentBindings.size(); i++)
+	{
+		VulkanResourceSetBinding& binding = m_currentBindings[i];
+		if (newBinding.location < binding.location)
+		{
+			m_currentBindings.insert(m_currentBindings.begin() + i, newBinding);
+			return m_currentBindings[i];
+		}
+	}
 
+	m_currentBindings.push_back(newBinding);
 	return m_currentBindings[m_currentBindings.size() - 1];
 }
 
@@ -90,4 +104,15 @@ bool VulkanResourceSet::UpdateBinding(int location, int arrayIndex, std::shared_
 	binding.samplerImageView = std::dynamic_pointer_cast<VulkanImageView>(imageView);
 
 	return true;
+}
+
+void VulkanResourceSet::GetUniformBufferOffsets(Array<uint32_t>& destination)
+{
+	for (auto& binding : m_currentBindings)
+	{
+		if (binding.type == VulkanResourceSetBindingType::UniformBuffer)
+		{
+			destination.push_back(binding.uniformBuffer->GetGpuBufferOffset());
+		}
+	}
 }

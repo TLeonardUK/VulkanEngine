@@ -579,7 +579,7 @@ bool VulkanGraphics::CreateSyncObjects()
 
 bool VulkanGraphics::CreateMemoryAllocator()
 {
-	m_memoryAllocator = std::make_shared<VulkanMemoryAllocator>(m_logicalDevice, m_physicalDeviceInfo.Device, m_logger);
+	m_memoryAllocator = std::make_shared<VulkanMemoryAllocator>(m_logicalDevice, m_physicalDeviceInfo.Device, m_logger, shared_from_this(), m_physicalDeviceInfo);
 	if (!m_memoryAllocator->Build())
 	{
 		return false;
@@ -1178,6 +1178,7 @@ bool VulkanGraphics::AllocateStagingBuffer(VulkanAllocation target, int offset, 
 		length,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VMA_MEMORY_USAGE_CPU_TO_GPU,
+		0,
 		buffer.Source))
 	{
 		return false;
@@ -1206,6 +1207,7 @@ bool VulkanGraphics::AllocateStagingBuffer(int length, VulkanStagingBuffer& resu
 		length,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VMA_MEMORY_USAGE_CPU_TO_GPU,
+		0,
 		buffer.Source))
 	{
 		return false;
@@ -1248,14 +1250,20 @@ void VulkanGraphics::PurgeQueuedDisposals()
 
 void VulkanGraphics::UpdateQueuedDisposals()
 {
-	for (auto iter = m_queuedDisposal.begin(); iter != m_queuedDisposal.end(); iter++)
+	for (int i = 0; i < m_queuedDisposal.size(); )
 	{
-		QueuedDisposal& disposal = *iter;
+		QueuedDisposal& disposal = m_queuedDisposal[i];
 		if (disposal.frameIndex <= GetSafeRecycleFrameIndex())
 		{
 			disposal.function();
 
-			iter = m_queuedDisposal.erase(iter);
+			m_queuedDisposal[i] = m_queuedDisposal[m_queuedDisposal.size() - 1];
+			m_queuedDisposal.resize(m_queuedDisposal.size() - 1);
+			i--;
+		}
+		else
+		{
+			i++;
 		}
 	}
 }
@@ -1264,18 +1272,21 @@ void VulkanGraphics::CollectGarbage()
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	for (auto iter = m_resources.begin(); iter != m_resources.end(); )
+	for (int i = 0; i < m_resources.size(); )
 	{
-		std::shared_ptr<IVulkanResource>& resource = *iter;
+		std::shared_ptr<IVulkanResource>& resource = m_resources[i];
 
 		if (resource.use_count() == 1)
 		{
+			m_resources[i] = m_resources[m_resources.size() - 1];
+			m_resources.resize(m_resources.size() - 1);
+			i--;
+
 			m_logger->WriteInfo(LogCategory::Vulkan, "[%-30s] Unloading, no longer referenced.", resource->GetName().c_str());
-			iter = m_resources.erase(iter);
 		}
 		else
 		{
-			iter++;
+			i++;
 		}
 	}
 

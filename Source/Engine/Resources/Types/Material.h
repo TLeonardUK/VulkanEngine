@@ -41,7 +41,8 @@ private:
 	String m_name;
 
 	std::shared_ptr<IGraphicsPipeline> m_pipeline;
-
+	std::shared_ptr<IGraphicsPipeline> m_wireframePipeline;
+	
 	std::shared_ptr<IGraphicsResourceSet> m_resourceSet;
 
 	Dictionary<String, std::shared_ptr<IGraphicsUniformBuffer>> m_uniformBuffers;
@@ -72,6 +73,7 @@ public:
 	std::shared_ptr<IGraphicsFramebuffer> GetFrameBuffer();
 
 	std::shared_ptr<IGraphicsPipeline> GetPipeline();
+	std::shared_ptr<IGraphicsPipeline> GetWireframePipeline();
 	std::shared_ptr<IGraphicsResourceSet> GetResourceSet();
 
 	bool GetVertexBufferFormat(VertexBufferBindingDescription& format);

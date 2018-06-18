@@ -161,6 +161,7 @@
     <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="Types\Math.cpp" />
     <ClCompile Include="Types\String.cpp" />
     <ClCompile Include="UI\ImguiManager.cpp" />
     <ClCompile Include="Utilities\Enum.cpp" />

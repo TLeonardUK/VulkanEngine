@@ -1,9 +1,9 @@
 {
     "Type": "Shader",    
-           
-    "FrameBuffer": "SwapChain",
+   
+    "FrameBuffer": "GBuffer",
     
-    "BlendEnabled": false,    
+    "BlendEnabled": false,
     "DepthTestEnabled": false,
     "DepthWriteEnabled": false,
     
@@ -11,7 +11,7 @@
     {
         "Vertex":
         {
-            "ShaderPath": "Engine/Shaders/resolve_to_swapchain.vert",
+            "ShaderPath": "Engine/Shaders/clear_gbuffer.vert",
             "EntryPoint": "main",
             "VertexStreams":
             {
@@ -31,29 +31,11 @@
         },
         "Fragment":
         {
-            "ShaderPath": "Engine/Shaders/resolve_to_swapchain.frag",
+            "ShaderPath": "Engine/Shaders/clear_gbuffer.frag",
             "EntryPoint": "main"
         }
     },
     "Bindings":
-    {     
-        "gbuffer0":
-        {
-            "Type": "Sampler",
-            "Binding": 1,
-            "BindTo": "GBuffer0"
-        },
-        "gbuffer1":
-        {
-            "Type": "Sampler",
-            "Binding": 2,
-            "BindTo": "GBuffer1"
-        },
-        "gbuffer2":
-        {
-            "Type": "Sampler",
-            "Binding": 3,
-            "BindTo": "GBuffer2"
-        }
+    {   
     }
 }

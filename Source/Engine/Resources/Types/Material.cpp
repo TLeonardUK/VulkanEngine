@@ -27,6 +27,11 @@ std::shared_ptr<IGraphicsPipeline> Material::GetPipeline()
 	return m_pipeline;
 }
 
+std::shared_ptr<IGraphicsPipeline> Material::GetWireframePipeline()
+{
+	return m_wireframePipeline;
+}
+
 std::shared_ptr<IGraphicsResourceSet> Material::GetResourceSet()
 {
 	return m_resourceSet;
@@ -321,6 +326,9 @@ void Material::RecreateResources()
 	pipelineSettings.ResourceSets.push_back(m_resourceSet);
 
 	m_pipeline = m_graphics->CreatePipeline(StringFormat("%s Pipeline", m_name.c_str()), pipelineSettings);
+
+	pipelineSettings.PolygonMode = GraphicsPolygonMode::Line;
+	m_wireframePipeline = m_graphics->CreatePipeline(StringFormat("%s Pipeline (Wireframe)", m_name.c_str()), pipelineSettings);
 }
 
 MaterialPropertyCollection& Material::GetProperties()

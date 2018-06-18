@@ -53,3 +53,5 @@ struct Rectangle
 	{
 	}
 };
+
+uint32_t RoundUpToPowerOfTwo(uint32_t value);

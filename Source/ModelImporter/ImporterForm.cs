@@ -88,7 +88,10 @@ namespace ModelImporter
             List<string> lines = new List<string>();
             lines.Add("{");
             lines.Add("\t\"Type\": \"Texture\",");
-            lines.Add("\t\"ImagePath\": \"" + GetAssetPath(texturePath) + "\"");
+            lines.Add("\t\"ImagePath\": \"" + GetAssetPath(texturePath) + "\",");
+            lines.Add("\t\"AddressModeU\": \"Repeat\",");
+            lines.Add("\t\"AddressModeV\": \"Repeat\",");
+            lines.Add("\t\"AddressModeW\": \"Repeat\"");
             lines.Add("}");
 
             File.WriteAllLines(path, lines);

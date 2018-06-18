@@ -210,10 +210,14 @@ void VulkanCommandBuffer::SetResourceSets(Array<std::shared_ptr<IGraphicsResourc
 	assert(m_activePipeline != nullptr);
 
 	Array<VkDescriptorSet> sets(resourceSets.size());
+	Array<uint32_t> uniformBufferOffsets;
+
 	for (int i = 0; i < resourceSets.size(); i++)
 	{
 		std::shared_ptr<VulkanResourceSet> vulkanBuffer = std::dynamic_pointer_cast<VulkanResourceSet>(resourceSets[i]);
 		sets[i] = vulkanBuffer->ConsumeSet();
+
+		vulkanBuffer->GetUniformBufferOffsets(uniformBufferOffsets);
 	}
 
 	vkCmdBindDescriptorSets(
@@ -223,8 +227,8 @@ void VulkanCommandBuffer::SetResourceSets(Array<std::shared_ptr<IGraphicsResourc
 		0,
 		static_cast<uint32_t>(sets.size()),
 		sets.data(),
-		0,
-		nullptr
+		static_cast<uint32_t>(uniformBufferOffsets.size()),
+		uniformBufferOffsets.data()
 	);
 }
 

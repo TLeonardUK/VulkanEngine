@@ -27,6 +27,7 @@ private:
 	friend class VulkanPipeline;
 	friend class VulkanResourceSet;
 	friend class VulkanResourceSetPool;
+	friend struct VulkanResourceSetBinding;
 
 	bool Build(const SamplerDescription& description);
 

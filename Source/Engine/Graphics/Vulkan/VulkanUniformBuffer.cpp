@@ -30,10 +30,10 @@ VulkanUniformBuffer::~VulkanUniformBuffer()
 
 void VulkanUniformBuffer::FreeResources()
 {
-	if (m_gpuBuffer.Allocation != nullptr)
+	if (m_buffer.Buffer != nullptr)
 	{
-		m_memoryAllocator->FreeBuffer(m_gpuBuffer);
-		m_gpuBuffer.Allocation = nullptr;
+		m_memoryAllocator->ReleaseUniformBuffer(m_buffer);
+		m_buffer.Buffer = nullptr;
 	}
 }
 
@@ -45,24 +45,20 @@ String VulkanUniformBuffer::GetName()
 bool VulkanUniformBuffer::Build(int bufferSize)
 {
 	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new uniform buffer: %s", m_name.c_str());
-
 	m_memorySize = bufferSize;
-
-	if (!m_memoryAllocator->CreateBuffer(
-		m_memorySize,
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		VMA_MEMORY_USAGE_CPU_TO_GPU,
-		m_gpuBuffer))
-	{
-		return false;
-	}
-
+	m_buffer.Buffer = nullptr;
+	
 	return true;
 }
 
-VulkanAllocation VulkanUniformBuffer::GetGpuBuffer()
+VkBuffer VulkanUniformBuffer::GetGpuBuffer()
 {
-	return m_gpuBuffer;
+	return m_buffer.Buffer;
+}
+
+uint32_t VulkanUniformBuffer::GetGpuBufferOffset()
+{
+	return m_buffer.Offset;
 }
 
 int VulkanUniformBuffer::GetDataSize()
@@ -74,15 +70,13 @@ bool VulkanUniformBuffer::Upload(void* buffer, int offset, int length)
 {
 	assert(offset >= 0 && offset + length <= m_memorySize);
 
-	// todo: allocate new buffer, copy data into it, and mark old one as free for recycling.
-
-	void* deviceData;
-
-	vmaMapMemory(m_gpuBuffer.Allocator, m_gpuBuffer.Allocation, &deviceData);
-
-	memcpy((char*)deviceData + offset, buffer, length);
-
-	vmaUnmapMemory(m_gpuBuffer.Allocator, m_gpuBuffer.Allocation);
+	if (m_buffer.Buffer != nullptr)
+	{
+		m_memoryAllocator->ReleaseUniformBuffer(m_buffer);
+	}
+	m_buffer = m_memoryAllocator->AllocateUniformBuffer(m_memorySize);
+	
+	memcpy((char*)m_buffer.MappedData + m_buffer.Offset + offset, buffer, length);
 
 	return true;
 }

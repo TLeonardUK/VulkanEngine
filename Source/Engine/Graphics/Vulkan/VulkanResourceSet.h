@@ -36,6 +36,8 @@ private:
 	VkDescriptorSetLayout GetLayout();
 	VkDescriptorSet ConsumeSet();
 
+	void GetUniformBufferOffsets(Array<uint32_t>& destination);
+
 	VulkanResourceSetBinding& GetBinding(int location, int arrayIndex);
 
 public:

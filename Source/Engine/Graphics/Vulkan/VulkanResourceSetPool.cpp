@@ -11,6 +11,16 @@
 
 #include <cassert>
 
+void VulkanResourceSetBinding::UpdateVulkanObjects(Array<VulkanResourceSetBinding>& objects)
+{
+	for (auto& obj : objects)
+	{
+		obj.vkUniformBuffer = obj.uniformBuffer != nullptr ? obj.uniformBuffer->GetGpuBuffer() : nullptr;
+		obj.vkSampler = obj.sampler != nullptr ? obj.sampler->GetSampler() : nullptr;
+		obj.vkSamplerImageView = obj.samplerImageView != nullptr ? obj.samplerImageView->GetImageView() : nullptr;
+	}
+}
+
 bool VulkanResourceSetBinding::EqualTo(const VulkanResourceSetBinding& other) const
 {
 	if (type != other.type ||
@@ -22,15 +32,15 @@ bool VulkanResourceSetBinding::EqualTo(const VulkanResourceSetBinding& other) co
 
 	if (type == VulkanResourceSetBindingType::Sampler)
 	{
-		if (sampler != other.sampler ||
-			samplerImageView != other.samplerImageView)
+		if (vkSampler != other.sampler->GetSampler() ||
+			vkSamplerImageView != other.samplerImageView->GetImageView())
 		{
 			return false;
 		}
 	}
 	else if (type == VulkanResourceSetBindingType::UniformBuffer)
 	{
-		if (uniformBuffer != other.uniformBuffer)
+		if (vkUniformBuffer != other.uniformBuffer->GetGpuBuffer())
 		{
 			return false;
 		}
@@ -110,7 +120,7 @@ bool VulkanResourceSetPool::CreateNewPool()
 {
 	Array<VkDescriptorPoolSize> poolSizes(2);
 
-	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 	poolSizes[0].descriptorCount = MaxAllocations;
 
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -210,11 +220,11 @@ bool VulkanResourceSetPool::WriteDescriptorSet(VkDescriptorSet set, const Array<
 			}
 		case VulkanResourceSetBindingType::UniformBuffer:
 			{
-				bufferInfo[bufferInfoIndex].buffer = binding.uniformBuffer->GetGpuBuffer().Buffer;
+				bufferInfo[bufferInfoIndex].buffer = binding.uniformBuffer->GetGpuBuffer();
 				bufferInfo[bufferInfoIndex].offset = 0;
 				bufferInfo[bufferInfoIndex].range = binding.uniformBuffer->GetDataSize();
 
-				write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 				write.descriptorCount = 1;
 				write.pBufferInfo = &bufferInfo[bufferInfoIndex];
 				write.pImageInfo = nullptr;
@@ -233,6 +243,9 @@ bool VulkanResourceSetPool::WriteDescriptorSet(VkDescriptorSet set, const Array<
 
 VkDescriptorSet VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings)
 {
+	//uint32_t bindingsHash = VulkanResourceSetBinding::HashBindings(bindings);
+	//if ()
+
 	// Find one that matches our layout and binding exactly, we can just return
 	// it as-is regardless of which frame it was last sent to the gpu as we don't need to update it.
 	for (auto& descriptor : m_descriptors)
@@ -268,6 +281,8 @@ VkDescriptorSet VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescri
 		WriteDescriptorSet(descriptor.set, bindings);
 
 		descriptor.currentBindings = bindings;
+		VulkanResourceSetBinding::UpdateVulkanObjects(descriptor.currentBindings);
+
 		descriptor.lastFrameUsed = m_graphics->GetFrameIndex();
 		return descriptor.set;
 	}
@@ -276,6 +291,7 @@ VkDescriptorSet VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescri
 	// Create actual set.		
 	CachedDescriptors descriptor;
 	descriptor.currentBindings = bindings;
+	VulkanResourceSetBinding::UpdateVulkanObjects(descriptor.currentBindings);
 	descriptor.lastFrameUsed = m_graphics->GetFrameIndex();
 	descriptor.layout = layout;
 
@@ -336,12 +352,12 @@ VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourc
 		{
 		case GraphicsBindingType::UniformBufferObject:
 			{
-				binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 				break;
 			}
 		case GraphicsBindingType::Sampler:
 			{
-				binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;;
+				binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				break;
 			}
 		default:

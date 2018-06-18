@@ -25,17 +25,20 @@ private:
 	int m_memorySize;
 
 	VkDevice m_device;
-	VulkanAllocation m_gpuBuffer;
+
+	VulkanUniformBufferAllocation m_buffer;
 
 private:
 	friend class VulkanGraphics;
 	friend class VulkanCommandBuffer;
 	friend class VulkanResourceSet;
 	friend class VulkanResourceSetPool;
+	friend struct VulkanResourceSetBinding;
 
 	bool Build(int bufferSize);
 
-	VulkanAllocation GetGpuBuffer();
+	VkBuffer GetGpuBuffer();
+	uint32_t GetGpuBufferOffset();
 	int GetDataSize();
 
 public:

@@ -64,6 +64,7 @@ bool VulkanIndexBuffer::Build(int indexSize, int vertexCount)
 		m_memorySize,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		VMA_MEMORY_USAGE_GPU_ONLY,
+		0,
 		m_gpuBuffer))
 	{
 		return false;
