@@ -11,6 +11,13 @@
 
 #include <cassert>
 
+template <class T>
+inline void BindingsHashCombine(std::size_t& seed, const T& v)
+{
+	std::hash<T> hasher;
+	seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
 void VulkanResourceSetBinding::UpdateVulkanObjects(Array<VulkanResourceSetBinding>& objects)
 {
 	for (auto& obj : objects)
@@ -72,6 +79,33 @@ bool VulkanResourceSetBinding::BindingsEqualTo(const Array<VulkanResourceSetBind
 	return true;
 }
 
+size_t VulkanResourceSetBinding::GetBindingsHashCode(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings)
+{
+	size_t hash = 0;
+	BindingsHashCombine(hash, layout);
+	BindingsHashCombine(hash, bindings.size());
+
+	for (int i = 0; i < bindings.size(); i++)
+	{
+		const VulkanResourceSetBinding& binding = bindings[i];
+		BindingsHashCombine(hash, binding.type);
+		BindingsHashCombine(hash, binding.location);
+		BindingsHashCombine(hash, binding.arrayIndex);
+
+		if (binding.type == VulkanResourceSetBindingType::Sampler)
+		{
+			BindingsHashCombine(hash, binding.sampler->GetSampler());
+			BindingsHashCombine(hash, binding.samplerImageView->GetImageView());
+		}
+		else if (binding.type == VulkanResourceSetBindingType::UniformBuffer)
+		{
+			BindingsHashCombine(hash, binding.uniformBuffer->GetGpuBuffer());
+		}
+	}
+
+	return hash;
+}
+
 VulkanResourceSetPool::VulkanResourceSetPool(
 	VkDevice device,
 	std::shared_ptr<Logger> logger,
@@ -82,6 +116,7 @@ VulkanResourceSetPool::VulkanResourceSetPool(
 	, m_logger(logger)
 	, m_name(name)
 	, m_graphics(graphics)
+	, m_descriptorIndex(0)
 {
 }
 
@@ -92,6 +127,13 @@ VulkanResourceSetPool::~VulkanResourceSetPool()
 
 void VulkanResourceSetPool::FreeResources()
 {
+	for (auto& descriptor : m_descriptors)
+	{
+		vkFreeDescriptorSets(m_device, descriptor->pool, 1, &descriptor->set);
+	}
+	m_descriptors.clear();
+	m_descriptorsMap.clear();
+
 	for (auto& layout : m_layouts)
 	{
 		vkDestroyDescriptorSetLayout(m_device, layout.layout, nullptr);
@@ -162,18 +204,23 @@ bool VulkanResourceSetPool::AllocateSet(VkDescriptorSetLayout layout, VkDescript
 
 bool VulkanResourceSetPool::PruneDescriptors()
 {
-	for (auto iter = m_descriptors.begin(); iter != m_descriptors.end(); )
+	for (int i = 0; i < m_descriptors.size(); )
 	{
-		CachedDescriptors& descriptor = *iter;
+		std::shared_ptr<CachedDescriptors>& descriptor = m_descriptors[i];
 
-		if (descriptor.lastFrameUsed > m_graphics->GetSafeRecycleFrameIndex())
+		if (descriptor->lastFrameUsed > m_graphics->GetSafeRecycleFrameIndex())
 		{
-			vkFreeDescriptorSets(m_device, descriptor.pool, 1, &descriptor.set);
-			iter = m_descriptors.erase(iter);
+			vkFreeDescriptorSets(m_device, descriptor->pool, 1, &descriptor->set);
+
+			m_descriptorsMap.erase(descriptor->bindingsHashCode);
+
+			m_descriptors[i] = m_descriptors[m_descriptors.size() - 1];
+			m_descriptors.resize(m_descriptors.size() - 1);
+			i--;
 		}
 		else
 		{
-			iter++;
+			i++;
 		}
 	}
 
@@ -241,87 +288,119 @@ bool VulkanResourceSetPool::WriteDescriptorSet(VkDescriptorSet set, const Array<
 	return true;
 }
 
-VkDescriptorSet VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings)
+bool VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings,  VkDescriptorSet& output)
 {
-	//uint32_t bindingsHash = VulkanResourceSetBinding::HashBindings(bindings);
-	//if ()
+	// Look up bindings hash code to see if we can speedily do this.
+	std::size_t hashCode = VulkanResourceSetBinding::GetBindingsHashCode(layout, bindings);
+
+	auto iter = m_descriptorsMap.find(hashCode);
+	if (iter != m_descriptorsMap.end())
+	{
+		std::shared_ptr<CachedDescriptors>& descriptor = iter->second;
+
+		if (descriptor->layout == layout)
+		{
+			if (VulkanResourceSetBinding::BindingsEqualTo(descriptor->currentBindings, bindings))
+			{
+				descriptor->lastFrameUsed = m_graphics->GetFrameIndex();
+				output = descriptor->set;
+				return true;
+			}
+			else
+			{
+				printf("Cannot use previous, bindings are different: %i/%i.\n", descriptor->currentBindings.size(), bindings.size());
+			}
+		}
+		else
+		{
+			printf("Cannot use previous, layout is different.\n");
+		}
+	}
 
 	// Find one that matches our layout and binding exactly, we can just return
 	// it as-is regardless of which frame it was last sent to the gpu as we don't need to update it.
 	for (auto& descriptor : m_descriptors)
 	{
-		if (descriptor.layout != layout)
+		if (descriptor->layout != layout)
 		{
 			continue;
 		}
 
-		if (!VulkanResourceSetBinding::BindingsEqualTo(descriptor.currentBindings, bindings))
+		if (!VulkanResourceSetBinding::BindingsEqualTo(descriptor->currentBindings, bindings))
 		{
 			continue;
 		}
 		
-		descriptor.lastFrameUsed = m_graphics->GetFrameIndex();
-		return descriptor.set;
+		descriptor->lastFrameUsed = m_graphics->GetFrameIndex();
+
+		output = descriptor->set;
+		return true;
 	}
 
 	// Find one using the same layout, but that hasn't been used for enough frames to ensure
 	// we don't trample on it while the gpu is reading, update this descriptor and return it.
 	for (auto& descriptor : m_descriptors)
 	{
-		if (descriptor.layout != layout)
+		if (descriptor->layout != layout)
 		{
 			continue;
 		}
 
-		if (descriptor.lastFrameUsed > m_graphics->GetSafeRecycleFrameIndex())
+		if (descriptor->lastFrameUsed > m_graphics->GetSafeRecycleFrameIndex())
 		{
 			continue;
 		}
 
-		WriteDescriptorSet(descriptor.set, bindings);
+		WriteDescriptorSet(descriptor->set, bindings);
 
-		descriptor.currentBindings = bindings;
-		VulkanResourceSetBinding::UpdateVulkanObjects(descriptor.currentBindings);
+		descriptor->currentBindings = bindings;
+		VulkanResourceSetBinding::UpdateVulkanObjects(descriptor->currentBindings);
 
-		descriptor.lastFrameUsed = m_graphics->GetFrameIndex();
-		return descriptor.set;
+		descriptor->bindingsHashCode = hashCode;
+		descriptor->lastFrameUsed = m_graphics->GetFrameIndex();
+
+		output = descriptor->set;
+		return true;
 	}
 
 	// If neither of the above worked, its time to create a new descriptor.
 	// Create actual set.		
-	CachedDescriptors descriptor;
-	descriptor.currentBindings = bindings;
-	VulkanResourceSetBinding::UpdateVulkanObjects(descriptor.currentBindings);
-	descriptor.lastFrameUsed = m_graphics->GetFrameIndex();
-	descriptor.layout = layout;
+	std::shared_ptr<CachedDescriptors> descriptor = std::make_shared<CachedDescriptors>();
+	descriptor->bindingsHashCode = hashCode;
+	descriptor->currentBindings = bindings;
+	VulkanResourceSetBinding::UpdateVulkanObjects(descriptor->currentBindings);
+	descriptor->lastFrameUsed = m_graphics->GetFrameIndex();
+	descriptor->layout = layout;
 
-	if (!AllocateSet(layout, descriptor.set, descriptor.pool))
+	if (!AllocateSet(layout, descriptor->set, descriptor->pool))
 	{
 		PruneDescriptors();
 
-		if (!AllocateSet(layout, descriptor.set, descriptor.pool))
+		if (!AllocateSet(layout, descriptor->set, descriptor->pool))
 		{
 			if (!CreateNewPool())
 			{
 				m_logger->WriteError(LogCategory::Vulkan, "Failed to allocate new descriptor pool when new descriptor was required.");
-				return nullptr;
+				return false;
 			}
 
-			if (!AllocateSet(layout, descriptor.set, descriptor.pool))
+			if (!AllocateSet(layout, descriptor->set, descriptor->pool))
 			{
 				m_logger->WriteError(LogCategory::Vulkan, "Failed to allocate new descriptor after pruning and attempting to create new pools.");
-				return nullptr;
+				return false;
 			}
 		}
 	}
 
-	WriteDescriptorSet(descriptor.set, descriptor.currentBindings);
+	WriteDescriptorSet(descriptor->set, descriptor->currentBindings);
 
 	m_descriptors.push_back(descriptor);
+	m_descriptorsMap.emplace(descriptor->bindingsHashCode, descriptor);
 
 	//m_logger->WriteInfo(LogCategory::Vulkan, "Allocated new descriptor: %i", m_descriptors.size());
 
-	return descriptor.set;
+	output = descriptor->set;
+	return true;
 }
 
 VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourceSetDescription& description)

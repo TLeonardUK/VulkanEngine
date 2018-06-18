@@ -48,10 +48,13 @@ VkDescriptorSetLayout VulkanResourceSet::GetLayout()
 
 VkDescriptorSet VulkanResourceSet::ConsumeSet()
 {
-	// todo: If we know we haven't been updated, keep previous descriptor set?
-	// todo: If uniforms are shared, don't duplicate them.
+	VkDescriptorSet output;
+	if (m_pool->RequestDescriptorSetForThisFrame(m_layout, m_currentBindings, output))
+	{
+		return output;
+	}
 
-	return m_pool->RequestDescriptorSetForThisFrame(m_layout, m_currentBindings);
+	return nullptr;
 }
 
 VulkanResourceSetBinding& VulkanResourceSet::GetBinding(int location, int arrayIndex)

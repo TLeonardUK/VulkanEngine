@@ -65,10 +65,10 @@ void VulkanGameInstance::Initialize()
 	std::shared_ptr<ResourceManager> resourceManager = engine->GetResourceManager();
 	std::shared_ptr<Renderer> renderer = engine->GetRenderer();
 
-	{
-	//	ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
-	//	renderer->TmpAddModelToRender(model);
-	}
+	/*{
+		ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
+		renderer->TmpAddModelToRender(model);
+	}*/
 	{
 		ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Skyboxes/blue_sky.json");
 		renderer->TmpAddModelToRender(model);

@@ -2,6 +2,7 @@
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
+#include "Engine/Types/Dictionary.h"
 #include "Engine/Engine/Logging.h"
 
 #include "Engine/Graphics/Graphics.h"
@@ -34,6 +35,7 @@ struct VulkanResourceSetBinding
 	bool EqualTo(const VulkanResourceSetBinding& other) const;
 	static bool BindingsEqualTo(const Array<VulkanResourceSetBinding>& first, const Array<VulkanResourceSetBinding>& second);
 	static void UpdateVulkanObjects(Array<VulkanResourceSetBinding>& objects);
+	static std::size_t GetBindingsHashCode(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings);
 };
 
 class VulkanResourceSetPool
@@ -44,6 +46,7 @@ class VulkanResourceSetPool
 private:
 	struct CachedDescriptors
 	{
+		std::size_t bindingsHashCode;
 		int lastFrameUsed;
 		VkDescriptorSetLayout layout;
 		VkDescriptorSet set;
@@ -58,7 +61,10 @@ private:
 	};
 
 	Array<CachedLayout> m_layouts;
-	Array<CachedDescriptors> m_descriptors;
+	Array<std::shared_ptr<CachedDescriptors>> m_descriptors;
+	Dictionary<uint32_t, std::shared_ptr<CachedDescriptors>> m_descriptorsMap;
+
+	uint32_t m_descriptorIndex;
 
 	String m_name;
 	std::shared_ptr<Logger> m_logger;
@@ -76,7 +82,7 @@ private:
 
 	bool Build();
 
-	VkDescriptorSet RequestDescriptorSetForThisFrame(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings);
+	bool RequestDescriptorSetForThisFrame(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings, VkDescriptorSet& output);
 	VkDescriptorSetLayout RequestLayout(const GraphicsResourceSetDescription& description);
 	bool WriteDescriptorSet(VkDescriptorSet set, const Array<VulkanResourceSetBinding>& bindings);
 
