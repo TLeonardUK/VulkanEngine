@@ -54,7 +54,7 @@
             this.sourcePathBox.ReadOnly = true;
             this.sourcePathBox.Size = new System.Drawing.Size(287, 20);
             this.sourcePathBox.TabIndex = 1;
-            this.sourcePathBox.Text = "C:\\Projects\\VulkanEngine\\Assets\\Engine\\Models\\Bistro\\exterior.mtl";
+            this.sourcePathBox.Text = "D:\\Git\\VulkanEngine\\Assets\\Engine\\Models\\Bistro\\exterior.obj";
             // 
             // browseButton
             // 
@@ -92,7 +92,7 @@
             this.assetRootPathBox.ReadOnly = true;
             this.assetRootPathBox.Size = new System.Drawing.Size(287, 20);
             this.assetRootPathBox.TabIndex = 7;
-            this.assetRootPathBox.Text = "C:\\Projects\\VulkanEngine\\Assets";
+            this.assetRootPathBox.Text = "D:\\Git\\VulkanEngine\\Assets";
             // 
             // label2
             // 

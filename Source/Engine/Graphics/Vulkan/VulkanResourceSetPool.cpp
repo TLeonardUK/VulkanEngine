@@ -11,11 +11,16 @@
 
 #include <cassert>
 
+// This whole thing feels very crude. bindings hold image references preventing them getting recycled (change to weak_ptr's).
+// if a model uses a different uniform buffer for several frames in a row, any descriptors using other uniform buffers will be recycled, resulting
+// in constantly churning descriptor pool (slow hash lookups)!
+
 template <class T>
-inline void BindingsHashCombine(std::size_t& seed, const T& v)
+inline void BindingsHashCombine(std::size_t& seed, T v)
 {
 	std::hash<T> hasher;
-	seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	size_t hash = hasher(v);
+	seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
 void VulkanResourceSetBinding::UpdateVulkanObjects(Array<VulkanResourceSetBinding>& objects)
@@ -28,20 +33,26 @@ void VulkanResourceSetBinding::UpdateVulkanObjects(Array<VulkanResourceSetBindin
 	}
 }
 
-bool VulkanResourceSetBinding::EqualTo(const VulkanResourceSetBinding& other) const
+bool VulkanResourceSetBinding::EqualTo(const VulkanResourceSetBinding& other, bool print) const
 {
 	if (type != other.type ||
 		location != other.location ||
 		arrayIndex != other.arrayIndex)
 	{
+		//if (print) printf("Binding different due to location.\n");
 		return false;
 	}
 
 	if (type == VulkanResourceSetBindingType::Sampler)
 	{
-		if (vkSampler != other.sampler->GetSampler() ||
-			vkSamplerImageView != other.samplerImageView->GetImageView())
+		if (vkSampler != other.sampler->GetSampler())
 		{
+			//if (print) printf("Binding different due to sampler.\n");
+			return false;
+		}
+		if (vkSamplerImageView != other.samplerImageView->GetImageView())
+		{
+			//if (print) printf("Binding different due to image view.\n");
 			return false;
 		}
 	}
@@ -49,6 +60,7 @@ bool VulkanResourceSetBinding::EqualTo(const VulkanResourceSetBinding& other) co
 	{
 		if (vkUniformBuffer != other.uniformBuffer->GetGpuBuffer())
 		{
+			//if (print) printf("Binding different due to uniform gpu buffer 0x%p / 0x%p.\n", vkUniformBuffer, other.uniformBuffer->GetGpuBuffer());
 			return false;
 		}
 	}
@@ -61,7 +73,7 @@ bool VulkanResourceSetBinding::EqualTo(const VulkanResourceSetBinding& other) co
 	return true;
 }
 
-bool VulkanResourceSetBinding::BindingsEqualTo(const Array<VulkanResourceSetBinding>& first, const Array<VulkanResourceSetBinding>& second)
+bool VulkanResourceSetBinding::BindingsEqualTo(const Array<VulkanResourceSetBinding>& first, const Array<VulkanResourceSetBinding>& second, bool print)
 {
 	if (first.size() != second.size())
 	{
@@ -70,7 +82,7 @@ bool VulkanResourceSetBinding::BindingsEqualTo(const Array<VulkanResourceSetBind
 
 	for (int i = 0; i < first.size(); i++)
 	{
-		if (!first[i].EqualTo(second[i]))
+		if (!first[i].EqualTo(second[i], print))
 		{
 			return false;
 		}
@@ -81,8 +93,8 @@ bool VulkanResourceSetBinding::BindingsEqualTo(const Array<VulkanResourceSetBind
 
 size_t VulkanResourceSetBinding::GetBindingsHashCode(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings)
 {
-	size_t hash = 0;
-	BindingsHashCombine(hash, layout);
+	size_t hash = 1;
+	BindingsHashCombine(hash, reinterpret_cast<void*>(layout));
 	BindingsHashCombine(hash, bindings.size());
 
 	for (int i = 0; i < bindings.size(); i++)
@@ -94,12 +106,12 @@ size_t VulkanResourceSetBinding::GetBindingsHashCode(VkDescriptorSetLayout layou
 
 		if (binding.type == VulkanResourceSetBindingType::Sampler)
 		{
-			BindingsHashCombine(hash, binding.sampler->GetSampler());
-			BindingsHashCombine(hash, binding.samplerImageView->GetImageView());
+			BindingsHashCombine(hash, reinterpret_cast<void*>(binding.sampler->GetSampler()));
+			BindingsHashCombine(hash, reinterpret_cast<void*>(binding.samplerImageView->GetImageView()));
 		}
 		else if (binding.type == VulkanResourceSetBindingType::UniformBuffer)
 		{
-			BindingsHashCombine(hash, binding.uniformBuffer->GetGpuBuffer());
+			BindingsHashCombine(hash, reinterpret_cast<void*>(binding.uniformBuffer->GetGpuBuffer()));
 		}
 	}
 
@@ -116,7 +128,6 @@ VulkanResourceSetPool::VulkanResourceSetPool(
 	, m_logger(logger)
 	, m_name(name)
 	, m_graphics(graphics)
-	, m_descriptorIndex(0)
 {
 }
 
@@ -208,7 +219,7 @@ bool VulkanResourceSetPool::PruneDescriptors()
 	{
 		std::shared_ptr<CachedDescriptors>& descriptor = m_descriptors[i];
 
-		if (descriptor->lastFrameUsed > m_graphics->GetSafeRecycleFrameIndex())
+		if (descriptor->lastFrameUsed < m_graphics->GetSafeRecycleFrameIndex())
 		{
 			vkFreeDescriptorSets(m_device, descriptor->pool, 1, &descriptor->set);
 
@@ -293,8 +304,8 @@ bool VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescriptorSetLayo
 	// Look up bindings hash code to see if we can speedily do this.
 	std::size_t hashCode = VulkanResourceSetBinding::GetBindingsHashCode(layout, bindings);
 
-	auto iter = m_descriptorsMap.find(hashCode);
-	if (iter != m_descriptorsMap.end())
+	auto range = m_descriptorsMap.equal_range(hashCode);
+	for (auto iter = range.first; iter != range.second; iter++)
 	{
 		std::shared_ptr<CachedDescriptors>& descriptor = iter->second;
 
@@ -303,19 +314,61 @@ bool VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescriptorSetLayo
 			if (VulkanResourceSetBinding::BindingsEqualTo(descriptor->currentBindings, bindings))
 			{
 				descriptor->lastFrameUsed = m_graphics->GetFrameIndex();
+				//printf("Descriptor 0x%p set to lastused=%i\n", &*descriptor, descriptor->lastFrameUsed);
+
 				output = descriptor->set;
 				return true;
 			}
+		}
+	}
+
+	/*
+	printf("===============================================================================================================\n");
+	printf("Current Bindings\n");
+	for (auto& binding : bindings)
+	{
+		printf("\tBinding: type=%i location=%i arrayIndex=%i sampler=(%s 0x%p) view=(%s 0x%p) uniform=(%s 0x%p)\n", binding.type, binding.location, binding.arrayIndex,
+			(binding.sampler != nullptr ? binding.sampler->GetName().c_str() : ""),
+			(binding.sampler != nullptr ? binding.sampler->GetSampler() : nullptr),
+			(binding.samplerImageView != nullptr ? binding.samplerImageView->GetName().c_str() : ""),
+			(binding.samplerImageView != nullptr ? binding.samplerImageView->GetImageView() : nullptr),
+			(binding.uniformBuffer != nullptr ? binding.uniformBuffer->GetName().c_str() : ""),
+			(binding.uniformBuffer != nullptr ? binding.uniformBuffer->GetGpuBuffer() : nullptr)
+		);
+	}
+
+	range = m_descriptorsMap.equal_range(hashCode);
+	for (auto iter = range.first; iter != range.second; iter++)
+	{
+		std::shared_ptr<CachedDescriptors>& descriptor = iter->second;
+
+		if (descriptor->layout == layout)
+		{
+			if (!VulkanResourceSetBinding::BindingsEqualTo(descriptor->currentBindings, bindings, true))
+			{
+				printf("Original Bindings\n");
+				for (auto& binding : descriptor->currentBindings)
+				{
+					printf("\tBinding: type=%i location=%i arrayIndex=%i sampler=(%s 0x%p) view=(%s 0x%p) uniform=(%s 0x%p)\n", binding.type, binding.location, binding.arrayIndex,
+						(binding.sampler != nullptr ? binding.sampler->GetName().c_str() : ""),
+						(binding.sampler != nullptr ? binding.sampler->GetSampler() : nullptr),
+						(binding.samplerImageView != nullptr ? binding.samplerImageView->GetName().c_str() : ""),
+						(binding.samplerImageView != nullptr ? binding.samplerImageView->GetImageView() : nullptr),
+						(binding.uniformBuffer != nullptr ? binding.uniformBuffer->GetName().c_str() : ""),
+						(binding.uniformBuffer != nullptr ? binding.uniformBuffer->GetGpuBuffer() : nullptr)
+					);
+				}
+			}
 			else
 			{
-				printf("Cannot use previous, bindings are different: %i/%i.\n", descriptor->currentBindings.size(), bindings.size());
+				printf("Bindings equal?\n");
 			}
 		}
 		else
 		{
 			printf("Cannot use previous, layout is different.\n");
 		}
-	}
+	}*/
 
 	// Find one that matches our layout and binding exactly, we can just return
 	// it as-is regardless of which frame it was last sent to the gpu as we don't need to update it.
@@ -330,7 +383,19 @@ bool VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescriptorSetLayo
 		{
 			continue;
 		}
-		
+
+		/*printf("Using pre-existing descriptor, originalHash=0x%p descriptorHash=0x%p\n", hashCode, descriptor->bindingsHashCode);
+		for (auto& binding : descriptor->currentBindings)
+		{
+			printf("\tBinding: type=%i location=%i arrayIndex=%i sampler=(%s 0x%p) view=(%s 0x%p) uniform=(%s 0x%p)\n", binding.type, binding.location, binding.arrayIndex,
+				(binding.sampler != nullptr ? binding.sampler->GetName().c_str() : ""),
+				(binding.sampler != nullptr ? binding.sampler->GetSampler() : nullptr),
+				(binding.samplerImageView != nullptr ? binding.samplerImageView->GetName().c_str() : ""),
+				(binding.samplerImageView != nullptr ? binding.samplerImageView->GetImageView() : nullptr),
+				(binding.uniformBuffer != nullptr ? binding.uniformBuffer->GetName().c_str() : ""),
+				(binding.uniformBuffer != nullptr ? binding.uniformBuffer->GetGpuBuffer() : nullptr)
+			);
+		}*/
 		descriptor->lastFrameUsed = m_graphics->GetFrameIndex();
 
 		output = descriptor->set;
@@ -346,7 +411,7 @@ bool VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescriptorSetLayo
 			continue;
 		}
 
-		if (descriptor->lastFrameUsed > m_graphics->GetSafeRecycleFrameIndex())
+		if (descriptor->lastFrameUsed >= m_graphics->GetSafeRecycleFrameIndex())
 		{
 			continue;
 		}
@@ -356,8 +421,27 @@ bool VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescriptorSetLayo
 		descriptor->currentBindings = bindings;
 		VulkanResourceSetBinding::UpdateVulkanObjects(descriptor->currentBindings);
 
+		// Remove original hash code entry.
+		auto range = m_descriptorsMap.equal_range(descriptor->bindingsHashCode);
+		for (auto iter = range.first; iter != range.second; iter++)
+		{
+			if (iter->second == descriptor)
+			{
+				m_descriptorsMap.erase(iter);
+				break;
+			}
+		}
+
+
+		//printf("Recycled descriptor(%p) hashcode=0x%p count=%i lastused=%i safeIndex=%i.\n", &*descriptor, hashCode, m_descriptorsMap.count(descriptor->bindingsHashCode), descriptor->lastFrameUsed, m_graphics->GetSafeRecycleFrameIndex());
+
 		descriptor->bindingsHashCode = hashCode;
 		descriptor->lastFrameUsed = m_graphics->GetFrameIndex();
+
+		// Emplace with new hash code entry.
+		m_descriptorsMap.emplace(descriptor->bindingsHashCode, descriptor);
+
+		//printf("After Recycled descriptor(%p) hashcode=0x%p count=%i lastUsed=%i.\n", &*descriptor, descriptor->bindingsHashCode, m_descriptorsMap.count(descriptor->bindingsHashCode), descriptor->lastFrameUsed);
 
 		output = descriptor->set;
 		return true;
@@ -396,9 +480,9 @@ bool VulkanResourceSetPool::RequestDescriptorSetForThisFrame(VkDescriptorSetLayo
 
 	m_descriptors.push_back(descriptor);
 	m_descriptorsMap.emplace(descriptor->bindingsHashCode, descriptor);
-
 	//m_logger->WriteInfo(LogCategory::Vulkan, "Allocated new descriptor: %i", m_descriptors.size());
 
+	//printf("New descriptor.\n");
 	output = descriptor->set;
 	return true;
 }

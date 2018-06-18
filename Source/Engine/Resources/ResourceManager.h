@@ -138,7 +138,7 @@ private:
 
 	std::atomic<int> m_pendingLoads;
 
-	const int MaxResourceLoaders = 2;
+	//const int MaxResourceLoaders = 2;
 
 	bool m_active;
 	Array<std::thread> m_workers;

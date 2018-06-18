@@ -22,7 +22,8 @@ bool ResourceManager::Init()
 	m_pendingLoads = 0;
 	m_ownerThread = std::this_thread::get_id();
 
-	for (int i = 0; i < MaxResourceLoaders; i++)
+	int loaders = std::thread::hardware_concurrency();
+	for (int i = 0; i < loaders; i++)
 	{
 		m_workers.push_back(std::thread(&ResourceManager::WorkerLoop, this));
 	}

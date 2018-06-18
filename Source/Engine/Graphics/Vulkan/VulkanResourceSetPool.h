@@ -32,8 +32,8 @@ struct VulkanResourceSetBinding
 	VkSampler vkSampler;
 	VkImageView vkSamplerImageView;
 
-	bool EqualTo(const VulkanResourceSetBinding& other) const;
-	static bool BindingsEqualTo(const Array<VulkanResourceSetBinding>& first, const Array<VulkanResourceSetBinding>& second);
+	bool EqualTo(const VulkanResourceSetBinding& other, bool print = false) const;
+	static bool BindingsEqualTo(const Array<VulkanResourceSetBinding>& first, const Array<VulkanResourceSetBinding>& second, bool print = false);
 	static void UpdateVulkanObjects(Array<VulkanResourceSetBinding>& objects);
 	static std::size_t GetBindingsHashCode(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings);
 };
@@ -62,9 +62,7 @@ private:
 
 	Array<CachedLayout> m_layouts;
 	Array<std::shared_ptr<CachedDescriptors>> m_descriptors;
-	Dictionary<uint32_t, std::shared_ptr<CachedDescriptors>> m_descriptorsMap;
-
-	uint32_t m_descriptorIndex;
+	MultiDictionary<size_t, std::shared_ptr<CachedDescriptors>> m_descriptorsMap;
 
 	String m_name;
 	std::shared_ptr<Logger> m_logger;
