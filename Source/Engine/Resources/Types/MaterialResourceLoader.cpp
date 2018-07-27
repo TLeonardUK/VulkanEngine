@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Resources/Types/MaterialResourceLoader.h"
 #include "Engine/Resources/Types/Material.h"
 #include "Engine/Resources/Types/Texture.h"
@@ -113,6 +115,12 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 			if (binding.Format == GraphicsBindingFormat::Texture)
 			{
 				binding.Value_Texture = manager->Load<Texture>(values[0]);
+				manager->AddResourceDependency(resource, binding.Value_Texture);
+			}
+			else if (binding.Format == GraphicsBindingFormat::TextureCube)
+			{
+				binding.Value_TextureCube = manager->Load<TextureCube>(values[0]);
+				manager->AddResourceDependency(resource, binding.Value_TextureCube);
 			}
 			else
 			{
@@ -125,8 +133,10 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 
 	std::shared_ptr<Material> material = std::make_shared<Material>(m_graphics, m_renderer, m_logger, resource->Path, shader, properties);
 
-	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
-		material->UpdateResources();
+	manager->AddResourceLoadedCallback(resource, [=]() {
+		m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+			material->UpdateResources();
+		});
 	});
 
 	return material;

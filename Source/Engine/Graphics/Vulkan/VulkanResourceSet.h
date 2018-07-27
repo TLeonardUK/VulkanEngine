@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -36,7 +37,9 @@ private:
 	VkDescriptorSetLayout GetLayout();
 	VkDescriptorSet ConsumeSet();
 
-	void GetUniformBufferOffsets(Array<uint32_t>& destination);
+	const Array<VulkanResourceSetBinding>& GetBindings();
+
+	void GetUniformBufferOffsets(uint32_t* destination, int* count);
 
 	VulkanResourceSetBinding& GetBinding(int location, int arrayIndex);
 
@@ -52,6 +55,8 @@ public:
 
 	virtual bool UpdateBinding(int location, int arrayIndex, std::shared_ptr<IGraphicsUniformBuffer> buffer);
 	virtual bool UpdateBinding(int location, int arrayIndex, std::shared_ptr<IGraphicsSampler> sampler, std::shared_ptr<IGraphicsImageView> imageView);
+
+	virtual std::shared_ptr<IGraphicsResourceSetInstance> ConsumeInstance();
 
 	virtual void FreeResources();
 	virtual String GetName();

@@ -1,0 +1,12 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/default_cube.json",  
+    "Bindings":
+    {        
+        "AlbedoTexture":
+        {   
+            "Format": "TextureCube",          
+            "Value": "Engine/Textures/default_cube.json"   
+        }
+    }
+}

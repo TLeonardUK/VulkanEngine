@@ -13,19 +13,21 @@ class VulkanGameInstance
 	: public IGameInstance
 {
 protected:
-	std::shared_ptr<RenderView> m_tmpRenderView;
 	Vector3 m_viewPosition;
 	Quaternion m_viewRotation;
 	Vector3 m_viewRotationEuler;
 	int m_frameCount;
 
-	const float MouseSensitivity = 500.0f;
-	const float MovementSpeed = 20.0f;
+	Entity m_camera;
+	Entity m_skybox;
+	Entity m_environment1;
+	Entity m_environment2;
 
 public:
 	VulkanGameInstance(std::shared_ptr<Engine> engine);
 
 	virtual String GetAssetFolder();
+	virtual String GetCompiledAssetFolder();
 	virtual String GetGameName();
 	virtual void GetGameVersion(int& major, int& minor, int& build);
 

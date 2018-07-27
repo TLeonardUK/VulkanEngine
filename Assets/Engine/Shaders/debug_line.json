@@ -1,0 +1,62 @@
+{
+    "Type": "Shader",   
+	
+	"PrimitiveType": "LineList",
+    "PolygonMode": "Line",
+	"LineWidth": 4,
+	
+    "FrameBuffer": "GBuffer",
+    
+    "Stages":
+    {
+        "Vertex":
+        {
+            "ShaderPath": "Engine/Shaders/debug_line.vert",
+            "EntryPoint": "main",
+            "VertexStreams":
+            {
+                "inPosition":
+                {
+                    "Format": "Float3",
+                    "Location": 0,
+                    "BindTo": "Position"
+                },
+                "inColor":
+                {
+                    "Format": "Float4",
+                    "Location": 1,
+                    "BindTo": "Color"
+                }
+            }
+        },
+        "Fragment":
+        {
+            "ShaderPath": "Engine/Shaders/debug_line.frag",
+            "EntryPoint": "main"
+        }
+    },
+    "Bindings":
+    {   
+        "globalProperties":
+        {
+            "Type": "UniformBufferObject",
+            "Binding": 0,
+			"Frequency": "Global",
+            "Fields":
+            {                       
+                "view":
+                {
+                    "Format": "Matrix4",
+                    "Location": 0,
+                    "BindTo": "ViewMatrix"
+                },                        
+                "proj":
+                {
+                    "Format": "Matrix4",
+                    "Location": 1,
+                    "BindTo": "ProjectionMatrix"
+                }
+            }
+        }
+    }
+}

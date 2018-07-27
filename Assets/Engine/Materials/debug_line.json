@@ -1,0 +1,7 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/debug_line.json",  
+    "Bindings":
+    {        
+    }
+}

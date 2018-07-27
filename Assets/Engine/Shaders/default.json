@@ -39,10 +39,32 @@
     },
     "Bindings":
     {   
-        "properties":
+        "globalProperties":
         {
             "Type": "UniformBufferObject",
             "Binding": 0,
+			"Frequency": "Global",
+            "Fields":
+            {                     
+                "view":
+                {
+                    "Format": "Matrix4",
+                    "Location": 0,
+                    "BindTo": "ViewMatrix"
+                },                        
+                "proj":
+                {
+                    "Format": "Matrix4",
+                    "Location": 1,
+                    "BindTo": "ProjectionMatrix"
+                }
+            }
+        },
+        "meshProperties":
+        {
+            "Type": "UniformBufferObject",
+            "Binding": 1,
+			"Frequency": "Mesh",
             "Fields":
             {
                 "model":
@@ -50,25 +72,13 @@
                     "Format": "Matrix4",
                     "Location": 0,
                     "BindTo": "ModelMatrix"
-                },                        
-                "view":
-                {
-                    "Format": "Matrix4",
-                    "Location": 1,
-                    "BindTo": "ViewMatrix"
-                },                        
-                "proj":
-                {
-                    "Format": "Matrix4",
-                    "Location": 2,
-                    "BindTo": "ProjectionMatrix"
                 }
             }
         },
         "albedoTextureSampler":
         {
             "Type": "Sampler",
-            "Binding": 1,
+            "Binding": 2,
             "BindTo": "AlbedoTexture"
         }
     }

@@ -1,10 +1,9 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
 #include "Engine/Graphics/GraphicsEnums.h"
-
-#include <memory>
 
 typedef int GraphicsAttachmentIndex;
 typedef int GraphicsSubPassIndex;
@@ -38,6 +37,8 @@ public:
 	Array<GraphicsRenderPassAttachment> attachments;
 	Array<GraphicsRenderPassSubPass> subPasses;
 	Array<GraphicsRenderPassSubPassDependency> subPassDependencies;
+
+	bool transitionToPresentFormat;
 
 public:
 	GraphicsAttachmentIndex AddColorAttachment(GraphicsFormat format, bool isPresentBuffer);

@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Engine/Logging.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Resources/Types/Material.h"
@@ -35,6 +37,11 @@ std::shared_ptr<IGraphicsPipeline> Material::GetWireframePipeline()
 std::shared_ptr<IGraphicsResourceSet> Material::GetResourceSet()
 {
 	return m_resourceSet;
+}
+
+String Material::GetName()
+{
+	return m_name;
 }
 
 bool Material::GetVertexBufferFormat(VertexBufferBindingDescription& vertexBufferFormat)
@@ -160,7 +167,7 @@ bool Material::FillUniformBuffer(std::shared_ptr<IGraphicsUniformBuffer> buffer,
 {
 	MaterialPropertyCollection& globalProperties = m_renderer->GetGlobalMaterialProperties();
 
-	Array<char> uboData(binding.GetUniformBufferSize());
+	m_uboDataBuffer.resize(binding.GetUniformBufferSize());
 
 	for (int i = 0; i < binding.Fields.size(); i++)
 	{
@@ -178,7 +185,7 @@ bool Material::FillUniformBuffer(std::shared_ptr<IGraphicsUniformBuffer> buffer,
 		}
 
 		// insert into ubo.
-		char* destination = uboData.data() + fieldOffset;
+		char* destination = m_uboDataBuffer.data() + fieldOffset;
 		char* source;
 		int sourceSize;
 
@@ -217,7 +224,7 @@ bool Material::FillUniformBuffer(std::shared_ptr<IGraphicsUniformBuffer> buffer,
 		memcpy(destination, source, sourceSize);
 	}
 
-	buffer->Upload(uboData.data(), 0, uboData.size());
+	buffer->Upload(m_uboDataBuffer.data(), 0, (int)m_uboDataBuffer.size());
 
 	return true;
 }
@@ -235,6 +242,9 @@ void Material::UpdateBindings()
 		{
 		case GraphicsBindingType::UniformBufferObject:
 			{
+				// todo: if global, retrieve from global list.
+				// todo: if mesh, retrieve from mesh list.
+
 				std::shared_ptr<IGraphicsUniformBuffer> buffer = m_uniformBuffers[binding.Name];
 
 				if (!FillUniformBuffer(buffer, binding))
@@ -268,6 +278,41 @@ void Material::UpdateBindings()
 				}
 
 				std::shared_ptr<Texture> texture = matBinding->Value_Texture.Get();
+				if (matBinding->Value_ImageSampler == nullptr &&
+					matBinding->Value_ImageView == nullptr)
+				{
+					m_resourceSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
+				}
+				else
+				{
+					m_resourceSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
+				}
+
+				break;
+			}
+		case GraphicsBindingType::SamplerCube:
+			{
+				MaterialProperty* matBinding;
+				
+				if (!m_properties.Get(binding.BindToHash, &matBinding))
+				{
+					if (!globalProperties.Get(binding.BindToHash, &matBinding))
+					{
+						m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s', property '%s' does not exist.", m_name.c_str(), binding.Name.c_str(), binding.BindTo.c_str());
+						continue;
+					}
+				}
+
+				if (matBinding->Format != GraphicsBindingFormat::TextureCube)
+				{
+					String expectedFormat = EnumToString<GraphicsBindingFormat>(GraphicsBindingFormat::TextureCube);
+					String actualFormat = EnumToString<GraphicsBindingFormat>(matBinding->Format);
+
+					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s', property format is '%s' expected '%s'.", m_name.c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
+					continue;
+				}
+
+				std::shared_ptr<TextureCube> texture = matBinding->Value_TextureCube.Get();
 				if (matBinding->Value_ImageSampler == nullptr &&
 					matBinding->Value_ImageView == nullptr)
 				{

@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -18,6 +19,7 @@ class VulkanImageView
 private:
 	String m_name;
 	std::shared_ptr<Logger> m_logger;
+	std::shared_ptr<VulkanGraphics> m_graphics;
 
 	VkDevice m_device;
 	VkImageView m_imageView;
@@ -30,13 +32,16 @@ private:
 	friend class VulkanResourceSet;
 	friend class VulkanResourceSetPool;
 	friend struct VulkanResourceSetBinding;
+	friend class VulkanCommandBuffer;
 
 	bool Build(std::shared_ptr<IGraphicsImage> image);
 
 	VkImageView GetImageView();
+	std::shared_ptr<VulkanImage> GetVkImage();
 
 public:
 	VulkanImageView(
+		std::shared_ptr<VulkanGraphics> graphics,
 		VkDevice device,
 		std::shared_ptr<Logger> logger,
 		const String& name);

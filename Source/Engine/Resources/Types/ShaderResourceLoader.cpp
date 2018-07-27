@@ -1,11 +1,11 @@
+#include "Pch.h"
+
 #include "Engine/Resources/Types/ShaderResourceLoader.h"
 #include "Engine/Resources/Types/Shader.h"
 #include "Engine/Resources/Resource.h"
 #include "Engine/Resources/ResourceManager.h"
 #include "Engine/Engine/Logging.h"
 #include "Engine/Graphics/Graphics.h"
-
-#include <algorithm>
 
 // todo: parse out pipeline values here as well? blending modes etc? 
 
@@ -48,7 +48,7 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 		}
 		if (!StringToEnum<GraphicsBindingType>(bindingTypeName, binding.Type))
 		{
-			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised binding type type.", resource->Path.c_str(), bindingTypeName.c_str());
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised binding type.", resource->Path.c_str(), bindingTypeName.c_str());
 			return false;
 		}
 
@@ -82,6 +82,19 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 			if (!fieldsJson.is_object())
 			{
 				m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader definition parameter 'Fields' expected to be an object.", resource->Path.c_str());
+				return false;
+			}
+
+			if (bindingJson.count("Frequency") == 0)
+			{
+				m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding '%s' does not include required paramater 'Frequency'.", resource->Path.c_str(), bindingName.c_str());
+				return false;
+			}
+
+			String freqencyName = bindingJson["Frequency"];
+			if (!StringToEnum<GraphicsBindingFrequency>(freqencyName, binding.Frequency))
+			{
+				m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised frequency type.", resource->Path.c_str(), freqencyName.c_str());
 				return false;
 			}
 
@@ -256,6 +269,8 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 		String shaderFile = stageJson["ShaderPath"];
 		String entryPoint = stageJson["EntryPoint"];
 
+		shaderFile += m_graphics->GetShaderPathPostfix();
+
 		Array<char> shaderBytes;
 		if (!manager->ReadResourceBytes(shaderFile, shaderBytes))
 		{
@@ -324,6 +339,15 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 			return false;
 		}
 	}
+	if (jsonValue.count("PrimitiveType"))
+	{
+		String value = jsonValue["PrimitiveType"];
+		if (!StringToEnum<GraphicsPrimitiveType>(value, pipelineDescription.PrimitiveType))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised primitive type.", resource->Path.c_str(), value.c_str());
+			return false;
+		}
+	}
 	if (jsonValue.count("CullMode"))
 	{
 		String value = jsonValue["CullMode"];
@@ -358,6 +382,26 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised depth compare op.", resource->Path.c_str(), value.c_str());
 			return false;
 		}
+	}
+	if (jsonValue.count("DepthBiasEnabled"))
+	{
+		pipelineDescription.DepthBiasEnabled = jsonValue["DepthBiasEnabled"];
+	}
+	if (jsonValue.count("LineWidth"))
+	{
+		pipelineDescription.LineWidth = jsonValue["LineWidth"];
+	}
+	if (jsonValue.count("DepthBiasConstant"))
+	{
+		pipelineDescription.DepthBiasConstant = jsonValue["DepthBiasConstant"];
+	}
+	if (jsonValue.count("DepthBiasClamp"))
+	{
+		pipelineDescription.DepthBiasClamp = jsonValue["DepthBiasClamp"];
+	}
+	if (jsonValue.count("DepthBiasSlopeFactor"))
+	{
+		pipelineDescription.DepthBiasSlopeFactor = jsonValue["DepthBiasSlopeFactor"];
 	}
 	if (jsonValue.count("StencilTestEnabled"))
 	{

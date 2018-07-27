@@ -1,6 +1,5 @@
 {
-    "Type": "Texture",       
-    "TextureType": "Cube",
+    "Type": "TextureCube",    
     
     "TopImagePath": "Engine/Textures/Skyboxes/top.jpg",
     "BottomImagePath": "Engine/Textures/Skyboxes/bottom.jpg",

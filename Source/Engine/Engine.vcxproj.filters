@@ -76,12 +76,6 @@
     <Filter Include="Source Files\Components\Transform">
       <UniqueIdentifier>{81ec6447-46a4-4ead-8a38-3d23a27c621e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Components\Rendering">
-      <UniqueIdentifier>{d092b1ff-051d-49e6-93a9-6cff847ff6b8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Components\Rendering">
-      <UniqueIdentifier>{fc98fbcf-8268-4855-babd-3450653bde70}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Input">
       <UniqueIdentifier>{0bd8c044-6a2d-422d-9584-516ccc99636d}</UniqueIdentifier>
     </Filter>
@@ -141,6 +135,33 @@
     </Filter>
     <Filter Include="Source Files\UI">
       <UniqueIdentifier>{1f1fbf85-bead-4317-8161-8cec99e438c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Physics">
+      <UniqueIdentifier>{80e44a82-56dd-44b9-8616-e3c6970410f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Physics">
+      <UniqueIdentifier>{c1dbc8cf-0762-4e75-ae32-f7bf99dd00e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Audio">
+      <UniqueIdentifier>{5b04bbd3-4f01-468c-941a-53d47d73f971}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Audio">
+      <UniqueIdentifier>{7e0d4a9d-4864-4a2a-8f38-69664720bf12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Threading">
+      <UniqueIdentifier>{453faf6a-63d6-41ca-a5d4-78afc7b19b3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Mesh">
+      <UniqueIdentifier>{d092b1ff-051d-49e6-93a9-6cff847ff6b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Components\Mesh">
+      <UniqueIdentifier>{fc98fbcf-8268-4855-babd-3450653bde70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Debug">
+      <UniqueIdentifier>{8c78539c-21b4-4b40-80df-1ea79a9d8477}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Profiling">
+      <UniqueIdentifier>{6afdb67f-c8e0-41b6-8ba0-bc2458084302}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -231,20 +252,11 @@
     <ClCompile Include="Graphics\Vulkan\VulkanSampler.cpp">
       <Filter>Source Files\Graphics\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Components\Entity.cpp">
-      <Filter>Source Files\Components</Filter>
-    </ClCompile>
     <ClCompile Include="Components\Component.cpp">
       <Filter>Source Files\Components</Filter>
     </ClCompile>
     <ClCompile Include="Components\Transform\TransformComponent.cpp">
       <Filter>Source Files\Components\Transform</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Camera\CameraViewComponent.cpp">
-      <Filter>Source Files\Components\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Rendering\MeshComponent.cpp">
-      <Filter>Source Files\Components\Rendering</Filter>
     </ClCompile>
     <ClCompile Include="Rendering\Renderer.cpp">
       <Filter>Source Files\Rendering</Filter>
@@ -303,12 +315,6 @@
     <ClCompile Include="Rendering\RenderView.cpp">
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="Components\EntityManager.cpp">
-      <Filter>Source Files\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Camera\CameraFlyingMovementComponent.cpp">
-      <Filter>Source Files\Components\Camera</Filter>
-    </ClCompile>
     <ClCompile Include="ThirdParty\imgui\imgui.cpp">
       <Filter>Source Files\ThirdParty\imgui</Filter>
     </ClCompile>
@@ -326,6 +332,69 @@
     </ClCompile>
     <ClCompile Include="Types\Math.cpp">
       <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Threading\TaskManager.cpp">
+      <Filter>Source Files\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\Timeout.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\World.cpp">
+      <Filter>Source Files\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\System.cpp">
+      <Filter>Source Files\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\AspectCollection.cpp">
+      <Filter>Source Files\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Aspect.cpp">
+      <Filter>Source Files\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Camera\RenderCameraViewsSystem.cpp">
+      <Filter>Source Files\Components\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Mesh\MeshComponent.cpp">
+      <Filter>Source Files\Components\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\Vector.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\Quaternion.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\Matrix.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Transform\TransformUtils.cpp">
+      <Filter>Source Files\Components\Transform</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Camera\FlyCameraMovementSystem.cpp">
+      <Filter>Source Files\Components\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Transform\TransformSystem.cpp">
+      <Filter>Source Files\Components\Transform</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Mesh\MeshBoundsUpdateSystem.cpp">
+      <Filter>Source Files\Components\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\TextureCube.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\TextureCubeResourceLoader.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Vulkan\VulkanResourceSetInstance.cpp">
+      <Filter>Source Files\Graphics\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\Color.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Threading\ParallelFor.cpp">
+      <Filter>Source Files\Threading</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -467,17 +536,11 @@
     <ClInclude Include="Graphics\Vulkan\VulkanSampler.h">
       <Filter>Header Files\Graphics\Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Components\Entity.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
     <ClInclude Include="Components\Component.h">
       <Filter>Header Files\Components</Filter>
     </ClInclude>
     <ClInclude Include="Components\Transform\TransformComponent.h">
       <Filter>Header Files\Components\Transform</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Rendering\MeshComponent.h">
-      <Filter>Header Files\Components\Rendering</Filter>
     </ClInclude>
     <ClInclude Include="Input\Input.h">
       <Filter>Header Files\Input</Filter>
@@ -560,15 +623,6 @@
     <ClInclude Include="Engine\FrameTime.h">
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="Components\EntityManager.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Camera\CameraViewComponent.h">
-      <Filter>Header Files\Components\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Camera\CameraFlyingMovementComponent.h">
-      <Filter>Header Files\Components\Camera</Filter>
-    </ClInclude>
     <ClInclude Include="ThirdParty\imgui\imconfig.h">
       <Filter>Header Files\ThirdParty\imgui</Filter>
     </ClInclude>
@@ -589,6 +643,123 @@
     </ClInclude>
     <ClInclude Include="Graphics\Vulkan\VulkanResource.h">
       <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\TaskManager.h">
+      <Filter>Header Files\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\ParallelFor.h">
+      <Filter>Header Files\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\Async.h">
+      <Filter>Header Files\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Timeout.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\System.h">
+      <Filter>Header Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Aspect.h">
+      <Filter>Header Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\AspectCollection.h">
+      <Filter>Header Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Camera\CameraViewComponent.h">
+      <Filter>Header Files\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Camera\RenderCameraViewsSystem.h">
+      <Filter>Header Files\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Vector.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Quaternion.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Matrix.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Frustum.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Rectangle.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Mesh\MeshComponent.h">
+      <Filter>Header Files\Components\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Vector2.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Vector3.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Vector4.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Matrix2.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Matrix3.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Matrix4.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Plane.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Transform\TransformUtils.h">
+      <Filter>Header Files\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Camera\FlyCameraComponent.h">
+      <Filter>Header Files\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Camera\FlyCameraMovementSystem.h">
+      <Filter>Header Files\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\MessageQueue.h">
+      <Filter>Header Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\ComponentPool.h">
+      <Filter>Header Files\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Transform\TransformSystem.h">
+      <Filter>Header Files\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Bounds.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\OrientedBounds.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Mesh\MeshBoundsUpdateSystem.h">
+      <Filter>Header Files\Components\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\TextureCube.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\TextureCubeResourceLoader.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Vulkan\VulkanResourceSetInstance.h">
+      <Filter>Header Files\Graphics\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsResourceSetInstance.h">
+      <Filter>Header Files\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Profiling\Profiling.h">
+      <Filter>Header Files\Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\Event.h">
+      <Filter>Header Files\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Set.h">
+      <Filter>Header Files\Types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -652,8 +823,14 @@
     <None Include="Rendering\EFrameBufferTarget.inc">
       <Filter>Header Files\Rendering</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Todo.txt" />
+    <None Include="Graphics\EGraphicsPrimitiveType.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsUsage.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Graphics\EGraphicsBindingFrequency.inc">
+      <Filter>Header Files\Graphics</Filter>
+    </None>
   </ItemGroup>
 </Project>

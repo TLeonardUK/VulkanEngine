@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Graphics/GraphicsEnums.h"
 #include "Engine/Types/Math.h"
 
@@ -22,6 +24,10 @@ enum_end_implementation(GraphicsFormat)
 enum_begin_implementation(GraphicsBindingFormat)
 #include "Engine/Graphics/EGraphicsBindingFormat.inc"
 enum_end_implementation(GraphicsBindingFormat)
+
+enum_begin_implementation(GraphicsBindingFrequency)
+#include "Engine/Graphics/EGraphicsBindingFrequency.inc"
+enum_end_implementation(GraphicsBindingFrequency)
 
 enum_begin_implementation(GraphicsBindingType)
 #include "Engine/Graphics/EGraphicsBindingType.inc"
@@ -63,6 +69,10 @@ enum_begin_implementation(GraphicsPolygonMode)
 #include "Engine/Graphics/EGraphicsPolygonMode.inc"
 enum_end_implementation(GraphicsPolygonMode)
 
+enum_begin_implementation(GraphicsPrimitiveType)
+#include "Engine/Graphics/EGraphicsPrimitiveType.inc"
+enum_end_implementation(GraphicsPrimitiveType)
+
 enum_begin_implementation(GraphicsStencilTestCompareOp)
 #include "Engine/Graphics/EGraphicsStencilTestCompareOp.inc"
 enum_end_implementation(GraphicsStencilTestCompareOp)
@@ -71,68 +81,74 @@ enum_begin_implementation(GraphicsStencilTestOp)
 #include "Engine/Graphics/EGraphicsStencilTestOp.inc"
 enum_end_implementation(GraphicsStencilTestOp)
 
+enum_begin_implementation(GraphicsUsage)
+#include "Engine/Graphics/EGraphicsUsage.inc"
+enum_end_implementation(GraphicsUsage)
+
 int GetValueCountForGraphicsBindingFormat(GraphicsBindingFormat format)
 {
-	switch (format)
-	{
-	case GraphicsBindingFormat::Bool:		return 1;
-	case GraphicsBindingFormat::Bool2:		return 2;
-	case GraphicsBindingFormat::Bool3:		return 3;
-	case GraphicsBindingFormat::Bool4:		return 4;
-	case GraphicsBindingFormat::Int:		return 1;
-	case GraphicsBindingFormat::Int2:		return 2;
-	case GraphicsBindingFormat::Int3:		return 3;
-	case GraphicsBindingFormat::Int4:		return 4;
-	case GraphicsBindingFormat::UInt:		return 1;
-	case GraphicsBindingFormat::UInt2:		return 2;
-	case GraphicsBindingFormat::UInt3:		return 3;
-	case GraphicsBindingFormat::UInt4:		return 4;
-	case GraphicsBindingFormat::Float:		return 1;
-	case GraphicsBindingFormat::Float2:		return 2;
-	case GraphicsBindingFormat::Float3:		return 3;
-	case GraphicsBindingFormat::Float4:		return 4;
-	case GraphicsBindingFormat::Double:		return 1;
-	case GraphicsBindingFormat::Double2:	return 2;
-	case GraphicsBindingFormat::Double3:	return 3;
-	case GraphicsBindingFormat::Double4:	return 4;
-	case GraphicsBindingFormat::Matrix2:	return 4;
-	case GraphicsBindingFormat::Matrix3:	return 9;
-	case GraphicsBindingFormat::Matrix4:	return 16;
-	case GraphicsBindingFormat::Texture:	return 1;
-	}
-	return 0;
+	static int lookupTable[static_cast<int>(GraphicsBindingFormat::COUNT)] = {
+		1,// Bool
+		2,
+		3,
+		4,
+		1, //Int
+		2,
+		3,
+		4,
+		1,//UInt
+		2,
+		3,
+		4,
+		1,//Float
+		2,
+		3,
+		4,
+		1,//Double
+		2,
+		3,
+		4,
+		4,//Matrix2
+		9,//Matrix3
+		16,//Matrix4
+		1,//Texture
+		1,//TextureCube
+	};
+
+	return lookupTable[static_cast<int>(format)];
 }
 
 int GetByteSizeForGraphicsBindingFormat(GraphicsBindingFormat format)
 {
-	switch (format)
-	{
-	case GraphicsBindingFormat::Bool:		return sizeof(bool);
-	case GraphicsBindingFormat::Bool2:		return sizeof(BVector2);
-	case GraphicsBindingFormat::Bool3:		return sizeof(BVector3);
-	case GraphicsBindingFormat::Bool4:		return sizeof(BVector4);
-	case GraphicsBindingFormat::Int:		return sizeof(int32_t);
-	case GraphicsBindingFormat::Int2:		return sizeof(IVector2);
-	case GraphicsBindingFormat::Int3:		return sizeof(IVector3);
-	case GraphicsBindingFormat::Int4:		return sizeof(IVector4);
-	case GraphicsBindingFormat::UInt:		return sizeof(uint32_t);
-	case GraphicsBindingFormat::UInt2:		return sizeof(UVector2);
-	case GraphicsBindingFormat::UInt3:		return sizeof(UVector3);
-	case GraphicsBindingFormat::UInt4:		return sizeof(UVector4);
-	case GraphicsBindingFormat::Float:		return sizeof(float);
-	case GraphicsBindingFormat::Float2:		return sizeof(Vector2);
-	case GraphicsBindingFormat::Float3:		return sizeof(Vector3);
-	case GraphicsBindingFormat::Float4:		return sizeof(Vector4);
-	case GraphicsBindingFormat::Double:		return sizeof(double);
-	case GraphicsBindingFormat::Double2:	return sizeof(DVector2);
-	case GraphicsBindingFormat::Double3:	return sizeof(DVector3);
-	case GraphicsBindingFormat::Double4:	return sizeof(DVector4);
-	case GraphicsBindingFormat::Matrix2:	return sizeof(Matrix2);
-	case GraphicsBindingFormat::Matrix3:	return sizeof(Matrix3);
-	case GraphicsBindingFormat::Matrix4:	return sizeof(Matrix4);
-	case GraphicsBindingFormat::Texture:	return 0;
-	}
-	return 0;
+	static int lookupTable[static_cast<int>(GraphicsBindingFormat::COUNT)] = {
+		sizeof(bool),
+		sizeof(BVector2),
+		sizeof(BVector3),
+		sizeof(BVector4),
+		sizeof(int32_t),
+		sizeof(IVector2),
+		sizeof(IVector3),
+		sizeof(IVector4),
+		sizeof(uint32_t),
+		sizeof(UVector2),
+		sizeof(UVector3),
+		sizeof(UVector4),
+		sizeof(float),
+		sizeof(Vector2),
+		sizeof(Vector3),
+		sizeof(Vector4),
+		sizeof(double),
+		sizeof(DVector2),
+		sizeof(DVector3),
+		sizeof(DVector4),
+		sizeof(Matrix2),
+		sizeof(Matrix3),
+		sizeof(Matrix4),
+		0,
+		0,
+	};
+
+	return lookupTable[static_cast<int>(format)];
 }
 
 int GetAlignmentForGraphicsBindingFormat(GraphicsBindingFormat format)
@@ -148,32 +164,33 @@ int GetAlignmentForGraphicsBindingFormat(GraphicsBindingFormat format)
 	// A row - major matrix of C columns has a base alignment equal to the base alignment of a vector of C matrix components.
 	// A column - major matrix has a base alignment equal to the base alignment of the matrix column type.
 
-	switch (format)
-	{
-	case GraphicsBindingFormat::Bool:		return sizeof(bool);
-	case GraphicsBindingFormat::Bool2:		return sizeof(bool) * 2;
-	case GraphicsBindingFormat::Bool3:		return sizeof(bool) * 4;
-	case GraphicsBindingFormat::Bool4:		return sizeof(bool) * 4;
-	case GraphicsBindingFormat::Int:		return sizeof(int32_t);
-	case GraphicsBindingFormat::Int2:		return sizeof(int32_t) * 2;
-	case GraphicsBindingFormat::Int3:		return sizeof(int32_t) * 4;
-	case GraphicsBindingFormat::Int4:		return sizeof(int32_t) * 4;
-	case GraphicsBindingFormat::UInt:		return sizeof(uint32_t);
-	case GraphicsBindingFormat::UInt2:		return sizeof(uint32_t) * 2;
-	case GraphicsBindingFormat::UInt3:		return sizeof(uint32_t) * 4;
-	case GraphicsBindingFormat::UInt4:		return sizeof(uint32_t) * 4;
-	case GraphicsBindingFormat::Float:		return sizeof(float);
-	case GraphicsBindingFormat::Float2:		return sizeof(float) * 2;
-	case GraphicsBindingFormat::Float3:		return sizeof(float) * 4;
-	case GraphicsBindingFormat::Float4:		return sizeof(float) * 4;
-	case GraphicsBindingFormat::Double:		return sizeof(double);
-	case GraphicsBindingFormat::Double2:	return sizeof(double) * 2;
-	case GraphicsBindingFormat::Double3:	return sizeof(double) * 4;
-	case GraphicsBindingFormat::Double4:	return sizeof(double) * 4;
-	case GraphicsBindingFormat::Matrix2:	return sizeof(float) * 2;
-	case GraphicsBindingFormat::Matrix3:	return sizeof(float) * 4;
-	case GraphicsBindingFormat::Matrix4:	return sizeof(float) * 4;
-	case GraphicsBindingFormat::Texture:	return 0;
-	}
-	return 0;
+	static int lookupTable[static_cast<int>(GraphicsBindingFormat::COUNT)] = {
+		sizeof(bool),
+		sizeof(bool) * 2,
+		sizeof(bool) * 4,
+		sizeof(bool) * 4,
+		sizeof(int32_t),
+		sizeof(int32_t) * 2,
+		sizeof(int32_t) * 4,
+		sizeof(int32_t) * 4,
+		sizeof(uint32_t),
+		sizeof(uint32_t) * 2,
+		sizeof(uint32_t) * 4,
+		sizeof(uint32_t) * 4,
+		sizeof(float),
+		sizeof(float) * 2,
+		sizeof(float) * 4,
+		sizeof(float) * 4,
+		sizeof(double),
+		sizeof(double) * 2,
+		sizeof(double) * 4,
+		sizeof(double) * 4,
+		sizeof(float) * 2,
+		sizeof(float) * 4,
+		sizeof(float) * 4,
+		0,
+		0,
+	};
+
+	return lookupTable[static_cast<int>(format)];
 }

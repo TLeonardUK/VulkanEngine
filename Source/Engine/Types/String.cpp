@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Types/String.h"
 
 String StringFormat(const String& Format, va_list List)

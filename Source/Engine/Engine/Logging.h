@@ -1,10 +1,7 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
-
-#include <stdarg.h>
-#include <memory>
-#include <chrono>
 
 enum class LogCategory
 {

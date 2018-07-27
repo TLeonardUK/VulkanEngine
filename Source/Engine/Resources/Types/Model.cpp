@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Resources/Types/Model.h"
 #include "Engine/Resources/Types/Shader.h"
 #include "Engine/Graphics/Graphics.h"
@@ -24,7 +26,7 @@ std::shared_ptr<Mesh> Model::CreateMesh()
 	return mesh;
 }
 
-Array<std::shared_ptr<Mesh>> Model::GetMeshes()
+const Array<std::shared_ptr<Mesh>>& Model::GetMeshes()
 {
 	return m_meshes;
 }
@@ -49,6 +51,11 @@ Mesh::Mesh(std::shared_ptr<Logger> logger, std::shared_ptr<Renderer> renderer, s
 ResourcePtr<Material> Mesh::GetMaterial()
 {
 	return m_material;
+}
+
+Bounds Mesh::GetBounds()
+{
+	return m_bounds;
 }
 
 std::shared_ptr<IGraphicsIndexBuffer> Mesh::GetIndexBuffer()
@@ -108,6 +115,11 @@ void Mesh::SetIndices(const Array<int>& indices)
 {
 	m_indices = indices;
 	m_dirty = true;
+}
+
+void Mesh::RecalculateBounds()
+{
+	m_bounds = Bounds(m_vertices);
 }
 
 void Mesh::UpdateResources()

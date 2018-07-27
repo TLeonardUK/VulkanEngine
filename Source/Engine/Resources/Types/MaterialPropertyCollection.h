@@ -1,10 +1,12 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Resources/ResourceLoader.h"
 #include "Engine/Resources/Resource.h"
 #include "Engine/Resources/ResourceManager.h"
 
 #include "Engine/Resources/Types/Texture.h"
+#include "Engine/Resources/Types/TextureCube.h"
 
 #include "Engine/Graphics/GraphicsEnums.h"
 
@@ -57,10 +59,13 @@ public:
 		Matrix4		Value_Matrix4;
 	};
 
-	ResourcePtr<Texture> Value_Texture;
+	ResourcePtr<Texture>	 Value_Texture;
+	ResourcePtr<TextureCube> Value_TextureCube;
 
 	std::shared_ptr<IGraphicsImageView> Value_ImageView;
 	std::shared_ptr<IGraphicsSampler> Value_ImageSampler;
+
+	//int DataHash;
 
 	void ParseJsonValue(Array<json>& value);
 
@@ -69,12 +74,17 @@ public:
 struct MaterialPropertyCollection
 {
 private:
+	//int m_dataHash;
 	Dictionary<MaterialPropertyHash, MaterialProperty> m_properties;
 
 protected:
 	MaterialProperty* GetOrCreate(MaterialPropertyHash name);
 
 public:
+	//MaterialPropertyCollection();
+
+	// set will update version if value is different.
+
 	void Add(const MaterialProperty& prop);
 
 	bool Get(MaterialPropertyHash Hash, MaterialProperty** binding);

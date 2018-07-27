@@ -1,6 +1,6 @@
-#include "Engine/Graphics/Vulkan/VulkanEnums.h"
+#include "Pch.h"
 
-#include <cassert>
+#include "Engine/Graphics/Vulkan/VulkanEnums.h"
 
 VkFormat GraphicsFormatToVkFormat(GraphicsFormat format)
 {

@@ -1,17 +1,13 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
 #include "Engine/Types/Math.h"
-
 #include "Engine/Graphics/Graphics.h"
-
 #include "Engine/Rendering/Renderer.h"
-
 #include "Engine/Engine/FrameTime.h"
-
-#include <memory>
-#include <chrono>
+#include "Engine/Components/World.h"
 
 class IPlatform;
 class IWindow;
@@ -21,11 +17,14 @@ class Logger;
 class IGameInstance;
 class ResourceManager;
 class ImguiManager;
+class TaskManager;
+class World;
 
 class Engine
 {
 private:
 	String m_assetFolder;
+	String m_compiledAssetFolder;
 	String m_name;
 	int m_versionMajor;
 	int m_versionMinor;
@@ -41,7 +40,23 @@ private:
 	std::shared_ptr<ResourceManager> m_resourceManager;
 
 	std::shared_ptr<ImguiManager> m_imguiManager;
+	std::shared_ptr<TaskManager> m_taskManager;
 
+	std::chrono::high_resolution_clock::time_point m_startTime;
+	std::chrono::high_resolution_clock::time_point m_lastFrameTime;
+	std::chrono::high_resolution_clock::time_point m_lastUpdateTime;
+
+	int m_frameCounter;
+	float m_fpsCounter;
+	float m_frameTimeSumCounter;
+
+	std::shared_ptr<World> m_world;
+
+	FrameTime m_frameTime;
+
+	std::shared_ptr<IGameInstance> m_gameInstance;
+
+private:
 	bool InitPlatform();
 	bool InitLogger();
 	bool InitWindow();
@@ -50,6 +65,8 @@ private:
 	bool InitRenderer();
 	bool InitResourceManager();
 	bool InitImguiManager();
+	bool InitTaskManager();
+	bool InitWorld();
 
 	void TermPlatform();
 	void TermLogger();
@@ -59,23 +76,14 @@ private:
 	void TermRenderer();
 	void TermResourceManager();
 	void TermImguiManager();
+	void TermTaskManager();
+	void TermWorld();
 
 	void UpdateFrameTime();
 
 	bool Init();
 	bool Term();
 	void MainLoop();
-
-	std::chrono::high_resolution_clock::time_point m_startTime;
-	std::chrono::high_resolution_clock::time_point m_lastFrameTime;
-	std::chrono::high_resolution_clock::time_point m_lastUpdateTime;
-	
-	float m_fpsCounter;
-	float m_frameTimeSumCounter;
-
-	FrameTime m_frameTime;
-
-	std::shared_ptr<IGameInstance> m_gameInstance;
 
 public:
 	bool Run(std::shared_ptr<IGameInstance> gameInstance);
@@ -84,6 +92,6 @@ public:
 	std::shared_ptr<Renderer> GetRenderer();
 	std::shared_ptr<IInput> GetInput();
 	std::shared_ptr<ImguiManager> GetImGuiManager();
-
+	std::shared_ptr<World> GetWorld();
 
 };

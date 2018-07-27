@@ -1,4 +1,4 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanSampler.h"
 #include "Engine/Graphics/Vulkan/VulkanEnums.h"
@@ -7,15 +7,16 @@
 
 #include "Engine/Engine/Logging.h"
 
-#include <cassert>
 #include <vk_mem_alloc.h>
 
 VulkanSampler::VulkanSampler(
+	std::shared_ptr<VulkanGraphics> graphics,
 	VkDevice device,
 	std::shared_ptr<Logger> logger,
 	const String& name
 )
-	: m_device(device)
+	: m_graphics(graphics)
+	, m_device(device)
 	, m_logger(logger)
 	, m_name(name)
 	, m_sampler(nullptr)
@@ -36,7 +37,9 @@ void VulkanSampler::FreeResources()
 {
 	if (m_sampler != nullptr)
 	{
-		vkDestroySampler(m_device, m_sampler, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, m_sampler = m_sampler]() {
+			vkDestroySampler(m_device, m_sampler, nullptr);
+		});
 		m_sampler = nullptr;
 	}
 }

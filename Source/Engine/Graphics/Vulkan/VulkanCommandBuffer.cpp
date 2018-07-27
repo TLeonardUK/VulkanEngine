@@ -1,4 +1,4 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
 #include "Engine/Graphics/Vulkan/VulkanCommandBuffer.h"
@@ -8,11 +8,11 @@
 #include "Engine/Graphics/Vulkan/VulkanVertexBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanIndexBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanResourceSet.h"
+#include "Engine/Graphics/Vulkan/VulkanResourceSetInstance.h"
 #include "Engine/Graphics/Vulkan/VulkanImage.h"
+#include "Engine/Graphics/Vulkan/VulkanImageView.h"
 
 #include "Engine/Engine/Logging.h"
-
-#include <cassert>
 
 VulkanCommandBuffer::VulkanCommandBuffer(
 	VkDevice device,
@@ -40,7 +40,9 @@ void VulkanCommandBuffer::FreeResources()
 {
 	if (m_commandBuffer != nullptr)
 	{
-		vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffer);
+		m_graphics->QueueDisposal([m_device = m_device, m_commandPool = m_commandPool, m_commandBuffer = m_commandBuffer]() {
+			vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffer);
+		});
 		m_commandBuffer = nullptr;
 	}
 }
@@ -76,10 +78,18 @@ void VulkanCommandBuffer::End()
 	m_activePipeline = nullptr;
 }
 
-void VulkanCommandBuffer::BeginPass(std::shared_ptr<IGraphicsRenderPass> pass, std::shared_ptr<IGraphicsFramebuffer> framebuffer)
+void VulkanCommandBuffer::BeginPass(const std::shared_ptr<IGraphicsRenderPass>& pass, const std::shared_ptr<IGraphicsFramebuffer>& framebuffer)
 {
-	std::shared_ptr<VulkanRenderPass> vulkanPass = std::dynamic_pointer_cast<VulkanRenderPass>(pass);
-	std::shared_ptr<VulkanFramebuffer> vulkanFramebuffer = std::dynamic_pointer_cast<VulkanFramebuffer>(framebuffer);
+	VulkanRenderPass* vulkanPass = static_cast<VulkanRenderPass*>(&*pass);
+	VulkanFramebuffer* vulkanFramebuffer = static_cast<VulkanFramebuffer*>(&*framebuffer);
+
+	// Transition framebuffer images to initial layouts.
+	const Array<std::shared_ptr<VulkanImageView>>& attachments = vulkanFramebuffer->GetAttachments();
+	for (auto& imageView : attachments)
+	{
+		VulkanImage* image = static_cast<VulkanImage*>(&*imageView->GetImage());
+		TransitionImage(image, image->IsDepth() ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	}
 
 	VkRect2D renderArea = {};
 	renderArea.offset = { 0, 0 };
@@ -93,12 +103,30 @@ void VulkanCommandBuffer::BeginPass(std::shared_ptr<IGraphicsRenderPass> pass, s
 
 	vkCmdBeginRenderPass(m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	m_subPassIndex = 0;
+	m_subPassIndex = 0;	
+	m_activeRenderPass = vulkanPass;
+	m_activeFramebuffer = vulkanFramebuffer;
 }
 
 void VulkanCommandBuffer::EndPass()
 {
 	vkCmdEndRenderPass(m_commandBuffer);
+
+	if (m_activeRenderPass->GetSettings().transitionToPresentFormat)
+	{
+		Array<std::shared_ptr<VulkanImageView>> imageViews = m_activeFramebuffer->GetAttachments();
+		for (auto& view : imageViews)
+		{
+			std::shared_ptr<VulkanImage> image = view->GetVkImage();
+			if (!image->IsDepth())
+			{
+				image->SetVkLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+			}
+		}
+	}
+
+	m_activeRenderPass = nullptr;
+	m_activeFramebuffer = nullptr;
 }
 
 void VulkanCommandBuffer::BeginSubPass()
@@ -136,9 +164,9 @@ void VulkanCommandBuffer::SetScissor(int x, int y, int width, int height)
 	vkCmdSetScissor(m_commandBuffer, 0, 1, &scissor);
 }
 
-void VulkanCommandBuffer::Clear(std::shared_ptr<IGraphicsImage> image, Color color, float depth, float stencil)
+void VulkanCommandBuffer::Clear(const std::shared_ptr<IGraphicsImage>& image, Color color, float depth, float stencil)
 {
-	std::shared_ptr<VulkanImage> vulkanImage = std::dynamic_pointer_cast<VulkanImage>(image);
+	VulkanImage* vulkanImage = static_cast<VulkanImage*>(&*image);
 	
 	VkClearColorValue clearColor = { color.r, color.g, color.b, color.a };
 	
@@ -152,12 +180,14 @@ void VulkanCommandBuffer::Clear(std::shared_ptr<IGraphicsImage> image, Color col
 	imageRange.levelCount = 1;
 	imageRange.layerCount = 1;
 
+	TransitionImage(vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	
 	if (vulkanImage->IsDepth())
 	{
 		vkCmdClearDepthStencilImage(
 			m_commandBuffer,
 			vulkanImage->GetVkImage(),
-			VK_IMAGE_LAYOUT_GENERAL,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			&clearValue.depthStencil,
 			1,
 			&imageRange
@@ -168,7 +198,7 @@ void VulkanCommandBuffer::Clear(std::shared_ptr<IGraphicsImage> image, Color col
 		vkCmdClearColorImage(
 			m_commandBuffer,
 			vulkanImage->GetVkImage(),
-			VK_IMAGE_LAYOUT_GENERAL,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			&clearColor,
 			1,
 			&imageRange
@@ -176,18 +206,18 @@ void VulkanCommandBuffer::Clear(std::shared_ptr<IGraphicsImage> image, Color col
 	}
 }
 
-void VulkanCommandBuffer::SetPipeline(std::shared_ptr<IGraphicsPipeline> pipeline)
+void VulkanCommandBuffer::SetPipeline(const std::shared_ptr<IGraphicsPipeline>& pipeline)
 {
-	std::shared_ptr<VulkanPipeline> vulkanPipeline = std::dynamic_pointer_cast<VulkanPipeline>(pipeline);
+	VulkanPipeline* vulkanPipeline = static_cast<VulkanPipeline*>(&*pipeline);
 
 	vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkanPipeline->GetPipeline());
 
 	m_activePipeline = vulkanPipeline;
 }
 
-void VulkanCommandBuffer::SetVertexBuffer(std::shared_ptr<IGraphicsVertexBuffer> buffer)
+void VulkanCommandBuffer::SetVertexBuffer(const std::shared_ptr<IGraphicsVertexBuffer>& buffer)
 {
-	std::shared_ptr<VulkanVertexBuffer> vulkanBuffer = std::dynamic_pointer_cast<VulkanVertexBuffer>(buffer);
+	VulkanVertexBuffer* vulkanBuffer = static_cast<VulkanVertexBuffer*>(&*buffer);
 
 	VkBuffer buffers[] = { vulkanBuffer->GetGpuBuffer().Buffer };
 	VkDeviceSize offsets[] = { 0 };
@@ -195,9 +225,9 @@ void VulkanCommandBuffer::SetVertexBuffer(std::shared_ptr<IGraphicsVertexBuffer>
 	vkCmdBindVertexBuffers(m_commandBuffer, 0, 1, buffers, offsets);
 }
 
-void VulkanCommandBuffer::SetIndexBuffer(std::shared_ptr<IGraphicsIndexBuffer> buffer)
+void VulkanCommandBuffer::SetIndexBuffer(const std::shared_ptr<IGraphicsIndexBuffer>& buffer)
 {
-	std::shared_ptr<VulkanIndexBuffer> vulkanBuffer = std::dynamic_pointer_cast<VulkanIndexBuffer>(buffer);
+	VulkanIndexBuffer* vulkanBuffer = static_cast<VulkanIndexBuffer*>(&*buffer);
 	vkCmdBindIndexBuffer(
 		m_commandBuffer,
 		vulkanBuffer->GetGpuBuffer().Buffer,
@@ -205,19 +235,44 @@ void VulkanCommandBuffer::SetIndexBuffer(std::shared_ptr<IGraphicsIndexBuffer> b
 		vulkanBuffer->GetIndexSize() == 4 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
 }
 
-void VulkanCommandBuffer::SetResourceSets(Array<std::shared_ptr<IGraphicsResourceSet>> resourceSets)
+void VulkanCommandBuffer::TransitionResourceSets(std::shared_ptr<IGraphicsResourceSet>* values, int count)
+{
+	for (int i = 0; i < count; i++)
+	{
+		VulkanResourceSet* vulkanBuffer = static_cast<VulkanResourceSet*>(&*values[i]);
+		
+		const Array<VulkanResourceSetBinding>& bindings = vulkanBuffer->GetBindings();
+		for (const VulkanResourceSetBinding& binding : bindings)
+		{
+			if (binding.type == VulkanResourceSetBindingType::Sampler)
+			{
+				VulkanImage* vkImage = &*binding.samplerImageView->GetVkImage();
+				TransitionImage(vkImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			}
+		}
+	}
+}
+
+void VulkanCommandBuffer::SetResourceSetInstances(std::shared_ptr<IGraphicsResourceSetInstance>* values, int count)
 {
 	assert(m_activePipeline != nullptr);
 
-	Array<VkDescriptorSet> sets(resourceSets.size());
-	Array<uint32_t> uniformBufferOffsets;
+	uint32_t descriptorSetCount = 0;
+	uint32_t uboOffsetCount = 0;
 
-	for (int i = 0; i < resourceSets.size(); i++)
+	for (int i = 0; i < count; i++)
 	{
-		std::shared_ptr<VulkanResourceSet> vulkanBuffer = std::dynamic_pointer_cast<VulkanResourceSet>(resourceSets[i]);
-		sets[i] = vulkanBuffer->ConsumeSet();
-
-		vulkanBuffer->GetUniformBufferOffsets(uniformBufferOffsets);
+		std::shared_ptr<VulkanResourceSetInstance> vulkanBufferInstance = std::static_pointer_cast<VulkanResourceSetInstance>(values[i]);
+		for (int j = 0; j < vulkanBufferInstance->m_setCount; j++)
+		{
+			assert(descriptorSetCount < VulkanGraphics::MAX_BOUND_DESCRIPTOR_SETS);
+			m_descriptorSetBuffer[descriptorSetCount++] = vulkanBufferInstance->m_sets[j];
+		}
+		for (int j = 0; j < vulkanBufferInstance->m_uboCount; j++)
+		{
+			assert(uboOffsetCount < VulkanGraphics::MAX_BOUND_UBO);
+			m_uniformBufferOffsetBuffer[uboOffsetCount++] = vulkanBufferInstance->m_uniformBufferOffsets[j];
+		}
 	}
 
 	vkCmdBindDescriptorSets(
@@ -225,10 +280,10 @@ void VulkanCommandBuffer::SetResourceSets(Array<std::shared_ptr<IGraphicsResourc
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		m_activePipeline->GetPipelineLayout(),
 		0,
-		static_cast<uint32_t>(sets.size()),
-		sets.data(),
-		static_cast<uint32_t>(uniformBufferOffsets.size()),
-		uniformBufferOffsets.data()
+		descriptorSetCount,
+		m_descriptorSetBuffer,
+		uboOffsetCount,
+		m_uniformBufferOffsetBuffer
 	);
 }
 
@@ -242,15 +297,15 @@ void VulkanCommandBuffer::DrawIndexedElements(int indexCount, int instanceCount,
 	vkCmdDrawIndexed(m_commandBuffer, indexCount, instanceCount, indexOffset, vertexOffset, instanceOffset);
 }
 
-void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsVertexBuffer> buffer)
+void VulkanCommandBuffer::Upload(const std::shared_ptr<IGraphicsVertexBuffer>& buffer)
 {
-	std::shared_ptr<VulkanVertexBuffer> vulkanBuffer = std::dynamic_pointer_cast<VulkanVertexBuffer>(buffer);
+	VulkanVertexBuffer* vulkanBuffer = static_cast<VulkanVertexBuffer*>(&*buffer);
 	UploadStagingBuffers(vulkanBuffer->ConsumeStagingBuffers());
 }
 
-void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsIndexBuffer> buffer)
+void VulkanCommandBuffer::Upload(const std::shared_ptr<IGraphicsIndexBuffer>& buffer)
 {
-	std::shared_ptr<VulkanIndexBuffer> vulkanBuffer = std::dynamic_pointer_cast<VulkanIndexBuffer>(buffer);
+	VulkanIndexBuffer* vulkanBuffer = static_cast<VulkanIndexBuffer*>(&*buffer);
 	UploadStagingBuffers(vulkanBuffer->ConsumeStagingBuffers());
 }
 
@@ -271,8 +326,23 @@ void VulkanCommandBuffer::UploadStagingBuffers(Array<VulkanStagingBuffer> buffer
 	}
 }
 
-void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout)
+void VulkanCommandBuffer::TransitionImage(VulkanImage* image, VkImageLayout dstLayout)
 {
+	/*if (dstLayout != image->GetVkLayout())
+	{
+		printf("[{%08x} %s] %i -> %i\n", image->GetVkImage(), image->GetName().c_str(), image->GetVkLayout(), dstLayout);
+	}*/
+	TransitionImage(image->GetVkImage(), image->GetVkFormat(), image->GetMipLevels(), image->GetVkLayout(), dstLayout, image->IsDepth(), image->GetLayers());
+	image->SetVkLayout(dstLayout);
+}
+
+void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout, bool isDepth, int layerCount)
+{
+	if (srcLayout == dstLayout)
+	{
+		return;
+	}
+
 	VkImageMemoryBarrier barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.oldLayout = srcLayout;
@@ -283,13 +353,13 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mi
 	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = mipLevels;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.layerCount = layerCount;
 	barrier.subresourceRange.baseArrayLayer = 0;
 
 	VkPipelineStageFlags sourceStage;
 	VkPipelineStageFlags destinationStage;
 
-	if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	if (isDepth)
 	{
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 	}
@@ -306,6 +376,14 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mi
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_PREINITIALIZED && dstLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
 	else if (srcLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && dstLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) 
 	{
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -314,6 +392,14 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mi
 		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED && dstLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	}
 	else if (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED && dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 	{
 		barrier.srcAccessMask = 0;
@@ -321,6 +407,78 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mi
 
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_PREINITIALIZED && dstLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_PREINITIALIZED && dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && dstLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && dstLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && dstLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && dstLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL && dstLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && dstLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	}
 	else 
 	{
@@ -337,9 +495,9 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mi
 	);
 }
 
-void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
+void VulkanCommandBuffer::Upload(const std::shared_ptr<IGraphicsImage>& buffer)
 {
-	std::shared_ptr<VulkanImage> vulkanImage = std::dynamic_pointer_cast<VulkanImage>(buffer);
+	VulkanImage* vulkanImage = static_cast<VulkanImage*>(&*buffer);
 
 	int mipLevels = vulkanImage->GetMipLevels();
 	int layerCount = vulkanImage->GetLayers();
@@ -378,7 +536,8 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
 		offset += vulkanImage->GetLayerSize();
 	}
 
-	TransitionImage(image, vulkanImage->GetVkFormat(), mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	TransitionImage(vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	//TransitionImage(image, vulkanImage->GetVkFormat(), mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	vkCmdCopyBufferToImage(
 		m_commandBuffer,
@@ -501,6 +660,8 @@ void VulkanCommandBuffer::Upload(std::shared_ptr<IGraphicsImage> buffer)
 		nullptr,
 		1, 
 		&barrier);
+
+	vulkanImage->SetVkLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Release staging buffers.
 	m_graphics->ReleaseStagingBuffer(stagingBuffer);

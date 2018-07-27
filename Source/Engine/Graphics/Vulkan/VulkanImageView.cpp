@@ -1,4 +1,4 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanImage.h"
 #include "Engine/Graphics/Vulkan/VulkanImageView.h"
@@ -7,14 +7,14 @@
 
 #include "Engine/Engine/Logging.h"
 
-#include <cassert>
-
 VulkanImageView::VulkanImageView(
+	std::shared_ptr<VulkanGraphics> graphics,
 	VkDevice device,
 	std::shared_ptr<Logger> logger,
 	const String& name
 )
-	: m_device(device)
+	: m_graphics(graphics)
+	, m_device(device)
 	, m_logger(logger)
 	, m_name(name)
 {
@@ -29,7 +29,9 @@ void VulkanImageView::FreeResources()
 {
 	if (m_imageView != nullptr)
 	{
-		vkDestroyImageView(m_device, m_imageView, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, m_imageView = m_imageView]() {
+			vkDestroyImageView(m_device, m_imageView, nullptr);
+		});
 		m_imageView = nullptr;
 	}
 }
@@ -44,11 +46,16 @@ VkImageView VulkanImageView::GetImageView()
 	return m_imageView;
 }
 
+std::shared_ptr<VulkanImage> VulkanImageView::GetVkImage()
+{
+	return m_vulkanImage;
+}
+
 bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image)
 {
 	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image view: %s", m_name.c_str());
 
-	std::shared_ptr<VulkanImage> vulkanImage = std::dynamic_pointer_cast<VulkanImage>(image);
+	std::shared_ptr<VulkanImage> vulkanImage = std::static_pointer_cast<VulkanImage>(image);
 
 	m_vulkanImage = vulkanImage;
 

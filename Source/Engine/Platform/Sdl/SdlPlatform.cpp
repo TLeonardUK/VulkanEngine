@@ -1,12 +1,11 @@
+#include "Pch.h"
+
 #include "Engine/Platform/Sdl/SdlPlatform.h"
 #include "Engine/Engine/Logging.h"
+#include "Engine/Profiling/Profiling.h"
 
 #include <SDL.h>
 #include <SDL_video.h>
-
-#if defined(_WIN32)
-#include <windows.h>
-#endif
 
 SdlPlatform::SdlPlatform()
 	: m_closeRequested(false)
@@ -41,6 +40,8 @@ bool SdlPlatform::SetupPlatform()
 
 void SdlPlatform::PumpMessageQueue()
 {
+	ProfileScope scope(Color::Blue, "SdlPlatform::PumpMessageQueue");
+
 	SDL_Event sdlEvent;
 	while (SDL_PollEvent(&sdlEvent))
 	{

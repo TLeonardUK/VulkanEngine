@@ -1,9 +1,7 @@
+#include "Pch.h"
+
 #include "Engine/Engine/Logging.h"
 #include "Engine/Platform/Platform.h"
-
-#include <stdarg.h>
-#include <chrono>
-#include <ctime>
 
 const char* gLogSeverityLiteral[(int)LogSeverity::COUNT] =
 {

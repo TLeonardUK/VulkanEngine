@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Resources/Types/Texture.h"
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Graphics/GraphicsCommandBuffer.h"

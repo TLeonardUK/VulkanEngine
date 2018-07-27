@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -6,8 +7,6 @@
 #include "Engine/Graphics/GraphicsVertexBuffer.h"
 #include "Engine/Graphics/GraphicsRenderPass.h"
 #include "Engine/Graphics/GraphicsResourceSet.h"
-
-#include <memory>
 
 class IGraphicsShader;
 
@@ -21,13 +20,21 @@ public:
 	VertexBufferBindingDescription VertexFormatDescription;
 	bool HasVertexFormatDescription;
 
+	GraphicsPrimitiveType PrimitiveType;
 	GraphicsPolygonMode PolygonMode;
 	GraphicsCullMode CullMode;
 	GraphicsFaceWindingOrder FaceWindingOrder;
 
+	float LineWidth;
+
 	bool DepthTestEnabled;
 	bool DepthWriteEnabled;
 	GraphicsDepthCompareOp DepthCompareOp;
+
+	bool DepthBiasEnabled;
+	float DepthBiasConstant;
+	float DepthBiasClamp;
+	float DepthBiasSlopeFactor;
 
 	bool StencilTestEnabled;
 	int StencilTestReference;

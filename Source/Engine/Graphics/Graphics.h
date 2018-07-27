@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 
@@ -17,8 +18,6 @@
 #include "Engine/Graphics/GraphicsSampler.h"
 #include "Engine/Graphics/GraphicsEnums.h"
 
-#include <memory>
-
 class IWindow;
 
 class IGraphics
@@ -29,6 +28,8 @@ protected:
 public:
 	virtual ~IGraphics() { };
 	virtual void Dispose() = 0;
+
+	virtual String GetShaderPathPostfix() = 0;
 
 	virtual bool AttachToWindow(std::shared_ptr<IWindow> window) = 0;
 	virtual void SetPresentMode(GraphicsPresentMode mode) = 0;
@@ -44,7 +45,7 @@ public:
 	virtual std::shared_ptr<IGraphicsUniformBuffer> CreateUniformBuffer(const String& name, int dataSize) = 0;
 	virtual std::shared_ptr<IGraphicsCommandBufferPool> CreateCommandBufferPool(const String& name) = 0;
 	virtual std::shared_ptr<IGraphicsResourceSetPool> CreateResourceSetPool(const String& name) = 0;
-	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips) = 0;
+	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage) = 0;
 	virtual std::shared_ptr<IGraphicsSampler> CreateSampler(const String& name, const SamplerDescription& settings) = 0;
 
 	// GraphicsDescriptorSetPool pool = CreateDescriptorSetPool(settings)

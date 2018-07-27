@@ -1,4 +1,4 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanUniformBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanEnums.h"
@@ -7,7 +7,6 @@
 
 #include "Engine/Engine/Logging.h"
 
-#include <cassert>
 #include <vk_mem_alloc.h>
 
 VulkanUniformBuffer::VulkanUniformBuffer(

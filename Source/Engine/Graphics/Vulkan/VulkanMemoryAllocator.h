@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -8,8 +9,6 @@
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
-#include <thread>
-#include <mutex>
 
 class VulkanGraphics;
 
@@ -89,7 +88,7 @@ public:
 
 	bool CreateBuffer(int size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryFlags, VmaAllocationCreateFlags allocFlags, VulkanAllocation& allocation);
 	bool CreateImage(const VkImageCreateInfo& createInfo, VmaMemoryUsage memoryFlags, VmaAllocationCreateFlags allocFlags, VulkanAllocation& allocation);
-	void FreeBuffer(VulkanAllocation& allocation);
+	void FreeBuffer(const VulkanAllocation& allocation);
 
 	VulkanUniformBufferAllocation AllocateUniformBuffer(int size);
 	void ReleaseUniformBuffer(VulkanUniformBufferAllocation allocation);

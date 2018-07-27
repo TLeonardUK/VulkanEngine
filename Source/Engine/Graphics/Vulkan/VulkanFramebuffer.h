@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -16,9 +17,12 @@ class VulkanFramebuffer
 private:
 	String m_name;
 	std::shared_ptr<Logger> m_logger;
+	std::shared_ptr<VulkanGraphics> m_graphics;
 
 	VkDevice m_device;
 	VkFramebuffer m_framebuffer;
+
+	Array<std::shared_ptr<VulkanImageView>> m_attachments;
 
 	int m_width;
 	int m_height;
@@ -32,10 +36,12 @@ private:
 	int GetWidth();
 	int GetHeight();
 
+	const Array<std::shared_ptr<VulkanImageView>>& GetAttachments();
 	VkFramebuffer GetFramebuffer();
 
 public:
 	VulkanFramebuffer(
+		std::shared_ptr<VulkanGraphics> graphics,
 		VkDevice device,
 		std::shared_ptr<Logger> logger,
 		const String& name);

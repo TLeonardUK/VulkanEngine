@@ -1,9 +1,7 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
-
-#include <memory>
-#include <vector>
 
 #include "Engine/Types/Array.h"
 
@@ -16,9 +14,6 @@
 
 #include <vulkan/vulkan.h>
 #include <SDL_vulkan.h>
-
-#include <thread>
-#include <mutex>
 
 class Logger;
 class IWindow;
@@ -95,6 +90,8 @@ class VulkanGraphics
 	, public std::enable_shared_from_this<VulkanGraphics>
 {
 public:
+	static const uint32_t MAX_BOUND_DESCRIPTOR_SETS = 8;
+	static const uint32_t MAX_BOUND_UBO = 8;
 
 private:
 	static const Array<const char*> InstanceExtensionsToRequest;
@@ -142,7 +139,9 @@ private:
 	VkExtent2D m_swapChainExtent;
 	bool m_swapChainRegeneratedThisFrame;
 
-	Array<QueuedDisposal> m_queuedDisposal;
+	Array<QueuedDisposal> m_queuedDisposalTable;
+	Array<int> m_queuedDisposalAllocatedIndices;
+	Array<int> m_queuedDisposalFreeIndices;
 
 	std::shared_ptr<IWindow> m_window;
 
@@ -226,6 +225,8 @@ public:
 	virtual ~VulkanGraphics();
 	virtual void Dispose();
 
+	virtual String GetShaderPathPostfix();
+
 	virtual bool AttachToWindow(std::shared_ptr<IWindow> window);
 	virtual void SetPresentMode(GraphicsPresentMode mode);
 	virtual bool Present();
@@ -240,7 +241,7 @@ public:
 	virtual std::shared_ptr<IGraphicsUniformBuffer> CreateUniformBuffer(const String& name, int dataSize);
 	virtual std::shared_ptr<IGraphicsResourceSetPool> CreateResourceSetPool(const String& name);
 	virtual std::shared_ptr<IGraphicsCommandBufferPool> CreateCommandBufferPool(const String& name);
-	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips);
+	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage);
 	virtual std::shared_ptr<IGraphicsSampler> CreateSampler(const String& name, const SamplerDescription& settings);
 
 	virtual void Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer);

@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Graphics/GraphicsRenderPass.h"
 
 GraphicsAttachmentIndex GraphicsRenderPassSettings::AddColorAttachment(GraphicsFormat format, bool isPresentBuffer)

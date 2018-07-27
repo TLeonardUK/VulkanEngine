@@ -1,4 +1,4 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanFramebuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanEnums.h"
@@ -8,14 +8,14 @@
 
 #include "Engine/Engine/Logging.h"
 
-#include <cassert>
-
 VulkanFramebuffer::VulkanFramebuffer(
+	std::shared_ptr<VulkanGraphics> graphics,
 	VkDevice device,
 	std::shared_ptr<Logger> logger,
 	const String& name
 )
-	: m_device(device)
+	: m_graphics(graphics)
+	, m_device(device)
 	, m_logger(logger)
 	, m_name(name)
 {
@@ -30,7 +30,9 @@ void VulkanFramebuffer::FreeResources()
 {
 	if (m_framebuffer != nullptr)
 	{
-		vkDestroyFramebuffer(m_device, m_framebuffer, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, m_framebuffer = m_framebuffer]() {
+			vkDestroyFramebuffer(m_device, m_framebuffer, nullptr);
+		});
 		m_framebuffer = nullptr;
 	}
 }
@@ -55,6 +57,11 @@ int VulkanFramebuffer::GetHeight()
 	return m_height;
 }
 
+const Array<std::shared_ptr<VulkanImageView>>& VulkanFramebuffer::GetAttachments()
+{
+	return m_attachments;
+}
+
 bool VulkanFramebuffer::Build(const GraphicsFramebufferSettings& settings)
 {
 	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new framebuffer: %s", m_name.c_str());
@@ -62,12 +69,15 @@ bool VulkanFramebuffer::Build(const GraphicsFramebufferSettings& settings)
 	Array<VkImageView> attachments;
 	for (std::shared_ptr<IGraphicsImageView> view : settings.attachments)
 	{
-		attachments.push_back(std::dynamic_pointer_cast<VulkanImageView>(view)->GetImageView());
+		std::shared_ptr<VulkanImageView> vkView = std::static_pointer_cast<VulkanImageView>(view);
+		m_attachments.push_back(vkView);
+
+		attachments.push_back(vkView->GetImageView());
 	}
 
 	VkFramebufferCreateInfo framebufferInfo = {};
 	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	framebufferInfo.renderPass = std::dynamic_pointer_cast<VulkanRenderPass>(settings.renderPass)->GetRenderPass();
+	framebufferInfo.renderPass = std::static_pointer_cast<VulkanRenderPass>(settings.renderPass)->GetRenderPass();
 	framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 	framebufferInfo.pAttachments = attachments.data();
 	framebufferInfo.width = settings.width;

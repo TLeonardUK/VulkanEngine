@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
 #include "Engine/Graphics/Vulkan/VulkanExtensions.h"
 #include "Engine/Graphics/Vulkan/VulkanDeviceInfo.h"
@@ -17,6 +19,7 @@
 #include "Engine/Graphics/Vulkan/VulkanResourceSetPool.h"
 #include "Engine/Graphics/Vulkan/VulkanSampler.h"
 #include "Engine/Windowing/Sdl/SdlWindow.h"
+#include "Engine/Profiling/Profiling.h"
 #include "Engine/Engine/Logging.h"
 
 #include "Engine/Build.h"
@@ -24,18 +27,14 @@
 #include <vulkan/vulkan.h>
 #include <SDL_vulkan.h>
 
-#include <algorithm>
-#include <set>
-#include <vector>
-#include <cassert>
-#include <memory>
-
 const Array<const char*> VulkanGraphics::DeviceExtensionsToRequest = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
 const Array<const char*> VulkanGraphics::DeviceLayersToRequest = {
+#if 0//defined(_DEBUG)
 	"VK_LAYER_LUNARG_standard_validation"
+#endif
 };
 
 const Array<const char*> VulkanGraphics::InstanceExtensionsToRequest = {
@@ -43,7 +42,9 @@ const Array<const char*> VulkanGraphics::InstanceExtensionsToRequest = {
 };
 
 const Array<const char*> VulkanGraphics::InstanceLayersToRequest = {
+#if 0//defined(_DEBUG)
 	"VK_LAYER_LUNARG_standard_validation"
+#endif
 }; 
 
 VulkanGraphics::VulkanGraphics(
@@ -72,6 +73,16 @@ VulkanGraphics::VulkanGraphics(
 	, m_presentQueue(nullptr)
 	, m_swapChainRegeneratedThisFrame(false)
 {
+	const int initialDisposalTableSize = 1000;
+
+	m_queuedDisposalTable.resize(initialDisposalTableSize);
+	m_queuedDisposalFreeIndices.resize(initialDisposalTableSize);
+	m_queuedDisposalAllocatedIndices.reserve(initialDisposalTableSize);
+
+	for (int i = 0; i < initialDisposalTableSize; i++)
+	{
+		m_queuedDisposalFreeIndices[i] = i;
+	}
 }
 
 VulkanGraphics::~VulkanGraphics()
@@ -115,7 +126,18 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanGraphics::DebugCallback(
 		m_logger->WriteInfo(LogCategory::Vulkan, message);
 	}
 
+
+	if ((flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) != 0)
+	{
+		DebugBreak();
+	}
+
 	return true;
+}
+
+String VulkanGraphics::GetShaderPathPostfix()
+{
+	return ".spirv";
 }
 
 VkInstance VulkanGraphics::GetInstance() const
@@ -157,7 +179,7 @@ bool VulkanGraphics::CreateInstance()
 		}
 	}
 
-	std::shared_ptr<SdlWindow> sdlWindow = std::dynamic_pointer_cast<SdlWindow>(m_window);
+	std::shared_ptr<SdlWindow> sdlWindow = std::static_pointer_cast<SdlWindow>(m_window);
 	if (sdlWindow != nullptr)
 	{
 		unsigned int sdlExtensionCount = 0;
@@ -322,6 +344,8 @@ bool VulkanGraphics::CreateLogicalDevice()
 
 	VkPhysicalDeviceFeatures deviceFeatures = {};
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
+	deviceFeatures.fillModeNonSolid = VK_TRUE;
+	deviceFeatures.depthBiasClamp = VK_TRUE;
 
 	Array<const char*> extensions = DeviceExtensionsToRequest;
 	Array<const char*> layers = DeviceLayersToRequest;
@@ -373,7 +397,7 @@ bool VulkanGraphics::CreateLogicalDevice()
 
 bool VulkanGraphics::CreateSurface()
 {
-	std::shared_ptr<SdlWindow> sdlWindow = std::dynamic_pointer_cast<SdlWindow>(m_window);
+	std::shared_ptr<SdlWindow> sdlWindow = std::static_pointer_cast<SdlWindow>(m_window);
 	if (sdlWindow == nullptr)
 	{
 		m_logger->WriteError(LogCategory::Vulkan, "Window is not an sdl window, no implementation for creating window surface available.");
@@ -505,7 +529,7 @@ bool VulkanGraphics::CreateSwapChain()
 	createInfo.imageColorSpace = m_swapChainFormat.colorSpace;
 	createInfo.imageExtent = m_swapChainExtent;
 	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	createInfo.preTransform = m_physicalDeviceInfo.SurfaceCapabilities.currentTransform;
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	createInfo.presentMode = m_presentMode;
@@ -545,8 +569,10 @@ bool VulkanGraphics::CreateSwapChain()
 		VkExtent3D extent { m_swapChainExtent.width, m_swapChainExtent.height, 1 };
 
 		std::shared_ptr<VulkanImage> image = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, "Swap Chain Buffer", swapChainImages[i], m_swapChainFormat.format, extent, false, shared_from_this());
+		image->SetVkLayout(VK_IMAGE_LAYOUT_UNDEFINED);// VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
 		m_swapChainImages[i] = image;
-		m_swapChainImageViews[i] = std::dynamic_pointer_cast<VulkanImageView>(CreateImageView(StringFormat("Swap Chain Buffer Image View %i", i), image));
+		m_swapChainImageViews[i] = std::static_pointer_cast<VulkanImageView>(CreateImageView(StringFormat("Swap Chain Buffer Image View %i", i), image));
 	}
 
 	m_logger->WriteSuccess(LogCategory::Vulkan, "Successfully created swapchain with %i images.", swapChainImageCount);
@@ -706,6 +732,9 @@ void VulkanGraphics::Dispose()
 		resource->FreeResources();
 	}
 
+	PurgeQueuedDisposals();
+
+
 	/*for (const std::shared_ptr<VulkanIndexBuffer>& buffer : m_indexBuffers)
 	{
 		buffer->FreeResources();
@@ -832,6 +861,8 @@ void VulkanGraphics::CancelPresent()
 
 bool VulkanGraphics::Present()
 {
+	ProfileScope scope(Color::Red, "VulkanGraphics::Present");
+
 	// If swap chain has been regenerated this frame, inform caller.
 	if (m_swapChainRegeneratedThisFrame)
 	{
@@ -927,7 +958,7 @@ std::shared_ptr<IGraphicsShader> VulkanGraphics::CreateShader(const String& name
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanShader> shader = std::make_shared<VulkanShader>(m_logicalDevice, m_logger, name, entryPoint, stage);
+	std::shared_ptr<VulkanShader> shader = std::make_shared<VulkanShader>(shared_from_this(), m_logicalDevice, m_logger, name, entryPoint, stage);
 	if (!shader->LoadFromArray(data))
 	{
 		return nullptr;
@@ -943,7 +974,7 @@ std::shared_ptr<IGraphicsRenderPass> VulkanGraphics::CreateRenderPass(const Stri
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanRenderPass> pass = std::make_shared<VulkanRenderPass>(m_logicalDevice, m_logger, name);
+	std::shared_ptr<VulkanRenderPass> pass = std::make_shared<VulkanRenderPass>(shared_from_this(), m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
 	{
 		return nullptr;
@@ -958,7 +989,7 @@ std::shared_ptr<IGraphicsPipeline> VulkanGraphics::CreatePipeline(const String& 
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanPipeline> pass = std::make_shared<VulkanPipeline>(m_logicalDevice, m_logger, name);
+	std::shared_ptr<VulkanPipeline> pass = std::make_shared<VulkanPipeline>(shared_from_this(), m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
 	{
 		return nullptr;
@@ -973,7 +1004,7 @@ std::shared_ptr<IGraphicsFramebuffer> VulkanGraphics::CreateFramebuffer(const St
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanFramebuffer> pass = std::make_shared<VulkanFramebuffer>(m_logicalDevice, m_logger, name);
+	std::shared_ptr<VulkanFramebuffer> pass = std::make_shared<VulkanFramebuffer>(shared_from_this(), m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
 	{
 		return nullptr;
@@ -988,7 +1019,7 @@ std::shared_ptr<IGraphicsImageView> VulkanGraphics::CreateImageView(const String
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	std::shared_ptr<VulkanImageView> pass = std::make_shared<VulkanImageView>(m_logicalDevice, m_logger, name);
+	std::shared_ptr<VulkanImageView> pass = std::make_shared<VulkanImageView>(shared_from_this(), m_logicalDevice, m_logger, name);
 	if (!pass->Build(image))
 	{
 		return nullptr;
@@ -1074,12 +1105,12 @@ std::shared_ptr<IGraphicsResourceSetPool> VulkanGraphics::CreateResourceSetPool(
 	return pass;
 }
 
-std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips)
+std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage)
 {
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanImage> pass = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, name, m_memoryAllocator, shared_from_this());
-	if (!pass->Build(width, height, layers, format, generateMips))
+	if (!pass->Build(width, height, layers, format, generateMips, usage))
 	{
 		return nullptr;
 	}
@@ -1095,7 +1126,7 @@ std::shared_ptr<IGraphicsSampler> VulkanGraphics::CreateSampler(const String& na
 
 	// todo: do some caching?
 
-	std::shared_ptr<VulkanSampler> pass = std::make_shared<VulkanSampler>(m_logicalDevice, m_logger, name);
+	std::shared_ptr<VulkanSampler> pass = std::make_shared<VulkanSampler>(shared_from_this(), m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
 	{
 		return nullptr;
@@ -1108,7 +1139,7 @@ std::shared_ptr<IGraphicsSampler> VulkanGraphics::CreateSampler(const String& na
 
 void VulkanGraphics::Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
-	m_pendingCommandBuffers.push_back(std::dynamic_pointer_cast<VulkanCommandBuffer>(buffer));
+	m_pendingCommandBuffers.push_back(std::static_pointer_cast<VulkanCommandBuffer>(buffer));
 }
 
 void VulkanGraphics::WaitForDeviceIdle()
@@ -1231,34 +1262,52 @@ void VulkanGraphics::ReleaseStagingBuffer(VulkanStagingBuffer buffer)
 
 void VulkanGraphics::QueueDisposal(QueuedDisposal::DisposalFunction_t function)
 {
-	QueuedDisposal disposal;
-	disposal.function = function;
+	if (m_queuedDisposalFreeIndices.size() == 0)
+	{
+		int index = m_queuedDisposalTable.size();
+		m_queuedDisposalTable.resize(index + 1);
+		m_queuedDisposalFreeIndices.push_back(index);
+	}
+
+	int index = m_queuedDisposalFreeIndices.back();
+	m_queuedDisposalFreeIndices.pop_back();
+	m_queuedDisposalAllocatedIndices.push_back(index);
+
+	QueuedDisposal& disposal = m_queuedDisposalTable[index];
+	disposal.function = std::move(function);
 	disposal.frameIndex = m_currentFrame;
-	m_queuedDisposal.push_back(disposal);
 }
 
 void VulkanGraphics::PurgeQueuedDisposals()
 {
-	for (auto iter = m_queuedDisposal.begin(); iter != m_queuedDisposal.end(); iter++)
+	for (int i = 0; i < m_queuedDisposalAllocatedIndices.size(); i++)
 	{
-		QueuedDisposal& disposal = *iter;
+		QueuedDisposal& disposal = m_queuedDisposalTable[m_queuedDisposalAllocatedIndices[i]];
 		disposal.function();
 	}
 
-	m_queuedDisposal.clear();
+	m_queuedDisposalAllocatedIndices.clear();
+	for (int i = 0; i < m_queuedDisposalTable.size(); i++)
+	{
+		m_queuedDisposalFreeIndices.push_back(i);
+	}
 }
 
 void VulkanGraphics::UpdateQueuedDisposals()
 {
-	for (int i = 0; i < m_queuedDisposal.size(); )
+	size_t count = m_queuedDisposalAllocatedIndices.size();
+
+	for (int i = 0; i < count; )
 	{
-		QueuedDisposal& disposal = m_queuedDisposal[i];
+		int tableIndex = m_queuedDisposalAllocatedIndices[i];
+		QueuedDisposal& disposal = m_queuedDisposalTable[tableIndex];
 		if (disposal.frameIndex <= GetSafeRecycleFrameIndex())
 		{
 			disposal.function();
 
-			m_queuedDisposal[i] = m_queuedDisposal[m_queuedDisposal.size() - 1];
-			m_queuedDisposal.resize(m_queuedDisposal.size() - 1);
+			m_queuedDisposalFreeIndices.push_back(tableIndex);
+			m_queuedDisposalAllocatedIndices[i] = m_queuedDisposalAllocatedIndices[count - 1];
+			count--;
 			i--;
 		}
 		else
@@ -1266,10 +1315,14 @@ void VulkanGraphics::UpdateQueuedDisposals()
 			i++;
 		}
 	}
+
+	m_queuedDisposalAllocatedIndices.resize(count);
 }
 
 void VulkanGraphics::CollectGarbage()
 {
+	ProfileScope scope(Color::Red, "VulkanGraphics::CollectGarbage");
+
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
 	for (int i = 0; i < m_resources.size(); )

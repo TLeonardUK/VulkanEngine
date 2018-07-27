@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Resources/ResourceLoader.h"
 #include "Engine/Resources/Resource.h"
@@ -12,6 +13,7 @@
 
 #include "Engine/Types/Math.h"
 #include "Engine/Types/Array.h"
+#include "Engine/Types/Bounds.h"
 #include "Engine/Types/Dictionary.h"
 #include "Engine/Utilities/Enum.h"
 
@@ -46,6 +48,8 @@ private:
 	std::shared_ptr<IGraphicsIndexBuffer> m_indexBuffer;
 	std::shared_ptr<IGraphicsVertexBuffer> m_vertexBuffer;
 
+	Bounds m_bounds;
+
 	bool m_dirty;
 
 private:
@@ -62,13 +66,16 @@ public:
 	Mesh(std::shared_ptr<Logger> logger, std::shared_ptr<Renderer> renderer, std::shared_ptr<IGraphics> graphics, const String& name);
 
 	ResourcePtr<Material> GetMaterial();
-	
+	Bounds GetBounds();
+
 	void SetMaterial(ResourcePtr<Material> material);
 	void SetVertices(const Array<Vector3>& vertices);
 	void SetNormals(const Array<Vector3>& normals);
 	void SetTexCoords(int index, const Array<Vector2>& texCoords);
 	void SetColors(const Array<Vector4>& colors);
 	void SetIndices(const Array<int>& indices);
+
+	void RecalculateBounds();
 
 };
 
@@ -89,7 +96,6 @@ private:
 
 	void UpdateResources();
 
-	Array<std::shared_ptr<Mesh>> GetMeshes();
 
 public:
 	static const char* Tag;
@@ -97,5 +103,7 @@ public:
 	Model(std::shared_ptr<Logger> logger, std::shared_ptr<Renderer> renderer, std::shared_ptr<IGraphics> graphics, const String& Name);
 
 	std::shared_ptr<Mesh> CreateMesh();
+
+	const Array<std::shared_ptr<Mesh>>& GetMeshes();
 
 };

@@ -1,12 +1,10 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
 #include "Engine/Graphics/Vulkan/VulkanCommandBufferPool.h"
 #include "Engine/Graphics/Vulkan/VulkanCommandBuffer.h"
 
 #include "Engine/Engine/Logging.h"
-
-#include <cassert>
 
 VulkanCommandBufferPool::VulkanCommandBufferPool(
 	VkDevice device,
@@ -45,7 +43,9 @@ void VulkanCommandBufferPool::FreeResources()
 
 	if (m_commandBufferPool != nullptr)
 	{
-		vkDestroyCommandPool(m_device, m_commandBufferPool, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, m_commandBufferPool = m_commandBufferPool]() {
+			vkDestroyCommandPool(m_device, m_commandBufferPool, nullptr);
+		});
 		m_commandBufferPool = nullptr;
 	}
 }
@@ -62,7 +62,7 @@ bool VulkanCommandBufferPool::Build()
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolInfo.queueFamilyIndex = m_deviceInfo.GraphicsQueueFamilyIndex;
-	poolInfo.flags = 0;
+	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 	CheckVkResultReturnOnFail(vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandBufferPool));
 

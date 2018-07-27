@@ -1,6 +1,5 @@
 #pragma once
-
-#include <memory>
+#include "Pch.h"
 
 #include "Engine/Resources/ResourceManager.h"
 #include "Engine/Resources/Types/Material.h"

@@ -1,18 +1,18 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanRenderPass.h"
 #include "Engine/Graphics/Vulkan/VulkanEnums.h"
 
 #include "Engine/Engine/Logging.h"
 
-#include <cassert>
-
 VulkanRenderPass::VulkanRenderPass(
+	std::shared_ptr<VulkanGraphics> graphics,
 	VkDevice device,
 	std::shared_ptr<Logger> logger,
 	const String& name
 )
-	: m_device(device)
+	: m_graphics(graphics)
+	, m_device(device)
 	, m_logger(logger)
 	, m_name(name)
 {
@@ -27,7 +27,9 @@ void VulkanRenderPass::FreeResources()
 {
 	if (m_renderPass != nullptr)
 	{
-		vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, m_renderPass = m_renderPass]() {
+			vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+		});
 		m_renderPass = nullptr;
 	}
 }
@@ -68,7 +70,7 @@ bool VulkanRenderPass::Build(const GraphicsRenderPassSettings& settings)
 			depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 			depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 			depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			depthAttachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;// VK_IMAGE_LAYOUT_UNDEFINED;
 			depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			attachmentDescriptions.push_back(depthAttachment);
 
@@ -87,7 +89,7 @@ bool VulkanRenderPass::Build(const GraphicsRenderPassSettings& settings)
 			colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			colorAttachment.finalLayout = attachment.bIsPresentBuffer ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			colorAttachment.finalLayout = settings.transitionToPresentFormat ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			attachmentDescriptions.push_back(colorAttachment);
 
 			VkAttachmentReference colorAttachmentRef = {};

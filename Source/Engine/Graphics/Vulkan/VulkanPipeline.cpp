@@ -1,4 +1,4 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanPipeline.h"
 #include "Engine/Graphics/Vulkan/VulkanEnums.h"
@@ -8,7 +8,21 @@
 
 #include "Engine/Engine/Logging.h"
 
-#include <cassert>
+VkPrimitiveTopology GraphicsPrimitiveTypeToVk(GraphicsPrimitiveType input)
+{
+	switch (input)
+	{
+	case GraphicsPrimitiveType::PointList:		return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	case GraphicsPrimitiveType::LineList:		return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+	case GraphicsPrimitiveType::LineStrip:		return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+	case GraphicsPrimitiveType::TriangleList:	return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	case GraphicsPrimitiveType::TriangleStrip:	return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+	case GraphicsPrimitiveType::TriangleFan:	return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+	}
+
+	assert(false);
+	return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+}
 
 VkPolygonMode GraphicsPolygonModeToVk(GraphicsPolygonMode input)
 {
@@ -149,11 +163,13 @@ VkShaderStageFlagBits GraphicsPipelineStageToVkShaderStage(GraphicsPipelineStage
 }
 
 VulkanPipeline::VulkanPipeline(
+	std::shared_ptr<VulkanGraphics> graphics,
 	VkDevice device,
 	std::shared_ptr<Logger> logger,
 	const String& name
 )
-	: m_device(device)
+	: m_graphics(graphics)
+	, m_device(device)
 	, m_logger(logger)
 	, m_name(name)
 {
@@ -168,12 +184,16 @@ void VulkanPipeline::FreeResources()
 {
 	if (m_pipeline != nullptr)
 	{
-		vkDestroyPipeline(m_device, m_pipeline, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, m_pipeline = m_pipeline]() {
+			vkDestroyPipeline(m_device, m_pipeline, nullptr);
+		});
 		m_pipeline = nullptr;
 	}
 	if (m_pipelineLayout != nullptr)
 	{
-		vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, m_pipelineLayout = m_pipelineLayout]() {
+			vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+		});
 		m_pipelineLayout = nullptr;
 	}
 }
@@ -197,7 +217,7 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 {
 	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new pipeline: %s", m_name.c_str());
 
-	std::shared_ptr<VulkanRenderPass> vulkanRenderPass = std::dynamic_pointer_cast<VulkanRenderPass>(settings.RenderPass);
+	std::shared_ptr<VulkanRenderPass> vulkanRenderPass = std::static_pointer_cast<VulkanRenderPass>(settings.RenderPass);
 
 	Array<VkPipelineShaderStageCreateInfo> shaderStages;
 
@@ -205,7 +225,7 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 	{
 		if (settings.ShaderStages[i] != nullptr)
 		{
-			std::shared_ptr<VulkanShader> shader = std::dynamic_pointer_cast<VulkanShader>(settings.ShaderStages[i]);
+			std::shared_ptr<VulkanShader> shader = std::static_pointer_cast<VulkanShader>(settings.ShaderStages[i]);
 
 			VkPipelineShaderStageCreateInfo info = {};
 			info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -232,7 +252,7 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 
 	for (int i = 0; i < settings.ResourceSets.size(); i++)
 	{
-		std::shared_ptr<VulkanResourceSet> set = std::dynamic_pointer_cast<VulkanResourceSet>(settings.ResourceSets[i]);
+		std::shared_ptr<VulkanResourceSet> set = std::static_pointer_cast<VulkanResourceSet>(settings.ResourceSets[i]);
 
 		resourceLayouts[i] = set->GetLayout();
 	}
@@ -246,7 +266,7 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssembly.topology = GraphicsPrimitiveTypeToVk(settings.PrimitiveType);
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 	VkViewport viewport = {};
@@ -273,13 +293,13 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = GraphicsPolygonModeToVk(settings.PolygonMode);
-	rasterizer.lineWidth = 1.0f;
+	rasterizer.lineWidth = settings.LineWidth;
 	rasterizer.cullMode = GraphicsCullModeToVk(settings.CullMode);
 	rasterizer.frontFace = GraphicsFaceWindingOrderToVk(settings.FaceWindingOrder);
-	rasterizer.depthBiasEnable = VK_FALSE;
-	rasterizer.depthBiasConstantFactor = 0.0f;
-	rasterizer.depthBiasClamp = 0.0f;
-	rasterizer.depthBiasSlopeFactor = 0.0f;
+	rasterizer.depthBiasEnable = settings.DepthBiasEnabled ? VK_TRUE : VK_FALSE;
+	rasterizer.depthBiasConstantFactor = settings.DepthBiasConstant;
+	rasterizer.depthBiasClamp = settings.DepthBiasClamp;
+	rasterizer.depthBiasSlopeFactor = settings.DepthBiasSlopeFactor;
 
 	VkPipelineMultisampleStateCreateInfo multisampling = {};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;

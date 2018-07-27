@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Resources/ResourceLoader.h"
 #include "Engine/Resources/Resource.h"
@@ -49,6 +50,8 @@ private:
 
 	std::shared_ptr<Shader> m_lastUpdatedShader;
 
+	Array<char> m_uboDataBuffer;
+
 	bool m_dirty;
 
 private:
@@ -76,6 +79,7 @@ public:
 	std::shared_ptr<IGraphicsPipeline> GetWireframePipeline();
 	std::shared_ptr<IGraphicsResourceSet> GetResourceSet();
 
+	String GetName();
 	bool GetVertexBufferFormat(VertexBufferBindingDescription& format);
 
 	MaterialPropertyCollection& GetProperties();

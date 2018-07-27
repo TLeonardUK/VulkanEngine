@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Resources/Types/MaterialPropertyCollection.h"
 
 MaterialPropertyHash CalculateMaterialPropertyHash(const String& name)
@@ -227,6 +229,10 @@ void MaterialProperty::ParseJsonValue(Array<json>& values)
 	switch (Format)
 	{
 	case GraphicsBindingFormat::Texture:
+	{
+		break;
+	}
+	case GraphicsBindingFormat::TextureCube:
 	{
 		break;
 	}

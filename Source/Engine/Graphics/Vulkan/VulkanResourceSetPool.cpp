@@ -1,4 +1,4 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
 #include "Engine/Graphics/Vulkan/VulkanResourceSetPool.h"
@@ -8,8 +8,6 @@
 #include "Engine/Graphics/Vulkan/VulkanSampler.h"
 
 #include "Engine/Engine/Logging.h"
-
-#include <cassert>
 
 // This whole thing feels very crude. bindings hold image references preventing them getting recycled (change to weak_ptr's).
 // if a model uses a different uniform buffer for several frames in a row, any descriptors using other uniform buffers will be recycled, resulting
@@ -140,21 +138,28 @@ void VulkanResourceSetPool::FreeResources()
 {
 	for (auto& descriptor : m_descriptors)
 	{
-		vkFreeDescriptorSets(m_device, descriptor->pool, 1, &descriptor->set);
+		m_graphics->QueueDisposal([m_device = m_device, pool = descriptor->pool, set = descriptor->set]() {
+			vkFreeDescriptorSets(m_device, pool, 1, &set);
+		});
 	}
-	m_descriptors.clear();
-	m_descriptorsMap.clear();
 
 	for (auto& layout : m_layouts)
 	{
-		vkDestroyDescriptorSetLayout(m_device, layout.layout, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, layout = layout.layout]() {
+			vkDestroyDescriptorSetLayout(m_device, layout, nullptr);
+		});
 	}
-	m_layouts.clear();
 
 	for (auto& pool : m_pools)
 	{
-		vkDestroyDescriptorPool(m_device, pool, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, pool = pool]() {
+			vkDestroyDescriptorPool(m_device, pool, nullptr);
+		});
 	}
+
+	m_descriptors.clear();
+	m_descriptorsMap.clear();
+	m_layouts.clear();
 	m_pools.clear();
 }
 
@@ -519,6 +524,11 @@ VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourc
 				break;
 			}
 		case GraphicsBindingType::Sampler:
+			{
+				binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				break;
+			}
+		case GraphicsBindingType::SamplerCube:
 			{
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				break;

@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Resources/Types/ModelResourceLoader.h"
 #include "Engine/Resources/Types/Model.h"
 #include "Engine/Resources/Types/Texture.h"
@@ -11,9 +13,6 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-
-#include <streambuf>
-#include <istream>
 
 struct membuf : std::streambuf 
 {
@@ -144,15 +143,15 @@ std::shared_ptr<IResource> ModelResourceLoader::Load(std::shared_ptr<ResourceMan
 		{
 			if (indices[i].vertex_index < 0)
 			{
-				indices[i].vertex_index = loader->tmpVertices.size() + indices[i].vertex_index;
+				indices[i].vertex_index = (int)loader->tmpVertices.size() + indices[i].vertex_index;
 			}
 			if (indices[i].normal_index < 0)
 			{
-				indices[i].normal_index = loader->tmpNormals.size() + indices[i].normal_index;
+				indices[i].normal_index = (int)loader->tmpNormals.size() + indices[i].normal_index;
 			}
 			if (indices[i].texcoord_index < 0)
 			{
-				indices[i].texcoord_index = loader->tmpTexcoords.size() + indices[i].texcoord_index;
+				indices[i].texcoord_index = (int)loader->tmpTexcoords.size() + indices[i].texcoord_index;
 			}
 		}
 
@@ -317,10 +316,13 @@ std::shared_ptr<IResource> ModelResourceLoader::Load(std::shared_ptr<ResourceMan
 		{
 			modelMesh->SetTexCoords(0, mesh.texcoords);
 		}
+		modelMesh->RecalculateBounds();
 	}
 
-	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
-		model->UpdateResources();
+	manager->AddResourceLoadedCallback(resource, [=]() {
+		m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+			model->UpdateResources();
+		});
 	});
 
 	return model;

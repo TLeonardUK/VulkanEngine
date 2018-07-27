@@ -1,7 +1,5 @@
 #pragma once
-
-#include <memory>
-#include <functional>
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -10,10 +8,6 @@
 #include <SDL.h>
 
 class Logger;
-
-#if defined(_WIN32)
-#include <Windows.h>
-#endif
 
 class SdlPlatform : public IPlatform
 {

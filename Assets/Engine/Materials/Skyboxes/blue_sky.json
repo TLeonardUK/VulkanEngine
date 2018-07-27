@@ -5,7 +5,7 @@
     {        
         "AlbedoTexture":
         {   
-            "Format": "Texture",          
+            "Format": "TextureCube",          
             "Value": "Engine/Textures/Skyboxes/blue_sky.json"   
         }
     }

@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #define ENGINE_NAME "TinyEngine"
 #define ENGINE_VERSION_MAJOR 1

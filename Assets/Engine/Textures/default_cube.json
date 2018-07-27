@@ -1,0 +1,21 @@
+{
+    "Type": "TextureCube",    
+    
+    "TopImagePath": "Engine/Textures/default.png",
+    "BottomImagePath": "Engine/Textures/default.png",
+    "FrontImagePath": "Engine/Textures/default.png",
+    "BackImagePath": "Engine/Textures/default.png",
+    "LeftImagePath": "Engine/Textures/default.png",
+    "RightImagePath": "Engine/Textures/default.png",
+    
+    "MagnificationFilter": "Linear",
+    "MinificationFilter": "Linear",
+    "AddressModeU": "ClampToEdge",
+    "AddressModeV": "ClampToEdge",
+    "AddressModeW": "ClampToEdge",
+    "MaxAnisotropy": 0,
+    "MinLod": 0.0,
+    "MaxLod": -1.0,
+    "MipLodBias": 0.0,
+    "MimapMode": "NearestNeighbour"
+}

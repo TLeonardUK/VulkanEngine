@@ -1,9 +1,10 @@
+#include "Pch.h"
+
 #include "Engine/Input/Sdl/SdlInput.h"
 #include "Engine/Windowing/Sdl/SdlWindow.h"
 #include "Engine/Platform/Sdl/SdlPlatform.h"
 #include "Engine/Engine/Logging.h"
-
-#include <memory>
+#include "Engine/Profiling/Profiling.h"
 
 #include <SDL.h>
 #include <SDL_video.h>
@@ -146,7 +147,7 @@ SdlInput::SdlInput(std::shared_ptr<Logger> logger, std::shared_ptr<IWindow> wind
 	: m_logger(logger)
 	, m_window(window)
 {
-	m_platform = std::dynamic_pointer_cast<SdlPlatform>(platform);
+	m_platform = std::static_pointer_cast<SdlPlatform>(platform);
 	assert(m_platform != nullptr);
 
 	m_platform->RegisterSdlEventCallback([=](SDL_Event& event) -> bool {
@@ -237,7 +238,7 @@ void SdlInput::UpdateKeyState(int keyIndex, bool down)
 
 bool SdlInput::IsWindowInFocus()
 {
-	std::shared_ptr<SdlWindow> window = std::dynamic_pointer_cast<SdlWindow>(m_window);
+	std::shared_ptr<SdlWindow> window = std::static_pointer_cast<SdlWindow>(m_window);
 	Uint32 flags = SDL_GetWindowFlags(window->GetSdlHandle());
 
 	return (window != nullptr && (flags & SDL_WINDOW_INPUT_FOCUS) != 0);
@@ -245,6 +246,8 @@ bool SdlInput::IsWindowInFocus()
 
 void SdlInput::PollInput()
 {
+	ProfileScope scope(Color::Blue, "SdlInput::PollInput");
+
 	if (!IsWindowInFocus())
 	{
 		return;
@@ -270,12 +273,12 @@ void SdlInput::PollInput()
 
 Vector2 SdlInput::GetMousePosition()
 {
-	return Vector2(m_mouseX, m_mouseY);
+	return Vector2((float)m_mouseX, (float)m_mouseY);
 }
 
 void SdlInput::SetMousePosition(Vector2 position)
 {
-	std::shared_ptr<SdlWindow> window = std::dynamic_pointer_cast<SdlWindow>(m_window);
+	std::shared_ptr<SdlWindow> window = std::static_pointer_cast<SdlWindow>(m_window);
 	if (IsWindowInFocus())
 	{
 		SDL_WarpMouseInWindow(window->GetSdlHandle(), (int)position.x, (int)position.y);

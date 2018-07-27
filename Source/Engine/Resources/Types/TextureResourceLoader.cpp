@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Resources/Types/TextureResourceLoader.h"
 #include "Engine/Resources/Types/Texture.h"
 #include "Engine/Resources/Resource.h"
@@ -31,72 +33,15 @@ void TextureResourceLoader::AssignDefault(std::shared_ptr<ResourceStatus> resour
 	resource->DefaultResource = m_defaultTexture.Get();
 }
 
-std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceManager> manager, std::shared_ptr<ResourceStatus> resource, json& jsonValue)
+bool TextureResourceLoader::LoadInternal(
+	std::shared_ptr<ResourceManager> manager,
+	std::shared_ptr<ResourceStatus> resource,
+	json& jsonValue,
+	Array<String>& imagePaths,
+	std::shared_ptr<IGraphicsSampler>& sampler,
+	std::shared_ptr<IGraphicsImageView>& imageView,
+	std::shared_ptr<IGraphicsImage>& image)
 {
-	String textureType = "2D";
-	if (jsonValue.count("TextureType") != 0)
-	{
-		textureType = jsonValue["TextureType"].get<std::string>();
-	}
-
-	Array<String> imagePaths;
-	if (textureType == "2D")
-	{
-		if (jsonValue.count("ImagePath") == 0)
-		{
-			m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'ImagePath'", resource->Path.c_str());
-			return nullptr;
-		}
-
-		imagePaths.push_back(jsonValue["ImagePath"].get<std::string>());
-	}
-	else if (textureType == "Cube")
-	{
-		if (jsonValue.count("TopImagePath") == 0)
-		{
-			m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'TopImagePath'", resource->Path.c_str());
-			return nullptr;
-		}
-		if (jsonValue.count("BottomImagePath") == 0)
-		{
-			m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'BottomImagePath'", resource->Path.c_str());
-			return nullptr;
-		}
-		if (jsonValue.count("FrontImagePath") == 0)
-		{
-			m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'FrontImagePath'", resource->Path.c_str());
-			return nullptr;
-		}
-		if (jsonValue.count("BackImagePath") == 0)
-		{
-			m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'BackImagePath'", resource->Path.c_str());
-			return nullptr;
-		}
-		if (jsonValue.count("LeftImagePath") == 0)
-		{
-			m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'LeftImagePath'", resource->Path.c_str());
-			return nullptr;
-		}
-		if (jsonValue.count("RightImagePath") == 0)
-		{
-			m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'RightImagePath'", resource->Path.c_str());
-			return nullptr;
-		}
-
-
-		imagePaths.push_back(jsonValue["RightImagePath"].get<std::string>());
-		imagePaths.push_back(jsonValue["LeftImagePath"].get<std::string>());
-		imagePaths.push_back(jsonValue["TopImagePath"].get<std::string>());
-		imagePaths.push_back(jsonValue["BottomImagePath"].get<std::string>());
-		imagePaths.push_back(jsonValue["FrontImagePath"].get<std::string>());
-		imagePaths.push_back(jsonValue["BackImagePath"].get<std::string>());
-	}
-	else
-	{
-		m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition contains an invalid type '%s'.", resource->Path.c_str(), textureType.c_str());
-		return nullptr;
-	}
-	
 	int finalTexWidth = -1;
 	int finalTexHeight = -1;
 	int finalTexChannels = -1;
@@ -112,15 +57,15 @@ std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceM
 		if (!manager->ReadResourceBytes(imagePath.c_str(), data))
 		{
 			m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to read path", imagePath.c_str());
-			return nullptr;
+			return false;
 		}
 
 		int texWidth, texHeight, texChannels;
-		buffers[i] = stbi_load_from_memory(reinterpret_cast<stbi_uc*>(data.data()), data.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		buffers[i] = stbi_load_from_memory(reinterpret_cast<stbi_uc*>(data.data()), (int)data.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		if (buffers[i] == nullptr)
 		{
 			m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to decode image, possibly corrupt or in unsupported format.", imagePath.c_str());
-			return nullptr;
+			return false;
 		}
 
 		if (i == 0)
@@ -132,16 +77,16 @@ std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceM
 		else if (texWidth != finalTexWidth || texHeight != finalTexHeight || texChannels != finalTexChannels)
 		{
 			m_logger->WriteError(LogCategory::Resources, "[%-30s] Images contained in texture definition are not all of the same width, height and format.", resource->Path.c_str());
-			return nullptr;
+			return false;
 		}
 	}
 
 	// Create image.
-	std::shared_ptr<IGraphicsImage> image = m_graphics->CreateImage(resource->Path.c_str(), finalTexWidth, finalTexHeight, imagePaths.size(), GraphicsFormat::UNORM_R8G8B8A8, true);
+	image = m_graphics->CreateImage(resource->Path.c_str(), finalTexWidth, finalTexHeight, (int)imagePaths.size(), GraphicsFormat::UNORM_R8G8B8A8, true, GraphicsUsage::None);
 	if (image == nullptr)
 	{
 		m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to create graphics image to use for rendering.", resource->Path.c_str());
-		return nullptr;
+		return false;
 	}
 
 	for (int i = 0; i < imagePaths.size(); i++)
@@ -151,11 +96,11 @@ std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceM
 	}
 
 	// Create view of image.
-	std::shared_ptr<IGraphicsImageView> imageView = m_graphics->CreateImageView(StringFormat("%s View", resource->Path.c_str()), image);
+	imageView = m_graphics->CreateImageView(StringFormat("%s View", resource->Path.c_str()), image);
 	if (imageView == nullptr)
 	{
 		m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to create graphics image view to use for rendering.", resource->Path.c_str());
-		return nullptr;
+		return false;
 	}
 
 	// Load sampler information.
@@ -234,18 +179,40 @@ std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceM
 
 	if (description.MaxLod == -1)
 	{
-		description.MaxLod = image->GetMipLevels();
+		description.MaxLod = (float)image->GetMipLevels();
 	}
 
-	std::shared_ptr<IGraphicsSampler> sampler = m_graphics->CreateSampler(StringFormat("%s Sampler", resource->Path.c_str()), description);
+	sampler = m_graphics->CreateSampler(StringFormat("%s Sampler", resource->Path.c_str()), description);
 	if (sampler == nullptr)
 	{
 		m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to create sampler for texture.", resource->Path.c_str());
 		return false;
 	}
 
-	std::shared_ptr<Texture> texture = std::make_shared<Texture>(m_renderer, image, imageView, sampler);
+	return true;
+}
 
+std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceManager> manager, std::shared_ptr<ResourceStatus> resource, json& jsonValue)
+{
+	Array<String> imagePaths;
+
+	if (jsonValue.count("ImagePath") == 0)
+	{
+		m_logger->WriteError(LogCategory::Resources, "[%-30s] Texture definition does not include required paramter 'ImagePath'", resource->Path.c_str());
+		return nullptr;
+	}
+
+	imagePaths.push_back(jsonValue["ImagePath"].get<std::string>());
+	
+	std::shared_ptr<IGraphicsSampler> sampler;
+	std::shared_ptr<IGraphicsImageView> imageView;
+	std::shared_ptr<IGraphicsImage> image;
+	if (!LoadInternal(manager, resource, jsonValue, imagePaths, sampler, imageView, image))
+	{
+		return nullptr;
+	}
+	
+	std::shared_ptr<Texture> texture = std::make_shared<Texture>(m_renderer, image, imageView, sampler);
 	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 		texture->UpdateResources();
 	});
@@ -257,7 +224,7 @@ std::shared_ptr<Texture> TextureResourceLoader::CreateTextureFromBytes(const Str
 {
 	assert(data.size() == (width * height * 4));
 
-	std::shared_ptr<IGraphicsImage> image = m_graphics->CreateImage(name, width, height, 1, GraphicsFormat::UNORM_R8G8B8A8, bGenerateMips);
+	std::shared_ptr<IGraphicsImage> image = m_graphics->CreateImage(name, width, height, 1, GraphicsFormat::UNORM_R8G8B8A8, bGenerateMips, GraphicsUsage::None);
 	if (image == nullptr)
 	{
 		m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to create graphics image to use for rendering.", name.c_str());
@@ -276,7 +243,7 @@ std::shared_ptr<Texture> TextureResourceLoader::CreateTextureFromBytes(const Str
 	SamplerDescription description = samplerDescription;
 	if (description.MaxLod == -1)
 	{
-		description.MaxLod = image->GetMipLevels();
+		description.MaxLod = (float)image->GetMipLevels();
 	}
 
 	std::shared_ptr<IGraphicsSampler> sampler = m_graphics->CreateSampler(StringFormat("%s Sampler", name.c_str()), description);

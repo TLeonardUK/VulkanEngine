@@ -1,57 +1,76 @@
 #pragma once
+#include "Pch.h"
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
+#include "Engine/Types/Quaternion.h"
+#include "Engine/Types/Vector.h"
+#include "Engine/Types/Matrix.h"
+#include "Engine/Types/Rectangle.h"
 
-#define MATH_PI 3.141592653f
-
-typedef glm::vec2 Vector2;
-typedef glm::vec3 Vector3;
-typedef glm::vec4 Vector4;
-
-typedef glm::bvec2 BVector2;
-typedef glm::bvec3 BVector3;
-typedef glm::bvec4 BVector4;
-
-typedef glm::ivec2 IVector2;
-typedef glm::ivec3 IVector3;
-typedef glm::ivec4 IVector4;
-
-typedef glm::uvec2 UVector2;
-typedef glm::uvec3 UVector3;
-typedef glm::uvec4 UVector4;
-
-typedef glm::dvec2 DVector2;
-typedef glm::dvec3 DVector3;
-typedef glm::dvec4 DVector4;
-
-typedef glm::mat2 Matrix2;
-typedef glm::mat3 Matrix3;
-typedef glm::mat4 Matrix4;
-
-typedef glm::quat Quaternion;
-
-struct Rectangle
+namespace Math
 {
-	float x, y, width, height;
+	static const float Pi = 3.141592653f;
 
-	Rectangle()
-		: x(0.0f)
-		, y(0.0f)
-		, width(0.0f)
-		, height(0.0f)
+	template <typename T>
+	T Radians(T degrees)
 	{
+		static const float Factor = Pi / T(180);
+		return degrees * Factor;
 	}
 
-	Rectangle(float x, float y, float w, float h)
-		: x(x)
-		, y(y)
-		, width(w)
-		, height(h)
+	template <typename T>
+	T Degrees(T radians)
 	{
+		static const float Factor = T(180) / Pi;
+		return radians * Factor;
 	}
-};
+	
+	template <typename T>
+	T Min(T a, T b)
+	{
+		return a < b ? a : b;
+	}
 
-uint32_t RoundUpToPowerOfTwo(uint32_t value);
+	template <typename T>
+	T Max(T a, T b)
+	{
+		return a > b ? a : b;
+	}
+
+	template <typename T>
+	T Sign(T a)
+	{
+		return (a >= 0 ? 1 : -1);
+	}
+
+	__forceinline float Sqrt(float in)
+	{
+		return sqrtf(in);
+	}
+
+	__forceinline float Abs(float in)
+	{
+		return abs(in);
+	}
+
+	__forceinline float InvSqrt(float in)
+	{
+		return 1.0f / sqrtf(in);
+	}
+
+	__forceinline float Squared(float in)
+	{
+		return in * in;
+	}
+
+	__forceinline uint32_t RoundUpToPowerOfTwo(uint32_t v)
+	{
+		v--;
+		v |= v >> 1;
+		v |= v >> 2;
+		v |= v >> 4;
+		v |= v >> 8;
+		v |= v >> 16;
+		v++;
+		return v;
+	}
+}

@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
 
@@ -71,11 +73,11 @@ bool VulkanMemoryAllocator::CreateImage(const VkImageCreateInfo& createInfo, Vma
 	return true;
 }
 
-void VulkanMemoryAllocator::FreeBuffer(VulkanAllocation& allocation)
+void VulkanMemoryAllocator::FreeBuffer(const VulkanAllocation& allocation)
 {
 	vmaDestroyBuffer(m_allocator, allocation.Buffer, allocation.Allocation);
-	allocation.Buffer = nullptr;
-	allocation.Allocation = nullptr;
+	//allocation.Buffer = nullptr;
+	//allocation.Allocation = nullptr;
 }
 
 bool VulkanMemoryAllocator::Build()
@@ -93,7 +95,7 @@ std::shared_ptr<VulkanUniformBufferPool> VulkanMemoryAllocator::GetUniformBuffer
 {
 	for (auto& pool : m_uniformBufferPools)
 	{
-		if (pool->FreeChunkOffsets.size() > 0 && pool->ChunkSize >= size)
+		if (pool->FreeChunkOffsets.size() > 0 && pool->ChunkSize >= (uint32_t)size)
 		{
 			return pool;
 		}
@@ -101,7 +103,7 @@ std::shared_ptr<VulkanUniformBufferPool> VulkanMemoryAllocator::GetUniformBuffer
 
 	// Time to create a new pool.
 	std::shared_ptr<VulkanUniformBufferPool> pool = std::make_shared<VulkanUniformBufferPool>();
-	pool->ChunkSize = std::max(RoundUpToPowerOfTwo(size), (uint32_t)m_deviceInfo.Properties.limits.minUniformBufferOffsetAlignment);
+	pool->ChunkSize = std::max(Math::RoundUpToPowerOfTwo(size), (uint32_t)m_deviceInfo.Properties.limits.minUniformBufferOffsetAlignment);
 	pool->BufferSize = std::min(MaxPoolBufferSize, (uint32_t)m_deviceInfo.Properties.limits.maxUniformBufferRange);
 		
 	if (!CreateBuffer(
@@ -115,7 +117,7 @@ std::shared_ptr<VulkanUniformBufferPool> VulkanMemoryAllocator::GetUniformBuffer
 		return nullptr;
 	}
 
-	for (int offset = 0; offset < pool->BufferSize; offset += pool->ChunkSize)
+	for (uint32_t offset = 0; offset < pool->BufferSize; offset += pool->ChunkSize)
 	{
 		pool->FreeChunkOffsets.push_back(offset);
 	}

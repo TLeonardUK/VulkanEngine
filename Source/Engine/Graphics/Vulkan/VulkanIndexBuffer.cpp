@@ -1,4 +1,4 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanIndexBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanEnums.h"
@@ -7,7 +7,6 @@
 
 #include "Engine/Engine/Logging.h"
 
-#include <cassert>
 #include <vk_mem_alloc.h>
 
 VulkanIndexBuffer::VulkanIndexBuffer(
@@ -40,7 +39,9 @@ void VulkanIndexBuffer::FreeResources()
 
 	if (m_gpuBuffer.Allocation != nullptr)
 	{
-		m_memoryAllocator->FreeBuffer(m_gpuBuffer);
+		m_graphics->QueueDisposal([m_memoryAllocator = m_memoryAllocator, m_gpuBuffer = m_gpuBuffer]() {
+			m_memoryAllocator->FreeBuffer(m_gpuBuffer);
+		});
 		m_gpuBuffer.Allocation = nullptr;
 	}
 }

@@ -1,8 +1,7 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
-
-#include <memory>
 
 class IGraphicsShader
 {

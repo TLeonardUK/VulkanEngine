@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -19,6 +20,7 @@ private:
 	String m_entryPoint;
 	GraphicsPipelineStage m_stage;
 	std::shared_ptr<Logger> m_logger;
+	std::shared_ptr<VulkanGraphics> m_graphics;
 
 	VkDevice m_device;
 	VkShaderModule m_module;
@@ -33,6 +35,7 @@ private:
 
 public:
 	VulkanShader(
+		std::shared_ptr<VulkanGraphics> graphics,
 		VkDevice device, 
 		std::shared_ptr<Logger> logger, 
 		const String& name, 

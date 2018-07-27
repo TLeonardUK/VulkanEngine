@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -26,9 +27,14 @@ private:
 
 	int m_subPassIndex;
 
-	std::shared_ptr<VulkanPipeline> m_activePipeline;
+	VulkanPipeline* m_activePipeline;
+	VulkanRenderPass* m_activeRenderPass;
+	VulkanFramebuffer* m_activeFramebuffer;
 
 	std::shared_ptr<VulkanGraphics> m_graphics;
+
+	VkDescriptorSet m_descriptorSetBuffer[VulkanGraphics::MAX_BOUND_DESCRIPTOR_SETS];
+	uint32_t m_uniformBufferOffsetBuffer[VulkanGraphics::MAX_BOUND_UBO];
 
 private:
 	friend class VulkanGraphics;
@@ -36,7 +42,8 @@ private:
 
 	VkCommandBuffer GetCommandBuffer();
 
-	void TransitionImage(VkImage image, VkFormat format, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout);
+	void TransitionImage(VulkanImage* image, VkImageLayout dstLayout);
+	void TransitionImage(VkImage image, VkFormat format, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout, bool isDepth, int layerCount);
 
 public:
 	VulkanCommandBuffer(
@@ -54,7 +61,7 @@ public:
 	virtual void Begin();
 	virtual void End();
 
-	virtual void BeginPass(std::shared_ptr<IGraphicsRenderPass> pass, std::shared_ptr<IGraphicsFramebuffer> framebuffer);
+	virtual void BeginPass(const std::shared_ptr<IGraphicsRenderPass>& pass, const std::shared_ptr<IGraphicsFramebuffer>& framebuffer);
 	virtual void EndPass();
 
 	virtual void BeginSubPass();
@@ -63,19 +70,21 @@ public:
 	virtual void SetViewport(int x, int y, int width, int height);
 	virtual void SetScissor(int x, int y, int width, int height);
 
-	virtual void Clear(std::shared_ptr<IGraphicsImage> image, Color color, float depth, float stencil);
+	virtual void Clear(const std::shared_ptr<IGraphicsImage>& image, Color color, float depth, float stencil);
 
-	virtual void SetPipeline(std::shared_ptr<IGraphicsPipeline> pipeline);
-	virtual void SetVertexBuffer(std::shared_ptr<IGraphicsVertexBuffer> buffer);
-	virtual void SetIndexBuffer(std::shared_ptr<IGraphicsIndexBuffer> buffer);
-	virtual void SetResourceSets(Array<std::shared_ptr<IGraphicsResourceSet>> resourceSets);
+	virtual void SetPipeline(const std::shared_ptr<IGraphicsPipeline>& pipeline);
+	virtual void SetVertexBuffer(const std::shared_ptr<IGraphicsVertexBuffer>& buffer);
+	virtual void SetIndexBuffer(const std::shared_ptr<IGraphicsIndexBuffer>& buffer);
+
+	virtual void TransitionResourceSets(std::shared_ptr<IGraphicsResourceSet>* values, int count);
+	virtual void SetResourceSetInstances(std::shared_ptr<IGraphicsResourceSetInstance>* values, int count);
 
 	virtual void DrawElements(int vertexCount, int instanceCount, int vertexOffset, int instanceOffset);
 	virtual void DrawIndexedElements(int indexCount, int instanceCount, int indexOffset, int vertexOffset, int instanceOffset);
 
-	virtual void Upload(std::shared_ptr<IGraphicsVertexBuffer> buffer);
-	virtual void Upload(std::shared_ptr<IGraphicsIndexBuffer> buffer);
-	virtual void Upload(std::shared_ptr<IGraphicsImage> buffer);
+	virtual void Upload(const std::shared_ptr<IGraphicsVertexBuffer>& buffer);
+	virtual void Upload(const std::shared_ptr<IGraphicsIndexBuffer>& buffer);
+	virtual void Upload(const std::shared_ptr<IGraphicsImage>& buffer);
 
 	void UploadStagingBuffers(Array<VulkanStagingBuffer> buffers);
 

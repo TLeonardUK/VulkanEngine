@@ -1,9 +1,9 @@
+#include "Pch.h"
+
 #include "Engine/Windowing/Sdl/SdlWindow.h"
 #include "Engine/Engine/Logging.h"
 
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
-
-#include <memory>
 
 #include <SDL.h>
 #include <SDL_video.h>
@@ -37,7 +37,7 @@ bool SdlWindow::SetupWindow()
 
 	Uint32 windowFlags = SDL_WINDOW_RESIZABLE;
 
-	std::shared_ptr<VulkanGraphics> vulkanGraphics = std::dynamic_pointer_cast<VulkanGraphics>(m_graphics);
+	std::shared_ptr<VulkanGraphics> vulkanGraphics = std::static_pointer_cast<VulkanGraphics>(m_graphics);
 	if (vulkanGraphics)
 	{
 		windowFlags |= SDL_WINDOW_VULKAN;

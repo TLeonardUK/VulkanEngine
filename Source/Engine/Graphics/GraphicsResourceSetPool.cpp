@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Graphics/GraphicsResourceSetPool.h"
 
 void GraphicsResourceSetDescription::AddBinding(const String& name, int location, GraphicsBindingType type, int arrayLength)

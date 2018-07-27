@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Resources/Types/Shader.h"
 #include "Engine/Graphics/GraphicsEnums.h"
 

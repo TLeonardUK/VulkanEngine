@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Graphics/GraphicsVertexBuffer.h"
 
 void VertexBufferBindingDescription::AddAttribute(const String& name, int location, GraphicsBindingFormat format, int stride, int offset)

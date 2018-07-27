@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -41,12 +42,14 @@ private:
 
 	std::shared_ptr<VulkanGraphics> m_graphics;
 
+	VkImageLayout m_layout;
+
 private:
 	friend class VulkanGraphics;
 	friend class VulkanImageView;
 	friend class VulkanCommandBuffer;
 
-	bool Build(int width, int height, int layers, GraphicsFormat format, bool generateMips);
+	bool Build(int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage);
 
 	int GetLayerSize();
 	Array<VulkanStagingBuffer> ConsumeStagingBuffers();
@@ -54,6 +57,9 @@ private:
 	VkImage GetVkImage();
 	VkFormat GetVkFormat();
 	VkExtent3D GetVkExtents();
+
+	VkImageLayout GetVkLayout();
+	void SetVkLayout(VkImageLayout layout);
 
 public:
 	VulkanImage(

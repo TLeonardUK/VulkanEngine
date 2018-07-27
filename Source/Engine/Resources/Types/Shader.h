@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Resources/Types/MaterialPropertyCollection.h"
 #include "Engine/Resources/ResourceLoader.h"
@@ -44,6 +45,7 @@ public:
 	GraphicsBindingType Type;
 	int Binding;
 	String BindTo;
+	GraphicsBindingFrequency Frequency;
 	MaterialPropertyHash BindToHash;
 	Array<ShaderBindingField> Fields;
 

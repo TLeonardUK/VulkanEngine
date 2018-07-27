@@ -1,16 +1,14 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
 #include "Engine/Graphics/Vulkan/VulkanResourceSet.h"
+#include "Engine/Graphics/Vulkan/VulkanResourceSetInstance.h"
 #include "Engine/Graphics/Vulkan/VulkanResourceSetPool.h"
 #include "Engine/Graphics/Vulkan/VulkanUniformBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanImageView.h"
 #include "Engine/Graphics/Vulkan/VulkanSampler.h"
 
 #include "Engine/Engine/Logging.h"
-
-#include <cassert>
-#include <algorithm>
 
 VulkanResourceSet::VulkanResourceSet(
 	VkDevice device,
@@ -57,6 +55,11 @@ VkDescriptorSet VulkanResourceSet::ConsumeSet()
 	return nullptr;
 }
 
+const Array<VulkanResourceSetBinding>& VulkanResourceSet::GetBindings()
+{
+	return m_currentBindings;
+}
+
 VulkanResourceSetBinding& VulkanResourceSet::GetBinding(int location, int arrayIndex)
 {
 	for (auto& binding : m_currentBindings)
@@ -92,7 +95,7 @@ bool VulkanResourceSet::UpdateBinding(int location, int arrayIndex, std::shared_
 	binding.location = location;
 	binding.arrayIndex = arrayIndex;
 	binding.type = VulkanResourceSetBindingType::UniformBuffer;
-	binding.uniformBuffer = std::dynamic_pointer_cast<VulkanUniformBuffer>(buffer);
+	binding.uniformBuffer = std::static_pointer_cast<VulkanUniformBuffer>(buffer);
 
 	return true;
 }
@@ -103,19 +106,32 @@ bool VulkanResourceSet::UpdateBinding(int location, int arrayIndex, std::shared_
 	binding.location = location;
 	binding.arrayIndex = arrayIndex;
 	binding.type = VulkanResourceSetBindingType::Sampler;
-	binding.sampler = std::dynamic_pointer_cast<VulkanSampler>(sampler);
-	binding.samplerImageView = std::dynamic_pointer_cast<VulkanImageView>(imageView);
+	binding.sampler = std::static_pointer_cast<VulkanSampler>(sampler);
+	binding.samplerImageView = std::static_pointer_cast<VulkanImageView>(imageView);
 
 	return true;
 }
 
-void VulkanResourceSet::GetUniformBufferOffsets(Array<uint32_t>& destination)
+void VulkanResourceSet::GetUniformBufferOffsets(uint32_t* destination, int* count)
 {
 	for (auto& binding : m_currentBindings)
 	{
 		if (binding.type == VulkanResourceSetBindingType::UniformBuffer)
 		{
-			destination.push_back(binding.uniformBuffer->GetGpuBufferOffset());
+			assert(*count < VulkanGraphics::MAX_BOUND_UBO);
+			destination[(*count)++] = binding.uniformBuffer->GetGpuBufferOffset();
 		}
 	}
+}
+
+std::shared_ptr<IGraphicsResourceSetInstance> VulkanResourceSet::ConsumeInstance()
+{
+	std::shared_ptr<VulkanResourceSetInstance> instance = std::make_shared<VulkanResourceSetInstance>();
+	instance->m_sets[0] = ConsumeSet();
+	instance->m_setCount = 1;
+	instance->m_uboCount = 0;
+
+	GetUniformBufferOffsets(instance->m_uniformBufferOffsets, &instance->m_uboCount);
+
+	return instance;
 }

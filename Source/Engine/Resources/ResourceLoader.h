@@ -1,9 +1,8 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Utilities/Json.h"
-
-#include <memory>
 
 class IResource;
 struct ResourceStatus;

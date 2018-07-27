@@ -1,9 +1,8 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
-
-#include <memory>
 
 struct SamplerDescription
 {

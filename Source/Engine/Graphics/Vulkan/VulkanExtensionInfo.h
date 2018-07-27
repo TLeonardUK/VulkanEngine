@@ -1,11 +1,10 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/Array.h"
 
 #include <vulkan/vulkan.h>
 #include <SDL_vulkan.h>
-
-#include <memory>
 
 class Logger;
 

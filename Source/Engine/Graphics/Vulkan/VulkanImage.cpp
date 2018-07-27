@@ -1,14 +1,10 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanImage.h"
 #include "Engine/Graphics/Vulkan/VulkanEnums.h"
 #include "Engine/Graphics/Vulkan/VulkanRenderPass.h"
 
 #include "Engine/Engine/Logging.h"
-
-#include <cassert>
-#include <algorithm>
-#include <math.h>
 
 VulkanImage::VulkanImage(
 	VkDevice device,
@@ -71,7 +67,9 @@ void VulkanImage::FreeResources()
 	{
 		if (m_isOwner)
 		{
-			vkDestroyImage(m_device, m_image, nullptr);
+			m_graphics->QueueDisposal([m_device = m_device, m_image = m_image]() {
+				vkDestroyImage(m_device, m_image, nullptr);
+			});
 		}
 		m_image = nullptr;
 	}
@@ -82,7 +80,7 @@ String VulkanImage::GetName()
 	return m_name;
 }
 
-bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format, bool generateMips)
+bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage)
 {
 	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image (%i x %i, %i layers): %s", width, height, layers, m_name.c_str());
 
@@ -110,17 +108,36 @@ bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format
 	imageInfo.format = m_format;
 	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	if (m_isDepth)
+
+	switch (usage)
 	{
-		imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	}
-	else
-	{
-		imageInfo.usage = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+	case GraphicsUsage::None:
+		{
+			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			break;
+		}
+	case GraphicsUsage::ColorAttachment:
+		{
+			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+			break;
+		}
+	case GraphicsUsage::DepthAttachment:
+		{
+			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+			break;
+		}
 	}
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.flags = 0;
+
+	if (layers == 6)
+	{
+		imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	}
+	else
+	{
+		imageInfo.flags = 0;
+	}
 
 	if (!m_memoryAllocator->CreateImage(
 		imageInfo,
@@ -132,6 +149,7 @@ bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format
 	}
 
 	m_image = m_mainImage.Image;
+	m_layout = imageInfo.initialLayout;
 
 	return true;
 }
@@ -191,6 +209,16 @@ GraphicsFormat VulkanImage::GetFormat()
 int VulkanImage::GetLayerSize()
 {
 	return m_layerSize;
+}
+
+VkImageLayout VulkanImage::GetVkLayout()
+{
+	return m_layout;
+}
+
+void VulkanImage::SetVkLayout(VkImageLayout layout)
+{
+	m_layout = layout;
 }
 
 bool VulkanImage::Stage(int layer, void* buffer, int offset, int length)

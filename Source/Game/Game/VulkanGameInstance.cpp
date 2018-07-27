@@ -6,8 +6,13 @@
 #include "Engine/Resources/Types/TextureResourceLoader.h"
 #include "Engine/Resources/Types/Model.h"
 #include "Engine/UI/ImguiManager.h"
-
 #include "Engine/ThirdParty/imgui/imgui.h"
+#include "Engine/Profiling/Profiling.h"
+
+#include "Engine/Components/Camera/CameraViewComponent.h"
+#include "Engine/Components/Camera/FlyCameraComponent.h"
+#include "Engine/Components/Mesh/MeshComponent.h"
+#include "Engine/Components/Transform/TransformComponent.h"
 
 VulkanGameInstance::VulkanGameInstance(std::shared_ptr<Engine> engine)
 	: IGameInstance(engine)
@@ -17,6 +22,11 @@ VulkanGameInstance::VulkanGameInstance(std::shared_ptr<Engine> engine)
 String VulkanGameInstance::GetAssetFolder()
 {
 	return "../Assets/";
+}
+
+String VulkanGameInstance::GetCompiledAssetFolder()
+{
+	return "../Temp/Assets/";
 }
 
 String VulkanGameInstance::GetGameName()
@@ -62,6 +72,7 @@ void VulkanGameInstance::GetWindowSettings(int& width, int& height, int& rate, W
 void VulkanGameInstance::Initialize()
 {
 	std::shared_ptr<Engine> engine = GetEngine();
+	std::shared_ptr<World> world = engine->GetWorld();
 	std::shared_ptr<ResourceManager> resourceManager = engine->GetResourceManager();
 	std::shared_ptr<Renderer> renderer = engine->GetRenderer();
 
@@ -70,18 +81,17 @@ void VulkanGameInstance::Initialize()
 		//renderer->TmpAddModelToRender(model);
 	}
 	{
-		ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Skyboxes/blue_sky.json");
-		renderer->TmpAddModelToRender(model);
+		//ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Skyboxes/blue_sky.json");
+		//renderer->TmpAddModelToRender(model);
 	}
 	{
 		//ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Bistro/exterior.json");
 		//renderer->TmpAddModelToRender(model);
 	}
 	{
-		ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Bistro/interior.json");
-		renderer->TmpAddModelToRender(model);
+		//ResourcePtr<Model> model = resourceManager->Load<Model>("Engine/Models/Bistro/interior.json");
+		//renderer->TmpAddModelToRender(model);
 	}
-
 	/*{
 		ResourcePtr<Model> model = resourceManager->Load<Model>("Game/Models/Dark Souls/10-0 Depths.json");
 		renderer->TmpAddModelToRender(model);
@@ -151,8 +161,92 @@ void VulkanGameInstance::Initialize()
 		renderer->TmpAddModelToRender(model);
 	}*/
 
-	m_tmpRenderView = std::make_shared<RenderView>();
-	renderer->AddView(m_tmpRenderView);
+
+	// Create environment.	
+	/*for (int x = 0; x < 15; x++) 
+	{
+		for (int y = 0; y < 15; y++)
+		{
+			for (int z = 0; z < 15; z++)
+			{
+				Entity cube = world->CreateEntity();
+
+				TransformComponent* rootTransform = world->AddComponent<TransformComponent>(cube);
+				rootTransform->localPosition = Vector3((float)x, (float)y, (float)z) * Vector3(10.0f, 10.0f, 10.0f);
+				rootTransform->localScale = Vector3(5.0f, 5.0f, 5.0f);
+				rootTransform->localRotation = Quaternion::Identity;
+				rootTransform->isDirty = true;
+				rootTransform->version = 0;
+
+				MeshComponent* meshComponent = world->AddComponent<MeshComponent>(cube);
+				meshComponent->model = resourceManager->Load<Model>("Engine/Models/Default.json");
+			}
+		}
+	}*/
+
+	{
+		m_environment1 = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
+		rootTransform->localPosition = Vector3(2.0f, 2.0f, 2.0f);
+		rootTransform->localScale = Vector3::One;
+		rootTransform->localRotation = Quaternion::Identity;
+		rootTransform->isDirty = true;
+		rootTransform->version = 0;
+
+		MeshComponent* meshComponent = world->AddComponent<MeshComponent>(m_environment1);
+		meshComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/interior.json");
+	}
+	{
+		m_environment2 = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment2);
+		rootTransform->localPosition = Vector3::Zero;
+		rootTransform->localScale = Vector3::One;
+		rootTransform->localRotation = Quaternion::Identity;
+		rootTransform->isDirty = true;
+		rootTransform->version = 0;
+
+		MeshComponent* meshComponent = world->AddComponent<MeshComponent>(m_environment2);
+		meshComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/exterior.json");
+	}
+
+	// Create skybox.
+	{
+		m_skybox = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_skybox);
+		rootTransform->localPosition = Vector3::Zero;
+		rootTransform->localScale = Vector3::One;
+		rootTransform->localRotation = Quaternion::Identity;
+		rootTransform->isDirty = true;
+		rootTransform->version = 0;
+
+		MeshComponent* meshComponent = world->AddComponent<MeshComponent>(m_skybox);
+		meshComponent->model = resourceManager->Load<Model>("Engine/Models/Skyboxes/blue_sky.json");
+	}
+
+	// Create debug fly camera.
+	{
+		m_camera = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_camera);
+		rootTransform->localPosition = Vector3::Zero;
+		rootTransform->localScale = Vector3::One;
+		rootTransform->localRotation = Quaternion::Identity;
+		rootTransform->isDirty = true;
+		rootTransform->version = 0;
+
+		CameraViewComponent* cameraView = world->AddComponent<CameraViewComponent>(m_camera);
+		cameraView->depthMin = 1.0f;
+		cameraView->depthMax = 100000.0f;
+		cameraView->fov = 65.0f;
+		cameraView->viewport = Rect(0.0f, 0.0f, 1.0f, 1.0f);
+
+		FlyCameraComponent* flyCamera = world->AddComponent<FlyCameraComponent>(m_camera);
+		flyCamera->movementSpeed = 5.0f;
+		flyCamera->mouseSensitivity = 500.0f;
+	}
 
 	m_viewPosition = Vector3(0.0f, 0.0f, -10.0f);
 	m_viewRotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
@@ -166,79 +260,6 @@ void VulkanGameInstance::Terminate()
 
 void VulkanGameInstance::Tick(const FrameTime& time)
 {
-	std::shared_ptr<Engine> engine = GetEngine();
-	std::shared_ptr<Renderer> renderer = engine->GetRenderer();
-	std::shared_ptr<IInput> input = engine->GetInput();
-	std::shared_ptr<ImguiManager> imGuiManager = engine->GetImGuiManager();
+	ProfileScope scope(Color::Blue, "VulkanGameInstance::Tick");
 
-	float swapWidth = renderer->GetSwapChainWidth();
-	float swapHeight = renderer->GetSwapChainHeight();
-	
-	Vector3 forward(0.0f, 0.0f, 1.0f);
-	Vector3 up(0.0f, 1.0f, 0.0f);
-	Vector3 right(1.0f, 0.0f, 0.0f);
-
-	Matrix4 viewMatrix = glm::lookAt(m_viewPosition, m_viewPosition + (forward * m_viewRotation), -up); // negative to correct for vulkans flipped y.
-	Matrix4 projectionMatrix = glm::perspective(glm::radians(65.0f), swapWidth / swapHeight, 0.1f, 1000000.0f);
-
-	if (!imGuiManager->IsMouseControlRequired())
-	{
-		Vector2 center(swapWidth / 2, swapHeight / 2);
-		Vector2 mouse = input->GetMousePosition();
-		Vector2 mouseDelta = (mouse - center);
-
-		if (m_frameCount > 5)
-		{
-			m_viewRotationEuler.y += (-mouseDelta.x / MouseSensitivity);
-			m_viewRotationEuler.x = std::min(std::max(m_viewRotationEuler.x - (mouseDelta.y / MouseSensitivity), MATH_PI * -0.4f), MATH_PI * 0.4f);
-
-			Quaternion xRotation = glm::angleAxis(m_viewRotationEuler.y, up);
-			Quaternion yRotation = glm::angleAxis(m_viewRotationEuler.x, right);
-			m_viewRotation = yRotation * xRotation;
-		}
-
-		input->SetMousePosition(center);
-		input->SetMouseHidden(true);
-		m_frameCount++;
-	}
-	else
-	{
-		input->SetMouseHidden(false);
-	}
-
-	float speed = MovementSpeed;
-	if (input->IsKeyDown(InputKey::Space))
-	{
-		speed *= 15.0f;
-	}
-
-	if (input->IsKeyDown(InputKey::W))
-	{
-		m_viewPosition += (forward * m_viewRotation) * speed * time.DeltaTime;
-	}
-	if (input->IsKeyDown(InputKey::S))
-	{
-		m_viewPosition -= (forward * m_viewRotation) * speed * time.DeltaTime;
-	}
-	if (input->IsKeyDown(InputKey::A))
-	{
-		m_viewPosition -= (right * m_viewRotation) * speed * time.DeltaTime;
-	}
-	if (input->IsKeyDown(InputKey::D))
-	{
-		m_viewPosition += (right * m_viewRotation) * speed * time.DeltaTime;
-	}
-	if (input->IsKeyDown(InputKey::Q))
-	{
-		m_viewPosition += (up * m_viewRotation) * speed * time.DeltaTime;
-	}
-	if (input->IsKeyDown(InputKey::E))
-	{
-		m_viewPosition -= (up * m_viewRotation) * speed * time.DeltaTime;
-	}
-
-	m_tmpRenderView->Viewport = Rectangle(0.0f, 0.0f, swapWidth, swapHeight);
-	m_tmpRenderView->ViewMatrix = viewMatrix;
-	m_tmpRenderView->ProjectionMatrix = projectionMatrix;
-	m_tmpRenderView->Location = m_viewPosition;
 }

@@ -1,0 +1,6 @@
+enum_entry(PointList)
+enum_entry(LineList)
+enum_entry(LineStrip)
+enum_entry(TriangleList)
+enum_entry(TriangleStrip)
+enum_entry(TriangleFan)

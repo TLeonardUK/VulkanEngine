@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/Build.h"
 
 #include "Engine/Engine/GameInstance.h"
@@ -9,6 +11,7 @@
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Resources/ResourceManager.h"
 #include "Engine/Resources/Types/TextureResourceLoader.h"
+#include "Engine/Resources/Types/TextureCubeResourceLoader.h"
 #include "Engine/Resources/Types/ShaderResourceLoader.h"
 #include "Engine/Resources/Types/MaterialResourceLoader.h"
 #include "Engine/Resources/Types/ModelResourceLoader.h"
@@ -18,10 +21,21 @@
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
 #include "Engine/Input/Sdl/SdlInput.h"
 
+#include "Engine/Threading/TaskManager.h"
+
 #include "Engine/Graphics/GraphicsEnums.h"
 #include "Engine/Graphics/GraphicsRenderPass.h"
 
 #include "Engine/UI/ImguiManager.h"
+
+#include "Engine/Components/Transform/TransformComponent.h"
+#include "Engine/Components/Transform/TransformSystem.h"
+#include "Engine/Components/Mesh/MeshBoundsUpdateSystem.h"
+#include "Engine/Components/Camera/CameraViewComponent.h"
+#include "Engine/Components/Camera/RenderCameraViewsSystem.h"
+#include "Engine/Components/Camera/FlyCameraMovementSystem.h"
+
+#include "Engine/Profiling/Profiling.h"
 
 // TODO:
 //	Depth buffer needs transition before use.
@@ -49,6 +63,10 @@ bool Engine::Init()
 	{
 		return false;
 	}
+	if (!InitTaskManager())
+	{
+		return false;
+	}
 	if (!InitRenderer())
 	{
 		return false;
@@ -61,15 +79,21 @@ bool Engine::Init()
 	{
 		return false;
 	}
+	if (!InitWorld())
+	{
+		return false;
+	}
 
 	return true;
 }
 
 bool Engine::Term()
 {
+	TermWorld();
 	TermImguiManager();
 	TermResourceManager();
 	TermRenderer();
+	TermTaskManager();
 	TermInput();
 	TermWindow();
 	TermGraphics();
@@ -86,9 +110,11 @@ bool Engine::Run(std::shared_ptr<IGameInstance> gameInstance)
 	m_gameInstance = gameInstance;
 	m_name = m_gameInstance->GetGameName();
 	m_assetFolder = m_gameInstance->GetAssetFolder();
+	m_compiledAssetFolder = m_gameInstance->GetCompiledAssetFolder();
 	m_gameInstance->GetGameVersion(m_versionMajor, m_versionMinor, m_versionBuild);
 
 	m_startTime = std::chrono::high_resolution_clock::now();
+	m_frameCounter = 0;
 
 	if (Init())
 	{
@@ -273,18 +299,23 @@ void Engine::TermRenderer()
 
 bool Engine::InitResourceManager()
 {
-	m_resourceManager = std::make_shared<ResourceManager>(m_logger);
+	m_resourceManager = std::make_shared<ResourceManager>(m_logger, m_taskManager);
 	if (!m_resourceManager->Init())
 	{
 		return false;
 	}
 
+	if (!m_resourceManager->Mount(m_compiledAssetFolder))
+	{
+		return false;
+	}
 	if (!m_resourceManager->Mount(m_assetFolder))
 	{
 		return false;
 	}
 
 	m_resourceManager->AddLoader(std::make_shared<TextureResourceLoader>(m_logger, m_graphics, m_renderer));
+	m_resourceManager->AddLoader(std::make_shared<TextureCubeResourceLoader>(m_logger, m_graphics, m_renderer));
 	m_resourceManager->AddLoader(std::make_shared<ShaderResourceLoader>(m_logger, m_graphics));
 	m_resourceManager->AddLoader(std::make_shared<MaterialResourceLoader>(m_logger, m_graphics, m_renderer));
 	m_resourceManager->AddLoader(std::make_shared<ModelResourceLoader>(m_logger, m_graphics, m_renderer));
@@ -330,6 +361,69 @@ void Engine::TermImguiManager()
 	}
 }
 
+bool Engine::InitTaskManager()
+{
+	m_taskManager = std::make_shared<TaskManager>(m_logger);
+	TaskManager::AsyncInstance = &*m_taskManager;
+
+	int totalCores = std::thread::hardware_concurrency() - 1; // 1 to take into account the main thread.
+
+	int longQueues = Math::Max(1, totalCores / 4);
+	int normalQueues = totalCores - longQueues;
+
+	// We create two types of queues:
+	//  - The first type has the most thread workers, and allows running of normal and time-critical tasks. This is where
+	//	  most of the frame tasks will get scheduled.
+	//  - The second type accepts the same tasks as the previous type, but with the addition of being able to run long-running
+	//    tasks (such as resource loads, saves, etc). This only typically has a few thread workers it chokeing the game tasks.
+
+	Dictionary<TaskQueueFlags, int> queues;
+	queues[static_cast<TaskQueueFlags>((int)TaskQueueFlags::Normal | (int)TaskQueueFlags::TimeCritical)] = normalQueues;
+	queues[static_cast<TaskQueueFlags>((int)TaskQueueFlags::Normal | (int)TaskQueueFlags::TimeCritical | (int)TaskQueueFlags::Long)] = longQueues;
+
+	if (!m_taskManager->Init(queues))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void Engine::TermTaskManager()
+{
+	if (m_taskManager != nullptr)
+	{
+		TaskManager::AsyncInstance = nullptr;
+		m_taskManager->Dispose();
+		m_taskManager = nullptr;
+	}
+}
+
+bool Engine::InitWorld()
+{
+	m_world = std::make_shared<World>(m_logger, m_taskManager);
+	if (!m_world->Init())
+	{
+		return false;
+	}
+
+	m_world->AddSystem<TransformSystem>();
+	m_world->AddSystem<MeshBoundsUpdateSystem>();
+	m_world->AddSystem<RenderCameraViewsSystem>(m_world, m_renderer);
+	m_world->AddSystem<FlyCameraMovementSystem>(m_input, m_renderer, m_imguiManager);
+
+	return true;
+}
+
+void Engine::TermWorld()
+{
+	if (m_world != nullptr)
+	{
+		m_world->Dispose();
+		m_world = nullptr;
+	}
+}
+
 void Engine::UpdateFrameTime()
 {
 	// Track FPS.
@@ -358,6 +452,7 @@ void Engine::UpdateFrameTime()
 	// Calculate delta.
 	m_frameTime.Time = std::chrono::duration<float, std::chrono::milliseconds::period>(timeSinceStart).count() / 1000.0f;
 	m_frameTime.DeltaTime = std::chrono::duration<float, std::chrono::milliseconds::period>(lastFrameDuration).count() / 1000.0f;
+	m_frameTime.FrameIndex = m_frameCounter++;
 }
 
 void Engine::MainLoop()
@@ -366,6 +461,8 @@ void Engine::MainLoop()
 
 	while (!m_platform->WasCloseRequested())
 	{
+		ProfileScope scope(Color::Blue, "Main Loop");
+
 		// Initial event handling and setup.
 		m_imguiManager->StartFrame(m_frameTime);
 		m_platform->PumpMessageQueue();
@@ -373,6 +470,9 @@ void Engine::MainLoop()
 
 		// Main frame tick.
 		m_gameInstance->Tick(m_frameTime);
+
+		// Tick world.
+		m_world->Tick(m_frameTime);
 
 		// Present frame.
 		m_imguiManager->EndFrame();
@@ -405,4 +505,9 @@ std::shared_ptr<IInput> Engine::GetInput()
 std::shared_ptr<ImguiManager> Engine::GetImGuiManager()
 {
 	return m_imguiManager;
+}
+
+std::shared_ptr<World> Engine::GetWorld()
+{
+	return m_world;
 }

@@ -1,17 +1,19 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Graphics/Vulkan/VulkanShader.h"
 
 #include "Engine/Engine/Logging.h"
 
 VulkanShader::VulkanShader(
+	std::shared_ptr<VulkanGraphics> graphics,
 	VkDevice device, 
 	std::shared_ptr<Logger> logger, 
 	const String& name, 
 	const String& entryPoint, 
 	GraphicsPipelineStage stage
 )
-	: m_device(device)
+	: m_graphics(graphics)
+	, m_device(device)
 	, m_logger(logger)
 	, m_name(name)
 	, m_entryPoint(entryPoint)
@@ -28,7 +30,9 @@ void VulkanShader::FreeResources()
 {
 	if (m_module != nullptr)
 	{
-		vkDestroyShaderModule(m_device, m_module, nullptr);
+		m_graphics->QueueDisposal([m_device = m_device, m_module = m_module]() {
+			vkDestroyShaderModule(m_device, m_module, nullptr);
+		});
 		m_module = nullptr;
 	}
 }

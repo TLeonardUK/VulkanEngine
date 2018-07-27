@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -18,6 +19,7 @@ class VulkanSampler
 private:
 	String m_name;
 	std::shared_ptr<Logger> m_logger;
+	std::shared_ptr<VulkanGraphics> m_graphics;
 
 	VkDevice m_device;
 	VkSampler m_sampler;
@@ -35,6 +37,7 @@ private:
 
 public:
 	VulkanSampler(
+		std::shared_ptr<VulkanGraphics> graphics,
 		VkDevice device,
 		std::shared_ptr<Logger> logger,
 		const String& name);

@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Utilities/Enum.h"
 
@@ -21,6 +22,10 @@ enum_end_declaration(GraphicsFormat)
 enum_begin_declaration(GraphicsBindingFormat)
 #include "Engine/Graphics/EGraphicsBindingFormat.inc"
 enum_end_declaration(GraphicsBindingFormat)
+
+enum_begin_declaration(GraphicsBindingFrequency)
+#include "Engine/Graphics/EGraphicsBindingFrequency.inc"
+enum_end_declaration(GraphicsBindingFrequency)
 
 enum_begin_declaration(GraphicsBindingType)
 #include "Engine/Graphics/EGraphicsBindingType.inc"
@@ -62,6 +67,10 @@ enum_begin_declaration(GraphicsPolygonMode)
 #include "Engine/Graphics/EGraphicsPolygonMode.inc"
 enum_end_declaration(GraphicsPolygonMode)
 
+enum_begin_declaration(GraphicsPrimitiveType)
+#include "Engine/Graphics/EGraphicsPrimitiveType.inc"
+enum_end_declaration(GraphicsPrimitiveType)
+
 enum_begin_declaration(GraphicsStencilTestCompareOp)
 #include "Engine/Graphics/EGraphicsStencilTestCompareOp.inc"
 enum_end_declaration(GraphicsStencilTestCompareOp)
@@ -69,6 +78,10 @@ enum_end_declaration(GraphicsStencilTestCompareOp)
 enum_begin_declaration(GraphicsStencilTestOp)
 #include "Engine/Graphics/EGraphicsStencilTestOp.inc"
 enum_end_declaration(GraphicsStencilTestOp)
+
+enum_begin_declaration(GraphicsUsage)
+#include "Engine/Graphics/EGraphicsUsage.inc"
+enum_end_declaration(GraphicsUsage)
 
 int GetValueCountForGraphicsBindingFormat(GraphicsBindingFormat format);
 int GetByteSizeForGraphicsBindingFormat(GraphicsBindingFormat format);

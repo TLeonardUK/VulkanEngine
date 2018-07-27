@@ -1,5 +1,8 @@
+#include "Pch.h"
+
 #include "Engine/Resources/ResourceManager.h"
 #include "Engine/Resources/ResourceLoader.h"
+#include "Engine/Profiling/Profiling.h"
 #include "Engine/Engine/Logging.h"
 #include "Engine/Utilities/File.h"
 #include "Engine/Utilities/Json.h"
@@ -7,8 +10,34 @@
 // todo: this should use parallel io to stream in, rather than just block loading on a couple of threads.
 // todo: what do if nested loads?
 
-ResourceManager::ResourceManager(std::shared_ptr<Logger> logger)
+class LoadResourceTask : public Task
+{
+private:
+	std::shared_ptr<ResourceStatus> m_resourceStatus;
+	std::shared_ptr<ResourceManager> m_resourceManager;
+
+public:
+	LoadResourceTask(std::shared_ptr<ResourceManager> resourceManager, std::shared_ptr<ResourceStatus> resourceStatus)
+		: m_resourceManager(resourceManager)
+		, m_resourceStatus(resourceStatus)
+	{
+	}
+
+	virtual void Run()
+	{
+		m_resourceManager->LoadResource(m_resourceStatus);
+		m_resourceStatus = nullptr;
+	}
+
+	virtual String GetName()
+	{
+		return m_resourceStatus->Path;
+	}
+};
+
+ResourceManager::ResourceManager(std::shared_ptr<Logger> logger, std::shared_ptr<TaskManager> taskManager)
 	: m_logger(logger)
+	, m_taskManager(taskManager)
 {
 }
 
@@ -22,28 +51,12 @@ bool ResourceManager::Init()
 	m_pendingLoads = 0;
 	m_ownerThread = std::this_thread::get_id();
 
-	int loaders = std::thread::hardware_concurrency();
-	for (int i = 0; i < loaders; i++)
-	{
-		m_workers.push_back(std::thread(&ResourceManager::WorkerLoop, this));
-	}
-
 	return true;
 }
 
 void ResourceManager::Dispose()
 {
 	m_active = false;
-
-	for (std::thread& thread : m_workers)
-	{
-		m_resourceLoadPendingSemaphore.Signal();
-	}
-
-	for (std::thread& thread : m_workers)
-	{
-		thread.join();
-	}
 }
 
 bool ResourceManager::Mount(const String& directory)
@@ -64,6 +77,18 @@ void ResourceManager::AddLoader(std::shared_ptr<IResourceLoader> loader)
 	m_logger->WriteInfo(LogCategory::Resources, "Added resource loader for tag: %s", loader->GetTag().c_str());
 }
 
+
+void ResourceManager::AddResourceLoadedCallback(std::shared_ptr<ResourceStatus> resource, ResourceLoadedCallback::Signature_t callback)
+{
+	std::lock_guard<std::mutex> lock(m_resourceLoadedCallbackMutex);
+
+	ResourceLoadedCallback call;
+	call.Callback = callback;
+	call.Resource = resource;
+
+	m_pendingResourceLoadedCallbacks.push_back(call);
+}
+
 void ResourceManager::LoadDefaults()
 {
 	for (auto& loader : m_loaders)
@@ -80,11 +105,9 @@ bool ResourceManager::IsIdle()
 
 void ResourceManager::WaitUntilIdle()
 {
-	std::unique_lock<std::mutex> lock(m_idleWaitLock);
-
 	while (!IsIdle())
-	{
-		m_idleWaitCondVariable.wait(lock);
+	{	
+		m_taskManager->Assist(static_cast<TaskQueueFlags>((int)TaskQueueFlags::Normal | (int)TaskQueueFlags::TimeCritical));
 
 		// If waiting on owner thread we need to pump the load queue.
 		if (m_ownerThread == std::this_thread::get_id())
@@ -96,6 +119,8 @@ void ResourceManager::WaitUntilIdle()
 
 void ResourceManager::ProcessPendingLoads()
 {
+	ProfileScope scope(Color::Red, "ResourceManager::ProcessPendingLoads");
+
 	std::lock_guard<std::recursive_mutex> guard(m_pendingLoadedFlagMutex);
 
 	int resourcesLoaded = 0;
@@ -125,6 +150,21 @@ void ResourceManager::ProcessPendingLoads()
 				m_pendingLoads--;
 				resourcesLoaded++;
 
+				{
+					std::lock_guard<std::mutex> lock(m_resourceLoadedCallbackMutex);
+
+					for (auto iter = m_pendingResourceLoadedCallbacks.begin(); iter != m_pendingResourceLoadedCallbacks.end(); iter++)
+					{
+						ResourceLoadedCallback& call = *iter;
+						if (call.Resource == status)
+						{
+							call.Callback();
+							m_pendingResourceLoadedCallbacks.erase(iter);
+							break;
+						}
+					}
+				}
+
 				m_logger->WriteSuccess(LogCategory::Resources, "[%-30s] Successfully loaded", status->Path.c_str());
 			}
 			else
@@ -138,6 +178,8 @@ void ResourceManager::ProcessPendingLoads()
 
 void ResourceManager::CollectGarbage()
 {
+	ProfileScope scope(Color::Red, "ResourceManager::CollectGarbage");
+
 	std::lock_guard<std::recursive_mutex> guard(m_resourcesMutex);
 
 	Array<String> garbage;
@@ -174,7 +216,6 @@ ResourcePtr<IResource> ResourceManager::GetResource(const String& path)
 ResourcePtr<IResource> ResourceManager::LoadTypeLess(const String& path, const String& tag)
 {
 	std::lock_guard<std::recursive_mutex> guard1(m_resourcesMutex);
-	std::lock_guard<std::recursive_mutex> guard2(m_pendingResourcesMutex);
 
 	std::shared_ptr<IResourceLoader> loader = GetLoaderForTag(tag);
 
@@ -207,9 +248,11 @@ ResourcePtr<IResource> ResourceManager::LoadTypeLess(const String& path, const S
 
 	m_resources.emplace(path, status);
 
+	std::shared_ptr<LoadResourceTask> loadTask = std::make_shared<LoadResourceTask>(shared_from_this(), status);
+	status->LoadTask = m_taskManager->CreateTask(loadTask);
+	m_taskManager->Dispatch(status->LoadTask, TaskQueueFlags::Long);
+
 	m_pendingLoads++;
-	m_pendingResources.emplace(status);
-	m_resourceLoadPendingSemaphore.Signal();
 
 	return status;
 }
@@ -310,40 +353,6 @@ void ResourceManager::LoadResource(std::shared_ptr<ResourceStatus> resource)
 	}
 }
 
-std::shared_ptr<ResourceStatus> ResourceManager::GetPendingResource()
-{
-	std::lock_guard<std::recursive_mutex> guard(m_pendingResourcesMutex);
-
-	if (m_pendingResources.size() > 0)
-	{
-		std::shared_ptr<ResourceStatus> result = m_pendingResources.front();
-		m_pendingResources.pop();
-		return result;
-	}
-
-	return nullptr;
-}
-
-void ResourceManager::WorkerLoop()
-{
-	while (m_active)
-	{
-		m_resourceLoadPendingSemaphore.Wait();
-
-		std::shared_ptr<ResourceStatus> status = GetPendingResource();
-		if (status != nullptr)
-		{
-			LoadResource(status);
-
-			// Wake everyone up whos waiting for idle states.
-			{
-				std::unique_lock<std::mutex> lock(m_idleWaitLock);
-				m_idleWaitCondVariable.notify_all();
-			}
-		}
-	}
-}
-
 ResourcePtr<IResource> ResourceManager::GetDefaultForTag(const String& tag)
 {
 	std::shared_ptr<ResourceStatus> status = std::make_shared<ResourceStatus>();
@@ -375,12 +384,10 @@ std::shared_ptr<IResourceLoader> ResourceManager::GetLoaderForTag(const String& 
 
 void ResourceStatus::WaitUntilLoaded()
 {
-	std::unique_lock<std::mutex> lock(ResourceManager->m_idleWaitLock);
-
 	while (Status == ResourceLoadStatus::Loading ||
 		   Status == ResourceLoadStatus::Pending)
 	{
-		ResourceManager->m_idleWaitCondVariable.wait(lock);
+		ResourceManager->m_taskManager->WaitForCompletion(LoadTask, Timeout(1));
 
 		// If waiting on owner thread we need to pump the load queue.
 		if (ResourceManager->m_ownerThread == std::this_thread::get_id())

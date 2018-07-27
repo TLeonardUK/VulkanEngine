@@ -1,11 +1,8 @@
 #pragma once
-
-#include <memory>
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
-
 #include "Engine/Engine/FrameTime.h"
-
 #include "Engine/Windowing/Window.h"
 
 class Engine;
@@ -44,6 +41,7 @@ public:
 	virtual std::shared_ptr<Engine> GetEngine();
 
 	virtual String GetAssetFolder() = 0;
+	virtual String GetCompiledAssetFolder() = 0;
 	virtual String GetGameName() = 0;
 	virtual void GetGameVersion(int& major, int& minor, int& build) = 0;
 

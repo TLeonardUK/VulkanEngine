@@ -1,3 +1,5 @@
+#include "Pch.h"
+
 #include "Engine/UI/ImguiManager.h"
 
 #include "Engine/Engine/Logging.h"
@@ -11,6 +13,8 @@
 
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
 #include "Engine/Windowing/Sdl/SdlWindow.h"
+
+#include "Engine/Profiling/Profiling.h"
 
 // todo: replace bindings with ones that interface with engine.
 
@@ -180,8 +184,8 @@ void ImguiManager::UpdateInput()
 		io.MouseDown[i] = m_input->IsKeyDown((InputKey)((int)InputKey::Mouse_0 + i));
 	}
 
-	io.MouseWheel = m_input->GetMouseWheel(false);
-	io.MouseWheelH = m_input->GetMouseWheel(true);
+	io.MouseWheel = (float)m_input->GetMouseWheel(false);
+	io.MouseWheelH = (float)m_input->GetMouseWheel(true);
 
 	String input = m_input->GetInput();
 	io.AddInputCharactersUTF8(input.c_str());
@@ -221,8 +225,10 @@ void ImguiManager::UpdateInput()
 
 void ImguiManager::StartFrame(const FrameTime& time)
 {
+	ProfileScope scope(Color::Red, "ImguiManager::StartFrame");
+
 	ImGuiIO& io = ImGui::GetIO();
-	io.DisplaySize = ImVec2(m_window->GetWidth(), m_window->GetHeight());
+	io.DisplaySize = ImVec2((float)m_window->GetWidth(), (float)m_window->GetHeight());
 	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
 	io.DeltaTime = time.DeltaTime;
 
@@ -284,6 +290,8 @@ ImTextureID ImguiManager::StoreImage(std::shared_ptr<IGraphicsImageView> view)
 
 void ImguiManager::EndFrame()
 {
+	ProfileScope scope(Color::Red, "ImguiManager::EndFrame");
+
 	ImGui::Render();
 
 	ImDrawData* drawData = ImGui::GetDrawData();
@@ -335,10 +343,10 @@ void ImguiManager::EndFrame()
 			vertex.position.y = imVertex.pos.y;
 			vertex.uv.x = imVertex.uv.x;
 			vertex.uv.y = imVertex.uv.y;
-			vertex.color.r = ((imVertex.col >> IM_COL32_R_SHIFT) & 0xFF) * colorNormalizer;
-			vertex.color.g = ((imVertex.col >> IM_COL32_G_SHIFT) & 0xFF) * colorNormalizer;
-			vertex.color.b = ((imVertex.col >> IM_COL32_B_SHIFT) & 0xFF) * colorNormalizer;
-			vertex.color.a = ((imVertex.col >> IM_COL32_A_SHIFT) & 0xFF) * colorNormalizer;
+			vertex.color.x = ((imVertex.col >> IM_COL32_R_SHIFT) & 0xFF) * colorNormalizer;
+			vertex.color.y = ((imVertex.col >> IM_COL32_G_SHIFT) & 0xFF) * colorNormalizer;
+			vertex.color.z = ((imVertex.col >> IM_COL32_B_SHIFT) & 0xFF) * colorNormalizer;
+			vertex.color.w = ((imVertex.col >> IM_COL32_A_SHIFT) & 0xFF) * colorNormalizer;
 
 			memcpy(vertexPtr, &vertex, sizeof(Vertex));
 			vertexPtr += sizeof(Vertex);
@@ -348,8 +356,8 @@ void ImguiManager::EndFrame()
 		indexPtr += sizeof(uint16_t) * cmdList->IdxBuffer.Size;
 	}
 
-	m_vertexBuffer->Stage(vertexData.data(), 0, vertexData.size());
-	m_indexBuffer->Stage(indexData.data(), 0, indexData.size());
+	m_vertexBuffer->Stage(vertexData.data(), 0, (int)vertexData.size());
+	m_indexBuffer->Stage(indexData.data(), 0, (int)indexData.size());
 
 	m_renderer->QueueRenderCommand(RenderCommandStage::PostViewsRendered, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 
@@ -378,6 +386,11 @@ void ImguiManager::EndFrame()
 		material->GetProperties().Set(ImGuiTexture, m_fontTexture);
 		material->UpdateResources();
 
+		std::shared_ptr<IGraphicsResourceSet> resourceSet = material->GetResourceSet();
+		std::shared_ptr<IGraphicsResourceSetInstance> resourceSetInstance = resourceSet->ConsumeInstance();
+
+		buffer->TransitionResourceSets(&resourceSet, 1);
+
 		buffer->Upload(m_vertexBuffer);
 		buffer->Upload(m_indexBuffer);
 
@@ -389,7 +402,7 @@ void ImguiManager::EndFrame()
 
 		buffer->SetIndexBuffer(m_indexBuffer);
 		buffer->SetVertexBuffer(m_vertexBuffer);
-		buffer->SetResourceSets({ material->GetResourceSet() });
+		buffer->SetResourceSetInstances(&resourceSetInstance, 1);
 
 		ImTextureID lastTextureId = 0;
 
@@ -417,7 +430,8 @@ void ImguiManager::EndFrame()
 					}
 					material->UpdateResources();
 
-					buffer->SetResourceSets({ material->GetResourceSet() });
+					resourceSetInstance = resourceSet->ConsumeInstance();
+					buffer->SetResourceSetInstances(&resourceSetInstance, 1);
 
 					lastTextureId = cmd->TextureId;
 				}

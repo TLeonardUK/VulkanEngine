@@ -43,14 +43,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\ThirdParty\sdl2\2.0.8\include\;$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Include\;$(SolutionDir)..\ThirdParty\glm\0.9.9-a2\;$(SolutionDir)..\ThirdParty\stb\;$(SolutionDir)..\ThirdParty\tiny_obj_loader\;$(SolutionDir)..\ThirdParty\nlohmann\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\ThirdParty\sdl2\2.0.8\include\;$(SolutionDir)..\ThirdParty\vulkan\1.1.77.0\Include\;$(SolutionDir)..\ThirdParty\glm\0.9.9-a2\;$(SolutionDir)..\ThirdParty\stb\;$(SolutionDir)..\ThirdParty\tiny_obj_loader\;$(SolutionDir)..\ThirdParty\nlohmann\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)..\ThirdParty\pix\Include\WinPixEventRuntime\;$(SolutionDir);$(SolutionDir)\Engine</IncludePath>
     <OutDir>$(SolutionDir)..\Binaries\</OutDir>
     <IntDir>$(SolutionDir)..\Temp\Source\Engine\$(Platform)\$(Configuration)\</IntDir>
-    <LibraryPath>$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Lib\;$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\ThirdParty\vulkan\1.1.77.0\Lib\;$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)..\ThirdParty\pix\bin\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\ThirdParty\sdl2\2.0.8\include\;$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Include\;$(SolutionDir)..\ThirdParty\glm\0.9.9-a2\;$(SolutionDir)..\ThirdParty\stb\;$(SolutionDir)..\ThirdParty\tiny_obj_loader\;$(SolutionDir)..\ThirdParty\nlohmann\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\ThirdParty\vulkan\1.1.73.0\Lib\;$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\ThirdParty\sdl2\2.0.8\include\;$(SolutionDir)..\ThirdParty\vulkan\1.1.77.0\Include\;$(SolutionDir)..\ThirdParty\glm\0.9.9-a2\;$(SolutionDir)..\ThirdParty\stb\;$(SolutionDir)..\ThirdParty\tiny_obj_loader\;$(SolutionDir)..\ThirdParty\nlohmann\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)..\ThirdParty\pix\Include\WinPixEventRuntime\;$(SolutionDir);$(SolutionDir)\Engine</IncludePath>
+    <LibraryPath>$(SolutionDir)..\ThirdParty\vulkan\1.1.77.0\Lib\;$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\;$(SolutionDir)..\ThirdParty\vulkan_memory_allocator\src\;$(SolutionDir)..\ThirdParty\pix\bin\;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)..\Binaries\</OutDir>
     <IntDir>$(SolutionDir)..\Temp\Source\Engine\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -60,7 +60,9 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_MBCS;_ITERATOR_DEBUG_LEVEL=0;_SCL_SECURE_NO_WARNINGS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;_ITERATOR_DEBUG_LEVEL=0;_SCL_SECURE_NO_WARNINGS=1;USE_PIX=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <AdditionalDependencies>SDL2.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -70,10 +72,11 @@
       </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>XCOPY /d "$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\SDL2.dll" "$(SolutionDir)..\Binaries\"</Command>
+      <Command>XCOPY /d "$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\SDL2.dll" "$(SolutionDir)..\Binaries\"
+XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(SolutionDir)..\Binaries\"</Command>
     </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>vulkan-1.lib;SDL2.lib</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;SDL2.lib;WinPixEventRuntime.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -84,9 +87,11 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_MBCS;_ITERATOR_DEBUG_LEVEL=0;_SCL_SECURE_NO_WARNINGS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;_ITERATOR_DEBUG_LEVEL=0;_SCL_SECURE_NO_WARNINGS=1;USE_PIX=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>Pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -94,10 +99,11 @@
       <AdditionalDependencies>SDL2.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>XCOPY /d "$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\SDL2.dll" "$(SolutionDir)..\Binaries\"</Command>
+      <Command>XCOPY /d "$(SolutionDir)..\ThirdParty\sdl2\2.0.8\lib\x64\SDL2.dll" "$(SolutionDir)..\Binaries\"
+XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(SolutionDir)..\Binaries\"</Command>
     </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>vulkan-1.lib;SDL2.lib</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;SDL2.lib;WinPixEventRuntime.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -111,13 +117,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Components\Camera\CameraFlyingMovementComponent.cpp" />
-    <ClCompile Include="Components\Camera\CameraViewComponent.cpp" />
+    <ClCompile Include="Components\Aspect.cpp" />
+    <ClCompile Include="Components\AspectCollection.cpp" />
+    <ClCompile Include="Components\Camera\FlyCameraMovementSystem.cpp" />
+    <ClCompile Include="Components\Camera\RenderCameraViewsSystem.cpp" />
     <ClCompile Include="Components\Component.cpp" />
-    <ClCompile Include="Components\Entity.cpp" />
-    <ClCompile Include="Components\EntityManager.cpp" />
-    <ClCompile Include="Components\Rendering\MeshComponent.cpp" />
+    <ClCompile Include="Components\Mesh\MeshBoundsUpdateSystem.cpp" />
+    <ClCompile Include="Components\Mesh\MeshComponent.cpp" />
+    <ClCompile Include="Components\System.cpp" />
     <ClCompile Include="Components\Transform\TransformComponent.cpp" />
+    <ClCompile Include="Components\Transform\TransformUtils.cpp" />
+    <ClCompile Include="Components\Transform\TransformSystem.cpp" />
+    <ClCompile Include="Components\World.cpp" />
     <ClCompile Include="Engine\Engine.cpp" />
     <ClCompile Include="Engine\GameInstance.cpp" />
     <ClCompile Include="Engine\Logging.cpp" />
@@ -141,6 +152,7 @@
     <ClCompile Include="Graphics\Vulkan\VulkanPipeline.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanRenderPass.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanResourceSet.cpp" />
+    <ClCompile Include="Graphics\Vulkan\VulkanResourceSetInstance.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanResourceSetPool.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanSampler.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanShader.cpp" />
@@ -148,6 +160,10 @@
     <ClCompile Include="Graphics\Vulkan\VulkanVertexBuffer.cpp" />
     <ClCompile Include="Input\Input.cpp" />
     <ClCompile Include="Input\Sdl\SdlInput.cpp" />
+    <ClCompile Include="Pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Platform\Sdl\SdlPlatform.cpp" />
     <ClCompile Include="Rendering\Renderer.cpp" />
     <ClCompile Include="Rendering\RendererEnums.cpp" />
@@ -161,12 +177,21 @@
     <ClCompile Include="Resources\Types\Shader.cpp" />
     <ClCompile Include="Resources\Types\ShaderResourceLoader.cpp" />
     <ClCompile Include="Resources\Types\Texture.cpp" />
+    <ClCompile Include="Resources\Types\TextureCube.cpp" />
+    <ClCompile Include="Resources\Types\TextureCubeResourceLoader.cpp" />
     <ClCompile Include="Resources\Types\TextureResourceLoader.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="Threading\ParallelFor.cpp" />
+    <ClCompile Include="Threading\TaskManager.cpp" />
+    <ClCompile Include="Types\Color.cpp" />
     <ClCompile Include="Types\Math.cpp" />
+    <ClCompile Include="Types\Matrix.cpp" />
+    <ClCompile Include="Types\Quaternion.cpp" />
     <ClCompile Include="Types\String.cpp" />
+    <ClCompile Include="Types\Timeout.cpp" />
+    <ClCompile Include="Types\Vector.cpp" />
     <ClCompile Include="UI\ImguiManager.cpp" />
     <ClCompile Include="Utilities\Enum.cpp" />
     <ClCompile Include="Utilities\File.cpp" />
@@ -175,13 +200,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Build.h" />
-    <ClInclude Include="Components\Camera\CameraFlyingMovementComponent.h" />
+    <ClInclude Include="Components\Aspect.h" />
+    <ClInclude Include="Components\AspectCollection.h" />
     <ClInclude Include="Components\Camera\CameraViewComponent.h" />
+    <ClInclude Include="Components\Camera\FlyCameraComponent.h" />
+    <ClInclude Include="Components\Camera\FlyCameraMovementSystem.h" />
+    <ClInclude Include="Components\Camera\RenderCameraViewsSystem.h" />
     <ClInclude Include="Components\Component.h" />
-    <ClInclude Include="Components\Entity.h" />
-    <ClInclude Include="Components\EntityManager.h" />
-    <ClInclude Include="Components\Rendering\MeshComponent.h" />
+    <ClInclude Include="Components\ComponentPool.h" />
+    <ClInclude Include="Components\Mesh\MeshBoundsUpdateSystem.h" />
+    <ClInclude Include="Components\Mesh\MeshComponent.h" />
+    <ClInclude Include="Components\MessageQueue.h" />
+    <ClInclude Include="Components\System.h" />
     <ClInclude Include="Components\Transform\TransformComponent.h" />
+    <ClInclude Include="Components\Transform\TransformUtils.h" />
+    <ClInclude Include="Components\Transform\TransformSystem.h" />
     <ClInclude Include="Components\World.h" />
     <ClInclude Include="Engine\Engine.h" />
     <ClInclude Include="Engine\FrameTime.h" />
@@ -204,6 +237,7 @@
     <ClInclude Include="Graphics\GraphicsShader.h" />
     <ClInclude Include="Graphics\GraphicsUniformBuffer.h" />
     <ClInclude Include="Graphics\GraphicsVertexBuffer.h" />
+    <ClInclude Include="Graphics\GraphicsResourceSetInstance.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanCommandBuffer.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanCommandBufferPool.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanDeviceInfo.h" />
@@ -212,6 +246,7 @@
     <ClInclude Include="Graphics\Vulkan\VulkanEnums.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanFramebuffer.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanGraphics.h" />
+    <ClInclude Include="Graphics\Vulkan\VulkanResourceSetInstance.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanImage.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanImageView.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanIndexBuffer.h" />
@@ -227,8 +262,10 @@
     <ClInclude Include="Graphics\Vulkan\VulkanVertexBuffer.h" />
     <ClInclude Include="Input\Input.h" />
     <ClInclude Include="Input\Sdl\SdlInput.h" />
+    <ClInclude Include="Pch.h" />
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\Sdl\SdlPlatform.h" />
+    <ClInclude Include="Profiling\Profiling.h" />
     <ClInclude Include="Rendering\Renderer.h" />
     <ClInclude Include="Rendering\RendererEnums.h" />
     <ClInclude Include="Rendering\RenderView.h" />
@@ -243,17 +280,39 @@
     <ClInclude Include="Resources\Types\Shader.h" />
     <ClInclude Include="Resources\Types\ShaderResourceLoader.h" />
     <ClInclude Include="Resources\Types\Texture.h" />
+    <ClInclude Include="Resources\Types\TextureCube.h" />
+    <ClInclude Include="Resources\Types\TextureCubeResourceLoader.h" />
     <ClInclude Include="Resources\Types\TextureResourceLoader.h" />
     <ClInclude Include="ThirdParty\imgui\imconfig.h" />
     <ClInclude Include="ThirdParty\imgui\imgui.h" />
     <ClInclude Include="ThirdParty\imgui\imgui_internal.h" />
+    <ClInclude Include="Threading\Async.h" />
+    <ClInclude Include="Threading\Event.h" />
+    <ClInclude Include="Threading\ParallelFor.h" />
     <ClInclude Include="Threading\Semaphore.h" />
+    <ClInclude Include="Threading\TaskManager.h" />
+    <ClInclude Include="Types\Bounds.h" />
     <ClInclude Include="Types\Color.h" />
     <ClInclude Include="Types\Dictionary.h" />
+    <ClInclude Include="Types\Frustum.h" />
     <ClInclude Include="Types\Math.h" />
+    <ClInclude Include="Types\Matrix.h" />
+    <ClInclude Include="Types\Matrix2.h" />
+    <ClInclude Include="Types\Matrix3.h" />
+    <ClInclude Include="Types\Matrix4.h" />
+    <ClInclude Include="Types\OrientedBounds.h" />
+    <ClInclude Include="Types\Plane.h" />
+    <ClInclude Include="Types\Quaternion.h" />
     <ClInclude Include="Types\Queue.h" />
+    <ClInclude Include="Types\Rectangle.h" />
+    <ClInclude Include="Types\Set.h" />
     <ClInclude Include="Types\String.h" />
     <ClInclude Include="Types\Array.h" />
+    <ClInclude Include="Types\Timeout.h" />
+    <ClInclude Include="Types\Vector.h" />
+    <ClInclude Include="Types\Vector2.h" />
+    <ClInclude Include="Types\Vector3.h" />
+    <ClInclude Include="Types\Vector4.h" />
     <ClInclude Include="UI\ImguiManager.h" />
     <ClInclude Include="Utilities\Enum.h" />
     <ClInclude Include="Utilities\File.h" />
@@ -268,6 +327,7 @@
     <None Include="Graphics\EGraphicsAccessMask.inc" />
     <None Include="Graphics\EGraphicsAddressMode.inc" />
     <None Include="Graphics\EGraphicsBindingFormat.inc" />
+    <None Include="Graphics\EGraphicsBindingFrequency.inc" />
     <None Include="Graphics\EGraphicsBindingType.inc" />
     <None Include="Graphics\EGraphicsBlendFactor.inc" />
     <None Include="Graphics\EGraphicsBlendOp.inc" />
@@ -279,13 +339,12 @@
     <None Include="Graphics\EGraphicsMipMapMode.inc" />
     <None Include="Graphics\EGraphicsPolygonMode.inc" />
     <None Include="Graphics\EGraphicsPresentMode.inc" />
+    <None Include="Graphics\EGraphicsPrimitiveType.inc" />
     <None Include="Graphics\EGraphicsStencilTestCompareOp.inc" />
     <None Include="Graphics\EGraphicsStencilTestOp.inc" />
+    <None Include="Graphics\EGraphicsUsage.inc" />
     <None Include="Rendering\EFrameBufferTarget.inc" />
     <None Include="Resources\Types\EShaderVertexStreamBinding.inc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Todo.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,5 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
@@ -10,9 +11,6 @@
 #include "Engine/UI/ImguiManager.h"
 
 #include "Engine/ThirdParty/imgui/imgui.h"
-
-#include <memory>
-#include <functional>
 
 class IGraphics;
 class IGraphicsCommandBuffer;
@@ -42,6 +40,23 @@ struct RenderCommand
 	CommandSignature_t command;
 };
 
+struct MeshInstance
+{
+	std::shared_ptr<IGraphicsResourceSet> resourceSet;
+	std::shared_ptr<IGraphicsResourceSetInstance> resourceSetInstance;
+	std::shared_ptr<IGraphicsIndexBuffer> indexBuffer;
+	std::shared_ptr<IGraphicsVertexBuffer> vertexBuffer;
+	int indexCount;
+};
+
+struct MaterialBatch
+{
+	Material* material;
+
+	Array<MeshInstance> meshInstances;
+	int meshInstanceCount;
+};
+
 class Renderer
 {
 private:
@@ -49,6 +64,7 @@ private:
 	std::shared_ptr<ResourceManager> m_resourceManager;
 	std::shared_ptr<ImguiManager> m_imguiManager;
 	int m_frameIndex;
+	int m_frameCounter;
 
 	std::shared_ptr<IGraphicsCommandBufferPool> m_commandBufferPool;
 	std::shared_ptr<IGraphicsResourceSetPool> m_resourceSetPool;
@@ -71,9 +87,9 @@ private:
 	std::recursive_mutex m_queuedRenderCommandsMutex;
 	Array<RenderCommand> m_queuedRenderCommands;
 
-	Array<ResourcePtr<Model>> m_tmpModelToRender;
-
+	std::mutex m_renderViewsMutex;
 	Array<std::shared_ptr<RenderView>> m_renderViews;
+	Array<std::shared_ptr<RenderView>> m_freeRenderViews;
 
 	static const int GBufferImageCount = 3;
 	std::shared_ptr<IGraphicsImage> m_gbufferImages[GBufferImageCount];
@@ -83,15 +99,43 @@ private:
 	
 	ResourcePtr<Material> m_resolveToSwapchainMaterial;
 	ResourcePtr<Material> m_clearGBufferMaterial;
+	ResourcePtr<Material> m_debugLineMaterial;
 	std::shared_ptr<IGraphicsVertexBuffer> m_fullscreenQuadVertexBuffer;
 	std::shared_ptr<IGraphicsIndexBuffer> m_fullscreenQuadIndexBuffer;
 	bool m_fullscreenQuadsUploaded;
 
 	ImguiCallbackToken m_debugMenuCallbackToken;
 
+	Dictionary<Material*, MaterialBatch> m_materialBatches;
+
+	// Stats.
+	int m_statMeshesRendered;
+	int m_statBatchesRendered;
+	int m_statTrianglesRendered;
+
 	// Debug functionality.
 	bool m_drawGBufferEnabled;
 	bool m_drawWireframeEnabled;
+	bool m_drawStatisticsEnabled;
+	bool m_drawBoundsEnabled;
+	bool m_renderingIsFrozen;
+
+private:
+
+	// todo: I do not like this manual vertex binding, may cause issues with
+	// renderers with non-c style packing. We should just create a model out of the 
+	// data and allow that to deal with platform-specific issues.
+	struct FullScreenQuadVertex
+	{
+		Vector2 position;
+		Vector2 uv;
+	};
+
+	struct DebugLineVertex
+	{
+		Vector3 position;
+		Vector4 color;
+	};
 
 private:
 	friend class Material;
@@ -106,6 +150,9 @@ private:
 	void SwapChainModified();
 
 	void BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer);
+
+	void BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer);
+	void BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer);
 	void BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer);
 
 	std::shared_ptr<IGraphicsResourceSet> AllocateResourceSet(const GraphicsResourceSetDescription& set);
@@ -128,15 +175,15 @@ public:
 	void Dispose();
 	void Present();
 
-	void AddView(std::shared_ptr<RenderView> view);
-	void RemoveView(std::shared_ptr<RenderView> view);
+	bool IsRenderingFrozen();
+	bool IsDrawBoundsEnabled();
+
+	std::shared_ptr<RenderView> QueueView();
 
 	MaterialPropertyCollection& GetGlobalMaterialProperties();
 	int GetSwapChainWidth();
 	int GetSwapChainHeight();
 
 	std::shared_ptr<IGraphicsFramebuffer> GetCurrentFramebuffer();
-
-	void TmpAddModelToRender(ResourcePtr<Model> model);
 
 };

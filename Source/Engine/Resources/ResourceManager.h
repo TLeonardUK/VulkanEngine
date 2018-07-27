@@ -1,21 +1,18 @@
 #pragma once
+#include "Pch.h"
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
 #include "Engine/Types/Dictionary.h"
 #include "Engine/Types/Queue.h"
 #include "Engine/Threading/Semaphore.h"
-
-#include <memory>
-#include <thread>
-#include <mutex>
-#include <cassert>
-#include <atomic>
+#include "Engine/Threading/TaskManager.h"
 
 class Logger;
 class IResourceLoader;
 class IResource;
 class ResourceManager;
+class TaskManager;
 
 enum class ResourceLoadStatus
 {
@@ -37,6 +34,7 @@ public:
 	std::shared_ptr<ResourceManager> ResourceManager;
 	Array<std::shared_ptr<ResourceStatus>> Dependencies;
 	std::string Tag;
+	Task::Id LoadTask;
 
 public:
 	void WaitUntilLoaded();
@@ -130,32 +128,33 @@ private:
 	std::recursive_mutex m_resourcesMutex;
 	Dictionary<String, std::shared_ptr<ResourceStatus>> m_resources;
 
-	std::recursive_mutex m_pendingResourcesMutex;
-	Queue<std::shared_ptr<ResourceStatus>> m_pendingResources;
-
 	std::recursive_mutex m_pendingLoadedFlagMutex;
 	Array<std::shared_ptr<ResourceStatus>> m_pendingLoadedResources;
 
 	std::atomic<int> m_pendingLoads;
 
-	//const int MaxResourceLoaders = 2;
-
 	bool m_active;
-	Array<std::thread> m_workers;
-
-	Semaphore m_resourceLoadPendingSemaphore;
-
-	std::mutex m_idleWaitLock;
-	std::condition_variable m_idleWaitCondVariable;
 
 	std::thread::id m_ownerThread;
 
+	std::shared_ptr<TaskManager> m_taskManager;
+
+	struct ResourceLoadedCallback
+	{
+		typedef std::function<void()> Signature_t;
+
+		std::shared_ptr<ResourceStatus> Resource;
+		Signature_t Callback;
+	};
+
+	std::mutex m_resourceLoadedCallbackMutex;
+	Array<ResourceLoadedCallback> m_pendingResourceLoadedCallbacks;
+
 private:
 	friend struct ResourceStatus;
+	friend class LoadResourceTask;
 
 	void LoadResource(std::shared_ptr<ResourceStatus> resource);
-
-	std::shared_ptr<ResourceStatus> GetPendingResource();
 
 	std::shared_ptr<IResourceLoader> GetLoaderForTag(const String& tag);
 	ResourcePtr<IResource> GetDefaultForTag(const String& tag);
@@ -163,10 +162,8 @@ private:
 	ResourcePtr<IResource> LoadTypeLess(const String& path, const String& tag = "");
 	ResourcePtr<IResource> CreateFromTypelessPointer(const String& name, std::shared_ptr<IResource> resource, const String& tag = "");
 
-	void WorkerLoop();
-
 public:
-	ResourceManager(std::shared_ptr<Logger> logger);
+	ResourceManager(std::shared_ptr<Logger> logger, std::shared_ptr<TaskManager> taskManager);
 	~ResourceManager();
 
 	bool Init();
@@ -181,6 +178,8 @@ public:
 	{
 		resource->Dependencies.push_back(dependency.m_loadState);
 	}
+
+	void AddResourceLoadedCallback(std::shared_ptr<ResourceStatus> resource, ResourceLoadedCallback::Signature_t callback);
 
 	bool IsIdle();
 	void LoadDefaults();

@@ -1,15 +1,14 @@
-#pragma once
+#include "Pch.h"
 
 #include "Engine/Utilities/File.h"
 
-#include <stdio.h>
-#include <fstream>
+namespace File {
 
-bool File::ReadAllBytes(const String& filename, Array<char>& buffer)
+bool ReadAllBytes(const String& filename, Array<char>& buffer)
 {
 	std::ifstream file(filename.c_str(), std::ios::ate | std::ios::binary);
 
-	if (!file.is_open()) 
+	if (!file.is_open())
 	{
 		return false;
 	}
@@ -24,3 +23,5 @@ bool File::ReadAllBytes(const String& filename, Array<char>& buffer)
 
 	return true;
 }
+
+}; // namespace File
