@@ -366,6 +366,8 @@ ResourcePtr<IResource> ResourceManager::GetDefaultForTag(const String& tag)
 		loader->AssignDefault(status);
 	}
 
+	status->Resource = status->DefaultResource;
+
 	return status;
 }
 

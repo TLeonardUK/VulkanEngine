@@ -67,6 +67,7 @@ public:
 			return ResourceLoadStatus::NotLoaded;
 		}
 
+#if _DEBUG
 		if (m_loadState->Status == ResourceLoadStatus::Loaded)
 		{
 			std::shared_ptr<ResourceType> type = std::dynamic_pointer_cast<ResourceType>(m_loadState->Resource);
@@ -74,8 +75,8 @@ public:
 			{
 				return ResourceLoadStatus::WrongType;
 			}
-			return true;
 		}
+#endif
 
 		return m_loadState->Status;
 	}
@@ -89,23 +90,44 @@ public:
 
 		if (m_loadState->Status == ResourceLoadStatus::Loaded)
 		{
+#if _DEBUG
 			std::shared_ptr<ResourceType> type = std::dynamic_pointer_cast<ResourceType>(m_loadState->Resource);
 			if (type != nullptr)
 			{
 				return type;
 			}
+#else
+			if (m_loadState->Resource == nullptr)
+			{
+				return nullptr;
+			}
+			return std::static_pointer_cast<ResourceType>(m_loadState->Resource);
+#endif
 		}
 
 		if (m_loadState->DefaultResource != nullptr)
 		{
+#if _DEBUG
 			std::shared_ptr<ResourceType> castedDefault = std::dynamic_pointer_cast<ResourceType>(m_loadState->DefaultResource);
 			if (castedDefault != nullptr)
 			{
 				return castedDefault;
 			}
+#else
+			if (m_loadState->DefaultResource == nullptr)
+			{
+				return nullptr;
+			}
+			return std::static_pointer_cast<ResourceType>(m_loadState->DefaultResource);
+#endif
 		}
 
 		return nullptr;
+	}
+
+	void Reset()
+	{
+		m_loadState = nullptr;
 	}
 
 	void WaitUntilLoaded()

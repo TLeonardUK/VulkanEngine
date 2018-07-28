@@ -22,6 +22,8 @@
 #include "Engine/Profiling/Profiling.h"
 #include "Engine/Engine/Logging.h"
 
+#include "Engine/Types/Math.h"
+
 #include "Engine/Build.h"
 
 #include <vulkan/vulkan.h>
@@ -1264,7 +1266,7 @@ void VulkanGraphics::QueueDisposal(QueuedDisposal::DisposalFunction_t function)
 {
 	if (m_queuedDisposalFreeIndices.size() == 0)
 	{
-		int index = m_queuedDisposalTable.size();
+		int index = static_cast<int>(m_queuedDisposalTable.size());
 		m_queuedDisposalTable.resize(index + 1);
 		m_queuedDisposalFreeIndices.push_back(index);
 	}
@@ -1280,7 +1282,7 @@ void VulkanGraphics::QueueDisposal(QueuedDisposal::DisposalFunction_t function)
 
 void VulkanGraphics::PurgeQueuedDisposals()
 {
-	for (int i = 0; i < m_queuedDisposalAllocatedIndices.size(); i++)
+	for (size_t i = 0; i < m_queuedDisposalAllocatedIndices.size(); i++)
 	{
 		QueuedDisposal& disposal = m_queuedDisposalTable[m_queuedDisposalAllocatedIndices[i]];
 		disposal.function();
@@ -1325,21 +1327,26 @@ void VulkanGraphics::CollectGarbage()
 
 	std::lock_guard<std::mutex> guard(m_resourcesMutex);
 
-	for (int i = 0; i < m_resources.size(); )
+	if (m_resources.size() > 0)
 	{
-		std::shared_ptr<IVulkanResource>& resource = m_resources[i];
-
-		if (resource.use_count() == 1)
+		m_garbageCollectScanIndex++;
+		if (m_garbageCollectScanIndex >= m_resources.size())
 		{
-			m_resources[i] = m_resources[m_resources.size() - 1];
-			m_resources.resize(m_resources.size() - 1);
-			i--;
-
-			m_logger->WriteInfo(LogCategory::Vulkan, "[%-30s] Unloading, no longer referenced.", resource->GetName().c_str());
+			m_garbageCollectScanIndex = 0;
 		}
-		else
+
+		int scanAmount = Math::Min(MaxGarbageScannedPerFrame, (int)m_resources.size());
+		for (int scan = 0; scan < scanAmount; scan++)
 		{
-			i++;
+			std::shared_ptr<IVulkanResource>& resource = m_resources[m_garbageCollectScanIndex];
+
+			if (resource.use_count() == 1)
+			{
+				m_logger->WriteInfo(LogCategory::Vulkan, "[%-30s] Unloading, no longer referenced.", resource->GetName().c_str());
+
+				m_resources[m_garbageCollectScanIndex] = m_resources[m_resources.size() - 1];
+				m_resources.resize(m_resources.size() - 1);
+			}
 		}
 	}
 

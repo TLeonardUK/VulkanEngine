@@ -179,6 +179,22 @@ __forceinline BaseVector4<T> operator/(const BaseVector4<T>& first, const BaseVe
 	return BaseVector4<T>(first.x / second.x, first.y / second.y, first.z / second.z, first.w / second.w);
 }
 
+template <typename T>
+__forceinline bool operator==(const BaseVector4<T>& first, const BaseVector4<T>& second)
+{
+	return
+		first.x == second.x &&
+		first.y == second.y &&
+		first.z == second.z &&
+		first.w == second.w;
+}
+
+template <typename T>
+__forceinline bool operator!=(const BaseVector4<T>& first, const BaseVector4<T>& second)
+{
+	return !(first == second);
+}
+
 typedef BaseVector4<float>			Vector4;
 typedef BaseVector4<bool>			BVector4;
 typedef BaseVector4<int>			IVector4;

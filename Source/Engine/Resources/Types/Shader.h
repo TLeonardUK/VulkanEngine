@@ -5,6 +5,7 @@
 #include "Engine/Resources/ResourceLoader.h"
 #include "Engine/Resources/Resource.h"
 #include "Engine/Rendering/RendererEnums.h"
+#include "Engine/Rendering/UniformBufferLayout.h"
 
 #include "Engine/Graphics/GraphicsPipeline.h"
 
@@ -27,17 +28,6 @@ public:
 
 };
 
-struct ShaderBindingField
-{
-public:
-	String Name;
-	GraphicsBindingFormat Format;
-	String BindTo;
-	MaterialPropertyHash BindToHash;
-	int Location;
-
-};
-
 struct ShaderBinding
 {
 public:
@@ -45,14 +35,8 @@ public:
 	GraphicsBindingType Type;
 	int Binding;
 	String BindTo;
-	GraphicsBindingFrequency Frequency;
 	MaterialPropertyHash BindToHash;
-	Array<ShaderBindingField> Fields;
-
-public:	
-	int GetUniformBufferSize() const;
-	int GetUniformBufferFieldOffset(int fieldIndex) const;
-
+	UniformBufferLayout UniformBufferLayout;
 };
 
 struct ShaderStage

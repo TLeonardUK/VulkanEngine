@@ -7,6 +7,16 @@ MaterialPropertyHash CalculateMaterialPropertyHash(const String& name)
 	return static_cast<MaterialPropertyHash>(std::hash<std::string>{}(name));
 }
 
+MaterialPropertyCollection::MaterialPropertyCollection()
+	: m_version(0)
+{
+}
+
+int MaterialPropertyCollection::GetVersion()
+{
+	return m_version;
+}
+
 MaterialProperty* MaterialPropertyCollection::GetOrCreate(MaterialPropertyHash name)
 {
 	MaterialProperty* value;
@@ -20,6 +30,7 @@ MaterialProperty* MaterialPropertyCollection::GetOrCreate(MaterialPropertyHash n
 	pair.second.Hash = name;
 
 	m_properties.insert(pair);
+	m_version++;
 
 	return &m_properties[name];
 }
@@ -31,6 +42,7 @@ void MaterialPropertyCollection::Add(const MaterialProperty& prop)
 	pair.second = prop;
 
 	m_properties.insert(pair);
+	m_version++;
 }
 
 bool MaterialPropertyCollection::Get(MaterialPropertyHash name, MaterialProperty** result)
@@ -48,179 +60,322 @@ bool MaterialPropertyCollection::Get(MaterialPropertyHash name, MaterialProperty
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, bool value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Bool;
-	prop->Value_Bool = value;
+
+	if (prop->Format != GraphicsBindingFormat::Bool ||
+		prop->Value_Bool != value)
+	{
+		prop->Format = GraphicsBindingFormat::Bool;
+		prop->Value_Bool = value;
+		m_version++;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, BVector2 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Bool2;
-	prop->Value_Bool2 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Bool2 ||
+		prop->Value_Bool2 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Bool2;
+		prop->Value_Bool2 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, BVector3 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Bool3;
-	prop->Value_Bool3 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Bool3 ||
+		prop->Value_Bool3 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Bool3;
+		prop->Value_Bool3 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, BVector4 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Bool4;
-	prop->Value_Bool4 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Bool4 ||
+		prop->Value_Bool4 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Bool4;
+		prop->Value_Bool4 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, int32_t value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Int;
-	prop->Value_Int = value;
+
+	if (prop->Format != GraphicsBindingFormat::Int ||
+		prop->Value_Int != value)
+	{
+		prop->Format = GraphicsBindingFormat::Int;
+		prop->Value_Int = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, IVector2 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Int2;
-	prop->Value_Int2 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Int2 ||
+		prop->Value_Int2 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Int2;
+		prop->Value_Int2 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, IVector3 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Int3;
-	prop->Value_Int3 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Int3 ||
+		prop->Value_Int3 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Int3;
+		prop->Value_Int3 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, IVector4 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Int4;
-	prop->Value_Int4 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Int4 ||
+		prop->Value_Int4 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Int4;
+		prop->Value_Int4 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, uint32_t value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::UInt;
-	prop->Value_UInt = value;
+
+	if (prop->Format != GraphicsBindingFormat::UInt ||
+		prop->Value_UInt != value)
+	{
+		prop->Format = GraphicsBindingFormat::UInt;
+		prop->Value_UInt = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, UVector2 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::UInt2;
-	prop->Value_UInt2 = value;
+
+	if (prop->Format != GraphicsBindingFormat::UInt2 ||
+		prop->Value_UInt2 != value)
+	{
+		prop->Format = GraphicsBindingFormat::UInt2;
+		prop->Value_UInt2 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, UVector3 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::UInt3;
-	prop->Value_UInt3 = value;
+
+	if (prop->Format != GraphicsBindingFormat::UInt3 ||
+		prop->Value_UInt3 != value)
+	{
+		prop->Format = GraphicsBindingFormat::UInt3;
+		prop->Value_UInt3 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, UVector4 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::UInt4;
-	prop->Value_UInt4 = value;
+
+	if (prop->Format != GraphicsBindingFormat::UInt4 ||
+		prop->Value_UInt4 != value)
+	{
+		prop->Format = GraphicsBindingFormat::UInt4;
+		prop->Value_UInt4 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, float value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Float;
-	prop->Value_Float = value;
+
+	if (prop->Format != GraphicsBindingFormat::Float ||
+		prop->Value_Float != value)
+	{
+		prop->Format = GraphicsBindingFormat::Float;
+		prop->Value_Float = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, Vector2 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Float2;
-	prop->Value_Float2 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Float2 ||
+		prop->Value_Float2 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Float2;
+		prop->Value_Float2 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, Vector3 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Float3;
-	prop->Value_Float3 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Float3 ||
+		prop->Value_Float3 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Float3;
+		prop->Value_Float3 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, Vector4 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Float4;
-	prop->Value_Float4 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Float4 ||
+		prop->Value_Float4 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Float4;
+		prop->Value_Float4 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, double value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Double;
-	prop->Value_Double = value;
+
+	if (prop->Format != GraphicsBindingFormat::Double ||
+		prop->Value_Double != value)
+	{
+		prop->Format = GraphicsBindingFormat::Double;
+		prop->Value_Double = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, DVector2 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Double2;
-	prop->Value_Double2 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Double2 ||
+		prop->Value_Double2 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Double2;
+		prop->Value_Double2 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, DVector3 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Double3;
-	prop->Value_Double3 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Double3 ||
+		prop->Value_Double3 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Double3;
+		prop->Value_Double3 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, DVector4 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Double4;
-	prop->Value_Double4 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Double4 ||
+		prop->Value_Double4 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Double4;
+		prop->Value_Double4 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, Matrix2 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Matrix2;
-	prop->Value_Matrix2 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Matrix2 ||
+		prop->Value_Matrix2 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Matrix2;
+		prop->Value_Matrix2 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, Matrix3 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Matrix3;
-	prop->Value_Matrix3 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Matrix3 ||
+		prop->Value_Matrix3 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Matrix3;
+		prop->Value_Matrix3 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, Matrix4 value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Matrix4;
-	prop->Value_Matrix4 = value;
+
+	if (prop->Format != GraphicsBindingFormat::Matrix4 ||
+		prop->Value_Matrix4 != value)
+	{
+		prop->Format = GraphicsBindingFormat::Matrix4;
+		prop->Value_Matrix4 = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, ResourcePtr<Texture> value)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Texture;
-	prop->Value_Texture = value;
-	prop->Value_ImageView = nullptr;
-	prop->Value_ImageSampler = nullptr;
+
+	if (prop->Format != GraphicsBindingFormat::Texture ||
+		prop->Value_Texture.Get() != value.Get() ||
+		prop->Value_ImageView != nullptr ||
+		prop->Value_ImageSampler != nullptr)
+	{
+		prop->Format = GraphicsBindingFormat::Texture;
+		prop->Value_Texture = value;
+		prop->Value_ImageView = nullptr;
+		prop->Value_ImageSampler = nullptr;
+	}
+}
+
+void MaterialPropertyCollection::Set(MaterialPropertyHash name, ResourcePtr<TextureCube> value)
+{
+	MaterialProperty* prop = GetOrCreate(name);
+
+	if (prop->Format != GraphicsBindingFormat::TextureCube ||
+		prop->Value_TextureCube.Get() != value.Get())
+	{
+		prop->Format = GraphicsBindingFormat::TextureCube;
+		prop->Value_TextureCube = value;
+	}
 }
 
 void MaterialPropertyCollection::Set(MaterialPropertyHash name, std::shared_ptr<IGraphicsImageView> imageView, std::shared_ptr<IGraphicsSampler> sampler)
 {
 	MaterialProperty* prop = GetOrCreate(name);
-	prop->Format = GraphicsBindingFormat::Texture;
-	prop->Value_ImageView = imageView;
-	prop->Value_ImageSampler = sampler;
+	
+	if (prop->Format != GraphicsBindingFormat::Texture ||
+		prop->Value_Texture.Get() != nullptr ||
+		prop->Value_ImageView != imageView ||
+		prop->Value_ImageSampler != sampler)
+	{
+		prop->Format = GraphicsBindingFormat::Texture;
+		prop->Value_Texture.Reset();
+		prop->Value_ImageView = imageView;
+		prop->Value_ImageSampler = sampler;
+	}
 }
 
 void MaterialProperty::ParseJsonValue(Array<json>& values)

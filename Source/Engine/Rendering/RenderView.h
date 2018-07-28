@@ -5,10 +5,13 @@
 #include "Engine/Types/Frustum.h"
 #include "Engine/Types/Color.h"
 
+struct MeshComponent;
+
 struct RenderMesh
 {
+	MeshComponent* MeshComponent;
 	std::shared_ptr<Mesh> Mesh;
-	Matrix4 Matrix;
+	int MeshIndex;
 };
 
 struct RenderLine

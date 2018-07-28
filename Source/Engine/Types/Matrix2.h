@@ -93,6 +93,24 @@ __forceinline BaseMatrix2<T> operator/(const BaseMatrix2<T>& first, float second
 	return BaseMatrix2<T>(first) /= second;
 }
 
+
+template <typename T>
+__forceinline bool operator==(const BaseMatrix2<T>& first, const BaseMatrix2<T>& second)
+{
+	return
+		first.columns[0][0] == second.columns[0][0] &&
+		first.columns[0][1] == second.columns[0][1] &&
+
+		first.columns[1][0] == second.columns[1][0] &&
+		first.columns[1][1] == second.columns[1][1];
+}
+
+template <typename T>
+__forceinline bool operator!=(const BaseMatrix2<T>& first, const BaseMatrix2<T>& second)
+{
+	return !(first == second);
+}
+
 static_assert(sizeof(BaseMatrix2<float>) == 4 * 2 * 2, "BaseMatrix2 is not expected size. Data should be tightly packed.");
 
 typedef BaseMatrix2<float> Matrix2;

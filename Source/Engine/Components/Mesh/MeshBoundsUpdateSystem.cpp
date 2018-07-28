@@ -29,7 +29,7 @@ void MeshBoundsUpdateSystem::Tick(
 	}
 
 	// Update bounds.
-	ParallelFor(entities.size(), [&](int i) 
+	ParallelFor(static_cast<int>(entities.size()), [&](int i)
 	{
 		const TransformComponent* transform = transforms[i];
 		MeshComponent* mesh = meshes[i];
@@ -42,11 +42,11 @@ void MeshBoundsUpdateSystem::Tick(
 			if (model != nullptr)
 			{
 				const Array<std::shared_ptr<Mesh>>& meshes = model->GetMeshes();
-				mesh->meshBounds.resize(meshes.size());
+				mesh->bounds.resize(meshes.size());
 
-				ParallelFor(mesh->meshBounds.size(), [&](int j)
+				ParallelFor(static_cast<int>(mesh->bounds.size()), [&](int j)
 				{
-					mesh->meshBounds[j] = OrientedBounds(meshes[j]->GetBounds(), transform->localToWorld);
+					mesh->bounds[j] = OrientedBounds(meshes[j]->GetBounds(), transform->localToWorld);
 				}, 16, "Sub-Mesh Bounds Update");
 			}
 		}

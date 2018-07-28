@@ -117,6 +117,11 @@ void Mesh::SetIndices(const Array<int>& indices)
 	m_dirty = true;
 }
 
+String Mesh::GetName()
+{
+	return m_name;
+}
+
 void Mesh::RecalculateBounds()
 {
 	m_bounds = Bounds(m_vertices);

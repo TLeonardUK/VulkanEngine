@@ -17,7 +17,6 @@ Shader::Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bin
 	, m_pipelineDescription(pipelineDescription)
 	, m_target(target)
 {
-
 }
 
 bool Shader::GetStage(GraphicsPipelineStage stage, const ShaderStage** result)
@@ -42,48 +41,6 @@ const Array<ShaderStage>& Shader::GetStages()
 const Array<ShaderBinding>& Shader::GetBindings()
 {
 	return m_bindings;
-}
-
-int ShaderBinding::GetUniformBufferSize() const
-{
-	int size = 0;
-	int baseAlignment = 0;
-
-	for (auto& field : Fields)
-	{
-		int alignment = GetAlignmentForGraphicsBindingFormat(field.Format);
-		if (baseAlignment == 0)
-		{
-			baseAlignment = alignment;
-		}
-
-		size += (size % alignment);
-		size += GetByteSizeForGraphicsBindingFormat(field.Format);
-	}
-	
-	size += (size % baseAlignment);
-
-	return size;
-}
-
-int ShaderBinding::GetUniformBufferFieldOffset(int fieldIndex) const
-{
-	int size = 0;
-	for (int i = 0; i < Fields.size(); i++)
-	{
-		auto& field = Fields[i];
-
-		int alignment = GetAlignmentForGraphicsBindingFormat(field.Format);
-		size += (size % alignment);
-
-		if (i == fieldIndex)
-		{
-			return size;
-		}
-
-		size += GetByteSizeForGraphicsBindingFormat(field.Format);
-	}
-	return size;
 }
 
 const GraphicsPipelineSettings& Shader::GetPipelineDescription()

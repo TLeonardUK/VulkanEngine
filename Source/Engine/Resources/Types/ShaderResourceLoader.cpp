@@ -92,7 +92,7 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 			}
 
 			String freqencyName = bindingJson["Frequency"];
-			if (!StringToEnum<GraphicsBindingFrequency>(freqencyName, binding.Frequency))
+			if (!StringToEnum<GraphicsBindingFrequency>(freqencyName, binding.UniformBufferLayout.Frequency))
 			{
 				m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised frequency type.", resource->Path.c_str(), freqencyName.c_str());
 				return false;
@@ -119,7 +119,7 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 					return false;
 				}
 
-				ShaderBindingField fieldBinding;
+				UniformBufferLayoutField fieldBinding;
 				fieldBinding.Name = fieldName;
 				fieldBinding.BindTo = fieldJson["BindTo"];
 				fieldBinding.BindToHash = CalculateMaterialPropertyHash(fieldBinding.BindTo);
@@ -133,25 +133,27 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 					return false;
 				}
 
-				binding.Fields.push_back(fieldBinding);
+				binding.UniformBufferLayout.Fields.push_back(fieldBinding);
 			}
 			
 			// Sort by location in struct.
-			std::sort(binding.Fields.begin(), binding.Fields.end(),
-				[](const ShaderBindingField& a, const ShaderBindingField& b) -> bool
+			std::sort(binding.UniformBufferLayout.Fields.begin(), binding.UniformBufferLayout.Fields.end(),
+				[](const UniformBufferLayoutField& a, const UniformBufferLayoutField& b) -> bool
 			{
 				return a.Location < b.Location;
 			});
 
 			// Ensure fields are sequential.
-			for (int i = 0; i < binding.Fields.size(); i++)
+			for (int i = 0; i < binding.UniformBufferLayout.Fields.size(); i++)
 			{
-				if (binding.Fields[i].Location != i)
+				if (binding.UniformBufferLayout.Fields[i].Location != i)
 				{
-					m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding field '%s' is not sequential, expected location %i.", resource->Path.c_str(), binding.Fields[i].Name, i);
+					m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding field '%s' is not sequential, expected location %i.", resource->Path.c_str(), binding.UniformBufferLayout.Fields[i].Name, i);
 					return false;
 				}
 			}
+
+			binding.UniformBufferLayout.CalculateHashCode();
 		}
 
 		binding.Binding = bindingJson["Binding"];

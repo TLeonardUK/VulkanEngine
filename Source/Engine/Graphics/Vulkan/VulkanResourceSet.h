@@ -37,7 +37,7 @@ private:
 	VkDescriptorSetLayout GetLayout();
 	VkDescriptorSet ConsumeSet();
 
-	const Array<VulkanResourceSetBinding>& GetBindings();
+	const Array<VulkanResourceSetBinding>& GetBindings() const;
 
 	void GetUniformBufferOffsets(uint32_t* destination, int* count);
 
@@ -56,7 +56,8 @@ public:
 	virtual bool UpdateBinding(int location, int arrayIndex, std::shared_ptr<IGraphicsUniformBuffer> buffer);
 	virtual bool UpdateBinding(int location, int arrayIndex, std::shared_ptr<IGraphicsSampler> sampler, std::shared_ptr<IGraphicsImageView> imageView);
 
-	virtual std::shared_ptr<IGraphicsResourceSetInstance> ConsumeInstance();
+	virtual std::shared_ptr<IGraphicsResourceSetInstance> NewInstance();
+	virtual void UpdateInstance(std::shared_ptr<IGraphicsResourceSetInstance>& instance);
 
 	virtual void FreeResources();
 	virtual String GetName();

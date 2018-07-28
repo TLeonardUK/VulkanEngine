@@ -6,20 +6,13 @@
 #include "Engine/Graphics/Vulkan/VulkanUniformBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanImageView.h"
 #include "Engine/Graphics/Vulkan/VulkanSampler.h"
+#include "Engine/Types/Hash.h"
 
 #include "Engine/Engine/Logging.h"
 
 // This whole thing feels very crude. bindings hold image references preventing them getting recycled (change to weak_ptr's).
 // if a model uses a different uniform buffer for several frames in a row, any descriptors using other uniform buffers will be recycled, resulting
 // in constantly churning descriptor pool (slow hash lookups)!
-
-template <class T>
-inline void BindingsHashCombine(std::size_t& seed, T v)
-{
-	std::hash<T> hasher;
-	size_t hash = hasher(v);
-	seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
 
 void VulkanResourceSetBinding::UpdateVulkanObjects(Array<VulkanResourceSetBinding>& objects)
 {
@@ -92,24 +85,24 @@ bool VulkanResourceSetBinding::BindingsEqualTo(const Array<VulkanResourceSetBind
 size_t VulkanResourceSetBinding::GetBindingsHashCode(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings)
 {
 	size_t hash = 1;
-	BindingsHashCombine(hash, reinterpret_cast<void*>(layout));
-	BindingsHashCombine(hash, bindings.size());
+	CombineHash(hash, reinterpret_cast<void*>(layout));
+	CombineHash(hash, bindings.size());
 
 	for (int i = 0; i < bindings.size(); i++)
 	{
 		const VulkanResourceSetBinding& binding = bindings[i];
-		BindingsHashCombine(hash, binding.type);
-		BindingsHashCombine(hash, binding.location);
-		BindingsHashCombine(hash, binding.arrayIndex);
+		CombineHash(hash, binding.type);
+		CombineHash(hash, binding.location);
+		CombineHash(hash, binding.arrayIndex);
 
 		if (binding.type == VulkanResourceSetBindingType::Sampler)
 		{
-			BindingsHashCombine(hash, reinterpret_cast<void*>(binding.sampler->GetSampler()));
-			BindingsHashCombine(hash, reinterpret_cast<void*>(binding.samplerImageView->GetImageView()));
+			CombineHash(hash, reinterpret_cast<void*>(binding.sampler->GetSampler()));
+			CombineHash(hash, reinterpret_cast<void*>(binding.samplerImageView->GetImageView()));
 		}
 		else if (binding.type == VulkanResourceSetBindingType::UniformBuffer)
 		{
-			BindingsHashCombine(hash, reinterpret_cast<void*>(binding.uniformBuffer->GetGpuBuffer()));
+			CombineHash(hash, reinterpret_cast<void*>(binding.uniformBuffer->GetGpuBuffer()));
 		}
 	}
 

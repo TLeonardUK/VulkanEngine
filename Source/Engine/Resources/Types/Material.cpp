@@ -34,11 +34,6 @@ std::shared_ptr<IGraphicsPipeline> Material::GetWireframePipeline()
 	return m_wireframePipeline;
 }
 
-std::shared_ptr<IGraphicsResourceSet> Material::GetResourceSet()
-{
-	return m_resourceSet;
-}
-
 String Material::GetName()
 {
 	return m_name;
@@ -145,6 +140,11 @@ bool Material::GetVertexBufferFormat(VertexBufferBindingDescription& vertexBuffe
 	return true;
 }
 
+GraphicsResourceSetDescription Material::GetResourceSetDescription()
+{
+	return m_resourceSetDescription;
+}
+
 void Material::UpdateResources()
 {
 	std::shared_ptr<Shader> shader = m_shader.Get();
@@ -159,174 +159,6 @@ void Material::UpdateResources()
 		m_dirty = false;
 		RecreateResources();
 	}
-
-	UpdateBindings();
-}
-
-bool Material::FillUniformBuffer(std::shared_ptr<IGraphicsUniformBuffer> buffer, const ShaderBinding& binding)
-{
-	MaterialPropertyCollection& globalProperties = m_renderer->GetGlobalMaterialProperties();
-
-	m_uboDataBuffer.resize(binding.GetUniformBufferSize());
-
-	for (int i = 0; i < binding.Fields.size(); i++)
-	{
-		const ShaderBindingField& field = binding.Fields[i];
-		int fieldOffset = binding.GetUniformBufferFieldOffset(i);
-
-		MaterialProperty* matBinding;
-		if (!m_properties.Get(field.BindToHash, &matBinding))
-		{
-			if (!globalProperties.Get(field.BindToHash, &matBinding))
-			{
-				m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s', property '%s' does not exist.", m_name.c_str(), field.Name.c_str(), field.BindTo.c_str());
-				continue;
-			}
-		}
-
-		// insert into ubo.
-		char* destination = m_uboDataBuffer.data() + fieldOffset;
-		char* source;
-		int sourceSize;
-
-		switch (field.Format)
-		{
-		case GraphicsBindingFormat::Bool:		sourceSize = sizeof(bool);		source = reinterpret_cast<char*>(&matBinding->Value_Bool);		break;
-		case GraphicsBindingFormat::Bool2:		sourceSize = sizeof(BVector2);	source = reinterpret_cast<char*>(&matBinding->Value_Bool2);		break;
-		case GraphicsBindingFormat::Bool3:		sourceSize = sizeof(BVector3);	source = reinterpret_cast<char*>(&matBinding->Value_Bool3);		break;
-		case GraphicsBindingFormat::Bool4:		sourceSize = sizeof(BVector4);	source = reinterpret_cast<char*>(&matBinding->Value_Bool4);		break;
-		case GraphicsBindingFormat::Int:		sourceSize = sizeof(int32_t);	source = reinterpret_cast<char*>(&matBinding->Value_Int);		break;
-		case GraphicsBindingFormat::Int2:		sourceSize = sizeof(IVector2);	source = reinterpret_cast<char*>(&matBinding->Value_Int2);		break;
-		case GraphicsBindingFormat::Int3:		sourceSize = sizeof(IVector3);	source = reinterpret_cast<char*>(&matBinding->Value_Int3);		break;
-		case GraphicsBindingFormat::Int4:		sourceSize = sizeof(IVector4);	source = reinterpret_cast<char*>(&matBinding->Value_Int4);		break;
-		case GraphicsBindingFormat::UInt:		sourceSize = sizeof(uint32_t);	source = reinterpret_cast<char*>(&matBinding->Value_UInt);		break;
-		case GraphicsBindingFormat::UInt2:		sourceSize = sizeof(UVector2);	source = reinterpret_cast<char*>(&matBinding->Value_UInt2);		break;
-		case GraphicsBindingFormat::UInt3:		sourceSize = sizeof(UVector3);	source = reinterpret_cast<char*>(&matBinding->Value_UInt3);		break;
-		case GraphicsBindingFormat::UInt4:		sourceSize = sizeof(UVector4);	source = reinterpret_cast<char*>(&matBinding->Value_UInt4);		break;
-		case GraphicsBindingFormat::Float:		sourceSize = sizeof(float);		source = reinterpret_cast<char*>(&matBinding->Value_Float);		break;
-		case GraphicsBindingFormat::Float2:		sourceSize = sizeof(Vector2);	source = reinterpret_cast<char*>(&matBinding->Value_Float2);	break;
-		case GraphicsBindingFormat::Float3:		sourceSize = sizeof(Vector3);	source = reinterpret_cast<char*>(&matBinding->Value_Float3);	break;
-		case GraphicsBindingFormat::Float4:		sourceSize = sizeof(Vector4);	source = reinterpret_cast<char*>(&matBinding->Value_Float4);	break;
-		case GraphicsBindingFormat::Double:		sourceSize = sizeof(double);	source = reinterpret_cast<char*>(&matBinding->Value_Double);	break;
-		case GraphicsBindingFormat::Double2:	sourceSize = sizeof(DVector2);	source = reinterpret_cast<char*>(&matBinding->Value_Double2);	break;
-		case GraphicsBindingFormat::Double3:	sourceSize = sizeof(DVector3);	source = reinterpret_cast<char*>(&matBinding->Value_Double3);	break;
-		case GraphicsBindingFormat::Double4:	sourceSize = sizeof(DVector4);	source = reinterpret_cast<char*>(&matBinding->Value_Double4);	break;
-		case GraphicsBindingFormat::Matrix2:	sourceSize = sizeof(Matrix2);	source = reinterpret_cast<char*>(&matBinding->Value_Matrix2);	break;
-		case GraphicsBindingFormat::Matrix3:	sourceSize = sizeof(Matrix3);	source = reinterpret_cast<char*>(&matBinding->Value_Matrix3);	break;
-		case GraphicsBindingFormat::Matrix4:	sourceSize = sizeof(Matrix4);	source = reinterpret_cast<char*>(&matBinding->Value_Matrix4);	break;
-		default:
-		{
-			m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s', unknown format.", m_name.c_str(), field.Name.c_str());
-			continue;
-		}
-		}
-
-		memcpy(destination, source, sourceSize);
-	}
-
-	buffer->Upload(m_uboDataBuffer.data(), 0, (int)m_uboDataBuffer.size());
-
-	return true;
-}
-
-void Material::UpdateBindings()
-{
-	MaterialPropertyCollection& globalProperties = m_renderer->GetGlobalMaterialProperties();
-
-	std::shared_ptr<Shader> shader = m_shader.Get();
-	const Array<ShaderBinding>& bindings = shader->GetBindings();
-
-	for (const ShaderBinding& binding : bindings)
-	{
-		switch (binding.Type)
-		{
-		case GraphicsBindingType::UniformBufferObject:
-			{
-				// todo: if global, retrieve from global list.
-				// todo: if mesh, retrieve from mesh list.
-
-				std::shared_ptr<IGraphicsUniformBuffer> buffer = m_uniformBuffers[binding.Name];
-
-				if (!FillUniformBuffer(buffer, binding))
-				{
-					continue;
-				}
-
-				m_resourceSet->UpdateBinding(binding.Binding, 0, buffer);
-				break;
-			}
-		case GraphicsBindingType::Sampler:
-			{
-				MaterialProperty* matBinding;
-				
-				if (!m_properties.Get(binding.BindToHash, &matBinding))
-				{
-					if (!globalProperties.Get(binding.BindToHash, &matBinding))
-					{
-						m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s', property '%s' does not exist.", m_name.c_str(), binding.Name.c_str(), binding.BindTo.c_str());
-						continue;
-					}
-				}
-
-				if (matBinding->Format != GraphicsBindingFormat::Texture)
-				{
-					String expectedFormat = EnumToString<GraphicsBindingFormat>(GraphicsBindingFormat::Texture);
-					String actualFormat = EnumToString<GraphicsBindingFormat>(matBinding->Format);
-
-					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s', property format is '%s' expected '%s'.", m_name.c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
-					continue;
-				}
-
-				std::shared_ptr<Texture> texture = matBinding->Value_Texture.Get();
-				if (matBinding->Value_ImageSampler == nullptr &&
-					matBinding->Value_ImageView == nullptr)
-				{
-					m_resourceSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
-				}
-				else
-				{
-					m_resourceSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
-				}
-
-				break;
-			}
-		case GraphicsBindingType::SamplerCube:
-			{
-				MaterialProperty* matBinding;
-				
-				if (!m_properties.Get(binding.BindToHash, &matBinding))
-				{
-					if (!globalProperties.Get(binding.BindToHash, &matBinding))
-					{
-						m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s', property '%s' does not exist.", m_name.c_str(), binding.Name.c_str(), binding.BindTo.c_str());
-						continue;
-					}
-				}
-
-				if (matBinding->Format != GraphicsBindingFormat::TextureCube)
-				{
-					String expectedFormat = EnumToString<GraphicsBindingFormat>(GraphicsBindingFormat::TextureCube);
-					String actualFormat = EnumToString<GraphicsBindingFormat>(matBinding->Format);
-
-					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s', property format is '%s' expected '%s'.", m_name.c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
-					continue;
-				}
-
-				std::shared_ptr<TextureCube> texture = matBinding->Value_TextureCube.Get();
-				if (matBinding->Value_ImageSampler == nullptr &&
-					matBinding->Value_ImageView == nullptr)
-				{
-					m_resourceSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
-				}
-				else
-				{
-					m_resourceSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
-				}
-
-				break;
-			}
-		}
-	}
 }
 
 void Material::RecreateResources()
@@ -340,28 +172,22 @@ void Material::RecreateResources()
 	}
 
 	// Create resource set and uniform buffers as appropriate.
-	GraphicsResourceSetDescription resourceSetDescription = {};
+	m_resourceSetDescription = {};
+
 	const Array<ShaderBinding>& bindings = shader->GetBindings();
-
-	m_uniformBuffers.clear();
-
 	for (const ShaderBinding& binding : bindings)
 	{
-		resourceSetDescription.AddBinding(binding.Name, binding.Binding, binding.Type);
+		m_resourceSetDescription.AddBinding(binding.Name, binding.Binding, binding.Type);
 
-		if (binding.Type == GraphicsBindingType::UniformBufferObject)
+		// If ubo is a global, make sure to register it with the renderer to be filled.
+		if (binding.Type == GraphicsBindingType::UniformBufferObject &&
+			binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Global)
 		{
-			int dataSize = binding.GetUniformBufferSize();
-
-			std::shared_ptr<IGraphicsUniformBuffer> uniformBuffer = m_graphics->CreateUniformBuffer(StringFormat("%s (%s)", m_name.c_str(), binding.Name.c_str()), dataSize);
-
-			std::pair<String, std::shared_ptr<IGraphicsUniformBuffer>> pair(binding.Name, uniformBuffer);
-
-			m_uniformBuffers.insert(pair);
+			m_renderer->RegisterGlobalUniformBuffer(binding.UniformBufferLayout);
 		}
 	}
 
-	m_resourceSet = m_renderer->AllocateResourceSet(resourceSetDescription);
+	m_resourceSet = m_renderer->AllocateResourceSet(m_resourceSetDescription);
 
 	// Create pipeline.
 	GraphicsPipelineSettings pipelineSettings = shader->GetPipelineDescription();
@@ -389,4 +215,210 @@ std::shared_ptr<IGraphicsRenderPass> Material::GetRenderPass()
 std::shared_ptr<IGraphicsFramebuffer> Material::GetFrameBuffer()
 {
 	return  m_renderer->GetFramebufferForTarget(m_shader.Get()->GetTarget());
+}
+
+MaterialRenderData::MaterialRenderData(
+	const std::shared_ptr<Logger>& logger,
+	const std::shared_ptr<Renderer>& renderer,
+	const std::shared_ptr<IGraphics>& graphics)
+	: m_logger(logger)
+	, m_renderer(renderer)
+	, m_graphics(graphics)
+{
+}
+
+void MaterialRenderData::Update(
+	const std::shared_ptr<Material>& material,
+	MaterialPropertyCollection* meshPropertiesCollection)
+{
+	bool regenerate = true;
+
+	if (&*material != &*m_lastKnownMaterial)
+	{
+		m_logger->WriteInfo(LogCategory::Engine, "Mateiral changed from %s to %s",
+			material == nullptr ? "null" : material->GetName().c_str(),
+			m_lastKnownMaterial == nullptr ? "null" : m_lastKnownMaterial->GetName().c_str()
+		);
+
+		m_lastKnownMaterial = material;
+		m_lastMeshPropertiesVersion = -1;
+		m_lastMaterialPropertiesVersion = -1;
+
+		Recreate();
+	}
+
+	int meshPropertiesVersion = (meshPropertiesCollection != nullptr ? meshPropertiesCollection->GetVersion() : m_lastMeshPropertiesVersion);
+	int materialPropertiesVersion = material->GetProperties().GetVersion();
+
+	if (meshPropertiesVersion != m_lastMeshPropertiesVersion ||
+		materialPropertiesVersion != m_lastMaterialPropertiesVersion)
+	{
+		UpdateBindings(meshPropertiesCollection);
+
+		m_lastMaterialPropertiesVersion = materialPropertiesVersion;
+		m_lastMeshPropertiesVersion = meshPropertiesVersion;
+	}
+}
+
+const std::shared_ptr<IGraphicsResourceSet>& MaterialRenderData::GetResourceSet()
+{
+	return m_resourceSet;
+}
+
+const std::shared_ptr<IGraphicsResourceSetInstance>& MaterialRenderData::GetResourceSetInstance()
+{
+	if (m_resourceSetInstance == nullptr)
+	{
+		m_resourceSetInstance = m_resourceSet->NewInstance();
+	}
+	else
+	{
+		m_resourceSet->UpdateInstance(m_resourceSetInstance);
+	}
+
+	return m_resourceSetInstance;
+}
+
+MaterialProperty* MaterialRenderData::GetMaterialPropertyFromCollections(MaterialPropertyHash hash, MaterialPropertyCollection** collections, int collectionCount)
+{
+	MaterialProperty* prop = nullptr;
+
+	for (int i = 0; i < collectionCount; i++)
+	{
+		if (collections[i] != nullptr &&
+			collections[i]->Get(hash, &prop))
+		{
+			return prop;
+		}
+	}
+
+	return nullptr;
+}
+
+void MaterialRenderData::Recreate()
+{
+	m_resourceSet = m_renderer->AllocateResourceSet(m_lastKnownMaterial->GetResourceSetDescription());
+
+	const Array<ShaderBinding>& bindings = m_lastKnownMaterial->GetShader().Get()->GetBindings();
+
+	m_uniformBuffers.clear();
+
+	for (const ShaderBinding& binding : bindings)
+	{
+		if (binding.Type == GraphicsBindingType::UniformBufferObject)
+		{
+			if (binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Mesh)
+			{
+				int dataSize = binding.UniformBufferLayout.GetSize();
+
+				std::shared_ptr<IGraphicsUniformBuffer> uniformBuffer = m_graphics->CreateUniformBuffer(
+					StringFormat("%s (%s)", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str()),
+					dataSize);
+
+				m_uniformBuffers.push_back(uniformBuffer);
+			}
+		}
+	}
+}
+
+void MaterialRenderData::UpdateBindings(MaterialPropertyCollection* meshPropertiesCollection)
+{
+	Array<ShaderBinding> bindings = m_lastKnownMaterial->GetShader().Get()->GetBindings();
+
+	MaterialPropertyCollection* meshFrequencyPropertyCollections[2] = {
+		meshPropertiesCollection,
+		&m_lastKnownMaterial->GetProperties()
+	};
+
+	int meshUboIndex = 0;
+
+	for (ShaderBinding& binding : bindings)
+	{
+		switch (binding.Type)
+		{
+		case GraphicsBindingType::UniformBufferObject:
+			{
+				std::shared_ptr<IGraphicsUniformBuffer> buffer = nullptr;
+
+				if (binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Global)
+				{
+					buffer = m_renderer->GetGlobalUniformBuffer(binding.UniformBufferLayout.HashCode);
+				}
+				else if (binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Mesh)
+				{
+					buffer = m_uniformBuffers[meshUboIndex++];
+					binding.UniformBufferLayout.FillBuffer(m_logger, buffer, meshFrequencyPropertyCollections, 2);
+				}
+				else
+				{
+					assert(false);
+				}
+
+				m_resourceSet->UpdateBinding(binding.Binding, 0, buffer);
+				break;
+			}
+		case GraphicsBindingType::Sampler:
+			{
+				MaterialProperty* matBinding = GetMaterialPropertyFromCollections(binding.BindToHash, meshFrequencyPropertyCollections, 2);
+				if (matBinding == nullptr)
+				{
+					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property '%s' does not exist.", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str(), binding.BindTo.c_str());
+					continue;
+				}
+
+				if (matBinding->Format != GraphicsBindingFormat::Texture)
+				{
+					String expectedFormat = EnumToString<GraphicsBindingFormat>(GraphicsBindingFormat::Texture);
+					String actualFormat = EnumToString<GraphicsBindingFormat>(matBinding->Format);
+
+					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property format is '%s' expected '%s'.", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
+					continue;
+				}
+
+				std::shared_ptr<Texture> texture = matBinding->Value_Texture.Get();
+				if (matBinding->Value_ImageSampler == nullptr &&
+					matBinding->Value_ImageView == nullptr)
+				{
+					m_resourceSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
+				}
+				else
+				{
+					m_resourceSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
+				}
+
+				break;
+			}
+		case GraphicsBindingType::SamplerCube:
+			{
+				MaterialProperty* matBinding = GetMaterialPropertyFromCollections(binding.BindToHash, meshFrequencyPropertyCollections, 2);
+				if (matBinding == nullptr)
+				{
+					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property '%s' does not exist.", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str(), binding.BindTo.c_str());
+					continue;
+				}
+
+				if (matBinding->Format != GraphicsBindingFormat::TextureCube)
+				{
+					String expectedFormat = EnumToString<GraphicsBindingFormat>(GraphicsBindingFormat::TextureCube);
+					String actualFormat = EnumToString<GraphicsBindingFormat>(matBinding->Format);
+
+					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property format is '%s' expected '%s'.", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
+					continue;
+				}
+
+				std::shared_ptr<TextureCube> texture = matBinding->Value_TextureCube.Get();
+				if (matBinding->Value_ImageSampler == nullptr &&
+					matBinding->Value_ImageView == nullptr)
+				{
+					m_resourceSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
+				}
+				else
+				{
+					m_resourceSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
+				}
+
+				break;
+			}
+		}
+	}
 }

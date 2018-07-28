@@ -30,7 +30,7 @@ void RenderCameraViewsSystem::GatherVisibleMeshes(
 	std::shared_ptr<AspectCollection> collection = world.GetAspectCollection(m_meshComponentAspectId);
 	const Array<MeshComponent*>& meshComponents = collection->GetEntityComponents<MeshComponent>();
 	const Array<TransformComponent*>& meshTransformComponents = collection->GetEntityComponents<TransformComponent>();
-	int totalPossibleMeshes = 0;
+	size_t totalPossibleMeshes = 0;
 
 	// Figure out maximum number of meshes that could be visible and make sure we have space for them.
 	{
@@ -57,7 +57,7 @@ void RenderCameraViewsSystem::GatherVisibleMeshes(
 	size_t count = meshComponents.size();
 
 	// Figure out which meshes are actually visible.
-	ParallelFor(meshComponents.size(), [&](int i)
+	ParallelFor(static_cast<int>(meshComponents.size()), [&](int i)
 	{
 		MeshComponent* meshComponent = meshComponents[i];
 		TransformComponent* meshTransformComponent = meshTransformComponents[i];
@@ -65,20 +65,27 @@ void RenderCameraViewsSystem::GatherVisibleMeshes(
 		std::shared_ptr<Model> model = meshComponent->model.Get();
 		const Array<std::shared_ptr<Mesh>>& meshes = model->GetMeshes();
 
-		ParallelFor(meshes.size(), [&](int j)
+		meshComponent->renderData.resize(meshes.size());
+
+		ParallelFor(static_cast<int>(meshes.size()), [&](int j)
 		{
-			if (renderView->Frustum.Intersects(meshComponent->meshBounds[j]) != FrustumIntersection::Outside)
+			if (renderView->Frustum.Intersects(meshComponent->bounds[j]) != FrustumIntersection::Outside)
 			{
 				int meshIndex = totalVisibleMeshes++;
 
 				RenderMesh& renderMesh = renderView->Meshes[meshIndex];
-				renderMesh.Matrix = meshTransformComponent->localToWorld;
+				renderMesh.MeshComponent = meshComponent;
+				renderMesh.MeshIndex = j;
 				renderMesh.Mesh = meshes[j];
 
+				// Apply transform properties for rendering..
+				meshComponent->properties.Set(ModelMatrixHash, meshTransformComponent->localToWorld);
+
+				// Draw mesh bounds if enabled.
 				if (m_renderer->IsDrawBoundsEnabled())
 				{
 					DrawDebugOrientedBoundsMessage boundsDrawMsg;
-					boundsDrawMsg.bounds = meshComponent->meshBounds[j];
+					boundsDrawMsg.bounds = meshComponent->bounds[j];
 					boundsDrawMsg.color = Color(0.0f, 0.5f, 1.0f, 1.0f);
 					world.QueueMessage(boundsDrawMsg);
 				}

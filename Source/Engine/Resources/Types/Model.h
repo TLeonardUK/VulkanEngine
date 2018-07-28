@@ -75,6 +75,8 @@ public:
 	void SetColors(const Array<Vector4>& colors);
 	void SetIndices(const Array<int>& indices);
 
+	String GetName();
+
 	void RecalculateBounds();
 
 };

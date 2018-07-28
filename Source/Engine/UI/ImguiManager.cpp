@@ -384,10 +384,12 @@ void ImguiManager::EndFrame()
 		material->GetProperties().Set(ImGuiScale, scale);
 		material->GetProperties().Set(ImGuiTranslation, translation);
 		material->GetProperties().Set(ImGuiTexture, m_fontTexture);
+		
 		material->UpdateResources();
+		m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
 
-		std::shared_ptr<IGraphicsResourceSet> resourceSet = material->GetResourceSet();
-		std::shared_ptr<IGraphicsResourceSetInstance> resourceSetInstance = resourceSet->ConsumeInstance();
+		std::shared_ptr<IGraphicsResourceSet> resourceSet = m_materialRenderData->GetResourceSet();
+		std::shared_ptr<IGraphicsResourceSetInstance> resourceSetInstance = resourceSet->NewInstance();
 
 		buffer->TransitionResourceSets(&resourceSet, 1);
 
@@ -430,7 +432,7 @@ void ImguiManager::EndFrame()
 					}
 					material->UpdateResources();
 
-					resourceSetInstance = resourceSet->ConsumeInstance();
+					resourceSetInstance = resourceSet->NewInstance();
 					buffer->SetResourceSetInstances(&resourceSetInstance, 1);
 
 					lastTextureId = cmd->TextureId;

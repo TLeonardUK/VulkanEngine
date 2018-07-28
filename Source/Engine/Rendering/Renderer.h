@@ -8,6 +8,8 @@
 #include "Engine/Resources/Types/Model.h"
 #include "Engine/Resources/Types/Material.h"
 
+#include "Engine/Rendering/RenderView.h"
+
 #include "Engine/UI/ImguiManager.h"
 
 #include "Engine/ThirdParty/imgui/imgui.h"
@@ -24,7 +26,14 @@ class IGraphicsImageView;
 class IGraphicsSampler;
 class IGraphicsImage;
 struct GraphicsResourceSetDescription;
-class RenderView;
+
+extern const MaterialPropertyHash ModelMatrixHash;
+extern const MaterialPropertyHash ViewMatrixHash;
+extern const MaterialPropertyHash ProjectionMatrixHash;
+extern const MaterialPropertyHash CameraPositionHash;
+extern const MaterialPropertyHash GBuffer0Hash;
+extern const MaterialPropertyHash GBuffer1Hash;
+extern const MaterialPropertyHash GBuffer2Hash;
 
 enum class RenderCommandStage
 {
@@ -58,8 +67,32 @@ struct MaterialBatch
 };
 
 class Renderer
+	: public std::enable_shared_from_this<Renderer>
 {
 private:
+	struct GlobalUniformBuffer
+	{
+		std::shared_ptr<IGraphicsUniformBuffer> buffer;
+		UniformBufferLayout layout;
+	};
+
+	// todo: I do not like this manual vertex binding, may cause issues with
+	// renderers with non-c style packing. We should just create a model out of the 
+	// data and allow that to deal with platform-specific issues.
+	struct FullScreenQuadVertex
+	{
+		Vector2 position;
+		Vector2 uv;
+	};
+
+	struct DebugLineVertex
+	{
+		Vector3 position;
+		Vector4 color;
+	};
+
+private:
+	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<IGraphics> m_graphics;
 	std::shared_ptr<ResourceManager> m_resourceManager;
 	std::shared_ptr<ImguiManager> m_imguiManager;
@@ -98,8 +131,14 @@ private:
 	std::shared_ptr<IGraphicsFramebuffer> m_gbufferFrameBuffer;
 	
 	ResourcePtr<Material> m_resolveToSwapchainMaterial;
+	std::shared_ptr<MaterialRenderData> m_resolveToSwapchainMaterialRenderData;
+
 	ResourcePtr<Material> m_clearGBufferMaterial;
+	std::shared_ptr<MaterialRenderData> m_clearGBufferMaterialRenderData;
+
 	ResourcePtr<Material> m_debugLineMaterial;
+	std::shared_ptr<MaterialRenderData> m_debugLineMaterialRenderData;
+
 	std::shared_ptr<IGraphicsVertexBuffer> m_fullscreenQuadVertexBuffer;
 	std::shared_ptr<IGraphicsIndexBuffer> m_fullscreenQuadIndexBuffer;
 	bool m_fullscreenQuadsUploaded;
@@ -107,6 +146,8 @@ private:
 	ImguiCallbackToken m_debugMenuCallbackToken;
 
 	Dictionary<Material*, MaterialBatch> m_materialBatches;
+
+	Dictionary<size_t, GlobalUniformBuffer> m_globalUniformBuffers;
 
 	// Stats.
 	int m_statMeshesRendered;
@@ -121,24 +162,8 @@ private:
 	bool m_renderingIsFrozen;
 
 private:
-
-	// todo: I do not like this manual vertex binding, may cause issues with
-	// renderers with non-c style packing. We should just create a model out of the 
-	// data and allow that to deal with platform-specific issues.
-	struct FullScreenQuadVertex
-	{
-		Vector2 position;
-		Vector2 uv;
-	};
-
-	struct DebugLineVertex
-	{
-		Vector3 position;
-		Vector4 color;
-	};
-
-private:
 	friend class Material;
+	friend class MaterialRenderData;
 
 	void CreateResources();
 	void FreeResources();
@@ -162,10 +187,12 @@ private:
 	std::shared_ptr<IGraphicsRenderPass> GetRenderPassForTarget(FrameBufferTarget target);
 	std::shared_ptr<IGraphicsFramebuffer> GetFramebufferForTarget(FrameBufferTarget target);
 
-	void DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material);
+	void DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material, std::shared_ptr<MaterialRenderData>* materialRenderData);
+
+	void UpdateGlobalUniformBuffers();
 
 public:
-	Renderer(std::shared_ptr<IGraphics> graphics);
+	Renderer(std::shared_ptr<Logger> m_logger, std::shared_ptr<IGraphics> graphics);
 
 	void QueueRenderCommand(RenderCommandStage stage, RenderCommand::CommandSignature_t callback);
 
@@ -185,5 +212,10 @@ public:
 	int GetSwapChainHeight();
 
 	std::shared_ptr<IGraphicsFramebuffer> GetCurrentFramebuffer();
+
+	void RegisterGlobalUniformBuffer(const UniformBufferLayout& layout);
+	std::shared_ptr<IGraphicsUniformBuffer> GetGlobalUniformBuffer(uint64_t hashCode);
+
+	void UpdateMaterialRenderData(std::shared_ptr<MaterialRenderData>* data, const std::shared_ptr<Material>& material, MaterialPropertyCollection* collection);
 
 };

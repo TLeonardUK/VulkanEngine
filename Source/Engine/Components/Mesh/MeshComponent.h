@@ -4,16 +4,19 @@
 #include "Engine/Resources/Types/Model.h"
 #include "Engine/Types/OrientedBounds.h"
 
+#include "Engine/Components/Component.h"
+
 // Describes an individual static mesh.
 struct MeshComponent
 {
 	ResourcePtr<Model> model;
-	Array<OrientedBounds> meshBounds;
+	Array<OrientedBounds> bounds;
+	MaterialPropertyCollection properties;
+
+	Array<std::shared_ptr<MaterialRenderData>> renderData;
 
 	uint64_t lastBoundsUpdateTransformVersion;
 	std::shared_ptr<Model> lastBoundsUpdateModel;
-
-	MaterialPropertyCollection& meshProperties;
 };
 
 // Changes the model of a mesh component.

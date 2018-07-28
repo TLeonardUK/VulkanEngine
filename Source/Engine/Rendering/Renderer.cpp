@@ -1,9 +1,13 @@
 #include "Pch.h"
 
+#include "Engine/Components/Mesh/MeshComponent.h"
+
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Rendering/RenderView.h"
 #include "Engine/Rendering/RendererEnums.h"
 #include "Engine/Profiling/Profiling.h"
+
+#include "Engine/Engine/Logging.h"
 
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsResourceSet.h"
@@ -11,16 +15,17 @@
 
 #include "Engine/UI/ImguiManager.h"
 
-static const MaterialPropertyHash ModelMatrixHash = CalculateMaterialPropertyHash("ModelMatrix");
-static const MaterialPropertyHash ViewMatrixHash = CalculateMaterialPropertyHash("ViewMatrix");
-static const MaterialPropertyHash ProjectionMatrixHash = CalculateMaterialPropertyHash("ProjectionMatrix");
-static const MaterialPropertyHash CameraPositionHash = CalculateMaterialPropertyHash("CameraPosition");
-static const MaterialPropertyHash GBuffer0Hash = CalculateMaterialPropertyHash("GBuffer0");
-static const MaterialPropertyHash GBuffer1Hash = CalculateMaterialPropertyHash("GBuffer1");
-static const MaterialPropertyHash GBuffer2Hash = CalculateMaterialPropertyHash("GBuffer2");
+const MaterialPropertyHash ModelMatrixHash = CalculateMaterialPropertyHash("ModelMatrix");
+const MaterialPropertyHash ViewMatrixHash = CalculateMaterialPropertyHash("ViewMatrix");
+const MaterialPropertyHash ProjectionMatrixHash = CalculateMaterialPropertyHash("ProjectionMatrix");
+const MaterialPropertyHash CameraPositionHash = CalculateMaterialPropertyHash("CameraPosition");
+const MaterialPropertyHash GBuffer0Hash = CalculateMaterialPropertyHash("GBuffer0");
+const MaterialPropertyHash GBuffer1Hash = CalculateMaterialPropertyHash("GBuffer1");
+const MaterialPropertyHash GBuffer2Hash = CalculateMaterialPropertyHash("GBuffer2");
 
-Renderer::Renderer(std::shared_ptr<IGraphics> graphics)
-	: m_graphics(graphics)
+Renderer::Renderer(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics)
+	: m_logger(logger)
+	, m_graphics(graphics)
 	, m_frameIndex(0)
 	, m_drawGBufferEnabled(false)
 	, m_drawWireframeEnabled(false)
@@ -33,7 +38,6 @@ Renderer::Renderer(std::shared_ptr<IGraphics> graphics)
 {
 	// Fill various global properties with dummies, saves showing errors on initial resource binding. 
 	Matrix4 identityMatrix = Matrix4::Identity;
-	m_globalMaterialProperties.Set(ModelMatrixHash, identityMatrix);
 	m_globalMaterialProperties.Set(ViewMatrixHash, identityMatrix);
 	m_globalMaterialProperties.Set(ProjectionMatrixHash, identityMatrix);
 }
@@ -315,7 +319,7 @@ void Renderer::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer
 	buffer->Clear(m_depthBufferImage, Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
 
 	// Clear G-Buffer
-	DrawFullScreenQuad(buffer, m_clearGBufferMaterial.Get());
+	DrawFullScreenQuad(buffer, m_clearGBufferMaterial.Get(), &m_clearGBufferMaterialRenderData);
 
 	// Render all views to gbuffer.
 	for (auto& view : m_renderViews)
@@ -324,7 +328,7 @@ void Renderer::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer
 	}
 
 	// Resolve to framebuffer.
-	DrawFullScreenQuad(buffer, m_resolveToSwapchainMaterial.Get());
+	DrawFullScreenQuad(buffer, m_resolveToSwapchainMaterial.Get(), &m_resolveToSwapchainMaterialRenderData);
 
 	RunQueuedCommands(RenderCommandStage::PostViewsRendered, buffer);
 
@@ -338,9 +342,10 @@ void Renderer::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer
 	m_renderViews.clear();
 }
 
-void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material)
+void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material, std::shared_ptr<MaterialRenderData>* materialRenderData)
 {
 	material->UpdateResources();
+	UpdateMaterialRenderData(materialRenderData, material, &m_globalMaterialProperties);
 
 	if (!m_fullscreenQuadsUploaded)
 	{
@@ -349,7 +354,7 @@ void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer
 		m_fullscreenQuadsUploaded = true;
 	}
 
-	buffer->TransitionResourceSets(&material->GetResourceSet(), 1);
+	buffer->TransitionResourceSets(&(*materialRenderData)->GetResourceSet(), 1);
 
 	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 	buffer->BeginSubPass();
@@ -360,7 +365,8 @@ void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer
 
 	buffer->SetIndexBuffer(m_fullscreenQuadIndexBuffer);
 	buffer->SetVertexBuffer(m_fullscreenQuadVertexBuffer);
-	buffer->SetResourceSetInstances(&material->GetResourceSet()->ConsumeInstance(), 1);
+
+	buffer->SetResourceSetInstances(&(*materialRenderData)->GetResourceSet()->NewInstance(), 1);
 
 	buffer->DrawIndexedElements(6, 1, 0, 0, 0);
 
@@ -372,13 +378,7 @@ void Renderer::BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, s
 {
 	ProfileScope scope(Color::Red, "Renderer::BuildViewCommandBuffer_Meshes");
 
-	m_globalMaterialProperties.Set(ModelMatrixHash, Matrix4::Identity);
-	m_globalMaterialProperties.Set(ViewMatrixHash, view->ViewMatrix);
-	m_globalMaterialProperties.Set(ProjectionMatrixHash, view->ProjectionMatrix);
-	m_globalMaterialProperties.Set(CameraPositionHash, view->CameraPosition);
-
 	// Batch meshes by material.
-
 	{
 		ProfileScope scope(Color::Red, "Batch meshes");
 
@@ -391,45 +391,63 @@ void Renderer::BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, s
 			}
 		}
 
+		// batch in parallel, each thread makes its own list, which is then combined.
+
 		for (auto& visibleMesh : view->Meshes)
 		{
 			Material* material = &*visibleMesh.Mesh->GetMaterial().Get();
 			MaterialBatch* batch = nullptr;
 
-			auto batchIter = m_materialBatches.find(material);
-			if (batchIter != m_materialBatches.end())
 			{
-				batch = &batchIter->second;
-			}
-			else
-			{
-				m_materialBatches.emplace(material, MaterialBatch());
+				ProfileScope scope(Color::Green, "Find Batch");
 
-				batch = &m_materialBatches[material];
-				batch->material = material;
-				batch->meshInstanceCount = 0;
-				batch->meshInstances.resize(view->Meshes.size());
+				auto batchIter = m_materialBatches.find(material);
+				if (batchIter != m_materialBatches.end())
+				{
+					batch = &batchIter->second;
+				}
+				else
+				{
+					m_materialBatches.emplace(material, MaterialBatch());
+
+					batch = &m_materialBatches[material];
+					batch->material = material;
+					batch->meshInstanceCount = 0;
+					batch->meshInstances.resize(view->Meshes.size());
+				}
 			}
 
 			// Update mesh state.
-			m_globalMaterialProperties.Set(ModelMatrixHash, visibleMesh.Matrix);
 			{
-				ProfileScope scope(Color::Red, "Update Resources");
+				ProfileScope scope(Color::Blue, "Update");
 				visibleMesh.Mesh->UpdateResources();
+
+				UpdateMaterialRenderData(
+					&visibleMesh.MeshComponent->renderData[visibleMesh.MeshIndex],
+					visibleMesh.Mesh->GetMaterial().Get(), 
+					&visibleMesh.MeshComponent->properties);
 			}
 
-			// Create new instance.
-			MeshInstance& instance = batch->meshInstances[batch->meshInstanceCount++];
-			instance.resourceSet = material->GetResourceSet();
-			instance.resourceSetInstance = instance.resourceSet->ConsumeInstance();
-			instance.indexBuffer = visibleMesh.Mesh->GetIndexBuffer();
-			instance.vertexBuffer = visibleMesh.Mesh->GetVertexBuffer();
-			instance.indexCount = visibleMesh.Mesh->GetIndexCount();
+			std::shared_ptr<MaterialRenderData>& renderData = visibleMesh.MeshComponent->renderData[visibleMesh.MeshIndex];
 
-			m_statMeshesRendered++;
-			m_statTrianglesRendered += instance.indexCount / 3; // Not stricly correct if we are using non triangle-list topologies, but close enough estimate.
+			{
+				ProfileScope scope(Color::Red, "Instance");
+
+				// Create new instance.
+				MeshInstance& instance = batch->meshInstances[batch->meshInstanceCount++];
+				instance.resourceSet = renderData->GetResourceSet();
+				instance.resourceSetInstance = renderData->GetResourceSetInstance();
+				instance.indexBuffer = visibleMesh.Mesh->GetIndexBuffer();
+				instance.vertexBuffer = visibleMesh.Mesh->GetVertexBuffer();
+				instance.indexCount = visibleMesh.Mesh->GetIndexCount();
+
+				m_statMeshesRendered++;
+				m_statTrianglesRendered += instance.indexCount / 3; // Not stricly correct if we are using non triangle-list topologies, but close enough estimate.
+			}
 		}
 	}
+
+	// create seperate command buffers and do in parallel.
 
 	// Draw each batch.
 	for (auto& batchIter : m_materialBatches)
@@ -445,97 +463,12 @@ void Renderer::BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, s
 		ProfileScope scope(Color::Red, "Render material batch: " + material->m_name);
 
 		{
-			ProfileScope scope(Color::Red, "Transition Resources");
-
+			ProfileScope scope(Color::Green, "Transition Resources");
 			for (int i = 0; i < batch.meshInstanceCount; i++)
 			{
 				buffer->TransitionResourceSets(&batch.meshInstances[i].resourceSet, 1);
 			}
 		}
-
-		{
-			ProfileScope scope(Color::Red, "Begin Pass");
-
-			buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
-			buffer->BeginSubPass();
-		}
-
-		{
-			ProfileScope scope(Color::Red, "Pipeline Setup");
-
-			if (m_drawWireframeEnabled)
-			{
-				buffer->SetPipeline(material->GetWireframePipeline());
-			}
-			else
-			{
-				buffer->SetPipeline(material->GetPipeline());
-			}
-		}
-
-		{
-			ProfileScope scope(Color::Red, "Viewport Setup");
-
-			buffer->SetScissor(
-				static_cast<int>(view->Viewport.x),
-				static_cast<int>(view->Viewport.y),
-				static_cast<int>(view->Viewport.width),
-				static_cast<int>(view->Viewport.height)
-			);
-			buffer->SetViewport(
-				static_cast<int>(view->Viewport.x),
-				static_cast<int>(view->Viewport.y),
-				static_cast<int>(view->Viewport.width),
-				static_cast<int>(view->Viewport.height)
-			);
-		}
-
-		{
-			ProfileScope scope(Color::Red, "Render meshes");
-
-			for (int i = 0; i < batch.meshInstanceCount; i++)
-			{
-				MeshInstance& instance = batch.meshInstances[i];
-				buffer->SetIndexBuffer(instance.indexBuffer);
-				buffer->SetVertexBuffer(instance.vertexBuffer);
-				buffer->SetResourceSetInstances(&instance.resourceSetInstance, 1);
-				buffer->DrawIndexedElements(instance.indexCount, 1, 0, 0, 0);
-			}
-		}
-
-		{
-			ProfileScope scope(Color::Red, "End Pass");
-
-			buffer->EndSubPass();
-			buffer->EndPass();
-		}
-
-		{
-			ProfileScope scope(Color::Red, "Cleanup");
-
-			m_statBatchesRendered++;
-
-			// Clear out old instance data.
-			/*for (int i = batch.meshInstanceCount; i < batch.meshInstances.size(); i++)
-			{
-				MeshInstance& instance = batch.meshInstances[i];
-				instance.resourceSet = nullptr;
-				instance.resourceSetInstance = nullptr;
-				instance.indexBuffer = nullptr;
-				instance.vertexBuffer = nullptr;
-			}*/
-		}
-	}
-
-	/*
-	for (auto& visibleMesh : view->Meshes)
-	{
-		m_globalMaterialProperties.Set(ModelMatrixHash, visibleMesh.Matrix);
-
-		visibleMesh.Mesh->UpdateResources();
-
-		std::shared_ptr<Material> material = visibleMesh.Mesh->GetMaterial().Get();
-		buffer->TransitionResourceSets({ material->GetResourceSet() });
 
 		buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 		buffer->BeginSubPass();
@@ -548,6 +481,7 @@ void Renderer::BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, s
 		{
 			buffer->SetPipeline(material->GetPipeline());
 		}
+
 		buffer->SetScissor(
 			static_cast<int>(view->Viewport.x),
 			static_cast<int>(view->Viewport.y),
@@ -561,21 +495,38 @@ void Renderer::BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, s
 			static_cast<int>(view->Viewport.height)
 		);
 
-		buffer->SetIndexBuffer(visibleMesh.Mesh->GetIndexBuffer());
-		buffer->SetVertexBuffer(visibleMesh.Mesh->GetVertexBuffer());
-		buffer->SetResourceSets({ material->GetResourceSet() });
-		buffer->DrawIndexedElements(visibleMesh.Mesh->GetIndexCount(), 1, 0, 0, 0);
+		{
+			ProfileScope scope(Color::Black, "Draw Meshes");
+			for (int i = 0; i < batch.meshInstanceCount; i++)
+			{
+				MeshInstance& instance = batch.meshInstances[i];
+				buffer->SetIndexBuffer(instance.indexBuffer);
+				buffer->SetVertexBuffer(instance.vertexBuffer);
+				buffer->SetResourceSetInstances(&instance.resourceSetInstance, 1);
+				buffer->DrawIndexedElements(instance.indexCount, 1, 0, 0, 0);
+			}
+		}
 
 		buffer->EndSubPass();
 		buffer->EndPass();
-	}*/
+		
+		m_statBatchesRendered++;
+
+		// Clear out old instance data.
+		/*for (int i = batch.meshInstanceCount; i < batch.meshInstances.size(); i++)
+		{
+			MeshInstance& instance = batch.meshInstances[i];
+			instance.resourceSet = nullptr;
+			instance.resourceSetInstance = nullptr;
+			instance.indexBuffer = nullptr;
+			instance.vertexBuffer = nullptr;
+		}*/
+	}
 }
 
 void Renderer::BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
 	ProfileScope scope(Color::Red, "Renderer::BuildViewCommandBuffer_Lines");
-
-	m_globalMaterialProperties.Set(ModelMatrixHash, Matrix4::Identity);
 
 	Array<uint16_t> lineIndices;
 	Array<DebugLineVertex> lineVerts;
@@ -591,8 +542,8 @@ void Renderer::BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, st
 		lineVerts[(i * 2) + 1].position = line.End;
 		lineVerts[(i * 2) + 1].color = line.LineColor.ToVector();
 
-		lineIndices[(i * 2) + 0] = (i * 2) + 0;
-		lineIndices[(i * 2) + 1] = (i * 2) + 1;
+		lineIndices[(i * 2) + 0] = static_cast<uint16_t>((i * 2) + 0);
+		lineIndices[(i * 2) + 1] = static_cast<uint16_t>((i * 2) + 1);
 	}
 
 	if (lineVerts.size() == 0)
@@ -605,21 +556,22 @@ void Renderer::BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, st
 		VertexBufferBindingDescription description;
 		m_debugLineMaterial.Get()->GetVertexBufferFormat(description);
 
-		view->LineVertexBuffer = m_graphics->CreateVertexBuffer("Debug Line Vertex Buffer", description, lineVerts.size());
+		view->LineVertexBuffer = m_graphics->CreateVertexBuffer("Debug Line Vertex Buffer", description, static_cast<int>(lineVerts.size()));
 	}
 
 	if (view->LineIndexBuffer == nullptr || lineIndices.size() > view->LineIndexBuffer->GetCapacity())
 	{
-		view->LineIndexBuffer = m_graphics->CreateIndexBuffer("Debug Line Index Buffer", sizeof(uint16_t), lineIndices.size());
+		view->LineIndexBuffer = m_graphics->CreateIndexBuffer("Debug Line Index Buffer", sizeof(uint16_t), static_cast<int>(lineIndices.size()));
 	}
 
-	view->LineVertexBuffer->Stage(lineVerts.data(), 0, lineVerts.size() * sizeof(DebugLineVertex));
-	view->LineIndexBuffer->Stage(lineIndices.data(), 0, lineIndices.size() * sizeof(uint16_t));
+	view->LineVertexBuffer->Stage(lineVerts.data(), 0, static_cast<int>(lineVerts.size()) * sizeof(DebugLineVertex));
+	view->LineIndexBuffer->Stage(lineIndices.data(), 0, static_cast<int>(lineIndices.size()) * sizeof(uint16_t));
 
 	std::shared_ptr<Material> material = m_debugLineMaterial.Get();
 	material->UpdateResources();
+	UpdateMaterialRenderData(&m_debugLineMaterialRenderData, material, &m_globalMaterialProperties);
 
-	buffer->TransitionResourceSets(&material->GetResourceSet(), 1);
+	buffer->TransitionResourceSets(&m_debugLineMaterialRenderData->GetResourceSet(), 1);
 
 	buffer->Upload(view->LineVertexBuffer);
 	buffer->Upload(view->LineIndexBuffer);
@@ -643,23 +595,24 @@ void Renderer::BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, st
 
 	buffer->SetIndexBuffer(view->LineIndexBuffer);
 	buffer->SetVertexBuffer(view->LineVertexBuffer);
-	buffer->SetResourceSetInstances(&material->GetResourceSet()->ConsumeInstance(), 1);
+	buffer->SetResourceSetInstances(&m_debugLineMaterialRenderData->GetResourceSet()->NewInstance(), 1);
 
-	buffer->DrawIndexedElements(view->Lines.size() * 2, 1, 0, 0, 0);
+	buffer->DrawIndexedElements(static_cast<int>(view->Lines.size() * 2), 1, 0, 0, 0);
 
 	buffer->EndSubPass();
 	buffer->EndPass();
-
 }
 
 void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
 	ProfileScope scope(Color::Red, "Renderer::BuildViewCommandBuffer");
 
-	m_globalMaterialProperties.Set(ModelMatrixHash, Matrix4::Identity);
 	m_globalMaterialProperties.Set(ViewMatrixHash, view->ViewMatrix);
 	m_globalMaterialProperties.Set(ProjectionMatrixHash, view->ProjectionMatrix);
 	m_globalMaterialProperties.Set(CameraPositionHash, view->CameraPosition);
+
+	// Update global buffers.
+	UpdateGlobalUniformBuffers();
 
 	// TODO: Z Pre Pass
 
@@ -693,6 +646,46 @@ void Renderer::Present()
 	if (m_graphics->Present())
 	{
 		SwapChainModified();
+	}
+}
+
+void Renderer::RegisterGlobalUniformBuffer(const UniformBufferLayout& layout)
+{
+	// Already exists?
+	if (GetGlobalUniformBuffer(layout.HashCode) != nullptr)
+	{
+		return;
+	}
+
+	int dataSize = layout.GetSize();
+
+	GlobalUniformBuffer buffer;
+	buffer.layout = layout;
+	buffer.buffer = m_graphics->CreateUniformBuffer(StringFormat("Global UBO (%s)", layout.Name.c_str()), dataSize);
+
+	m_globalUniformBuffers.emplace(layout.HashCode, buffer);
+}
+
+std::shared_ptr<IGraphicsUniformBuffer> Renderer::GetGlobalUniformBuffer(uint64_t hashCode)
+{
+	auto iter = m_globalUniformBuffers.find(hashCode);
+	if (iter == m_globalUniformBuffers.end())
+	{
+		return nullptr;
+	}
+
+	return iter->second.buffer;
+}
+
+void Renderer::UpdateGlobalUniformBuffers()
+{
+	MaterialPropertyCollection* propCollections[1] = {
+		&m_globalMaterialProperties
+	};
+
+	for (auto& ubo : m_globalUniformBuffers)
+	{
+		ubo.second.layout.FillBuffer(m_logger, ubo.second.buffer, propCollections, 1);
 	}
 }
 
@@ -776,4 +769,14 @@ std::shared_ptr<IGraphicsFramebuffer> Renderer::GetFramebufferForTarget(FrameBuf
 	}
 
 	return nullptr;
+}
+
+void Renderer::UpdateMaterialRenderData(std::shared_ptr<MaterialRenderData>* data, const std::shared_ptr<Material>& material, MaterialPropertyCollection* collection)
+{
+	if (*data == nullptr)
+	{
+		*data = std::make_shared<MaterialRenderData>(m_logger, shared_from_this(), m_graphics);
+	}
+
+	(*data)->Update(material, collection);
 }

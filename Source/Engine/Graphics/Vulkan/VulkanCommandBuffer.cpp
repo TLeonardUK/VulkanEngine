@@ -12,6 +12,8 @@
 #include "Engine/Graphics/Vulkan/VulkanImage.h"
 #include "Engine/Graphics/Vulkan/VulkanImageView.h"
 
+#include "Engine/Profiling/Profiling.h"
+
 #include "Engine/Engine/Logging.h"
 
 VulkanCommandBuffer::VulkanCommandBuffer(
@@ -235,11 +237,11 @@ void VulkanCommandBuffer::SetIndexBuffer(const std::shared_ptr<IGraphicsIndexBuf
 		vulkanBuffer->GetIndexSize() == 4 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
 }
 
-void VulkanCommandBuffer::TransitionResourceSets(std::shared_ptr<IGraphicsResourceSet>* values, int count)
+void VulkanCommandBuffer::TransitionResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count)
 {
 	for (int i = 0; i < count; i++)
 	{
-		VulkanResourceSet* vulkanBuffer = static_cast<VulkanResourceSet*>(&*values[i]);
+		const VulkanResourceSet* vulkanBuffer = static_cast<const VulkanResourceSet*>(&*values[i]);
 		
 		const Array<VulkanResourceSetBinding>& bindings = vulkanBuffer->GetBindings();
 		for (const VulkanResourceSetBinding& binding : bindings)
@@ -253,7 +255,7 @@ void VulkanCommandBuffer::TransitionResourceSets(std::shared_ptr<IGraphicsResour
 	}
 }
 
-void VulkanCommandBuffer::SetResourceSetInstances(std::shared_ptr<IGraphicsResourceSetInstance>* values, int count)
+void VulkanCommandBuffer::SetResourceSetInstances(const std::shared_ptr<IGraphicsResourceSetInstance>* values, int count)
 {
 	assert(m_activePipeline != nullptr);
 
@@ -332,12 +334,14 @@ void VulkanCommandBuffer::TransitionImage(VulkanImage* image, VkImageLayout dstL
 	{
 		printf("[{%08x} %s] %i -> %i\n", image->GetVkImage(), image->GetName().c_str(), image->GetVkLayout(), dstLayout);
 	}*/
-	TransitionImage(image->GetVkImage(), image->GetVkFormat(), image->GetMipLevels(), image->GetVkLayout(), dstLayout, image->IsDepth(), image->GetLayers());
-	image->SetVkLayout(dstLayout);
+	TransitionImage(image->m_image, image->m_format, image->m_mipLevels, image->m_layout, dstLayout, image->m_isDepth, image->m_layers);
+	image->m_layout = dstLayout;
 }
 
 void VulkanCommandBuffer::TransitionImage(VkImage image, VkFormat format, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout, bool isDepth, int layerCount)
 {
+	ProfileScope scope(Color::Red, "Memory Barrier");
+
 	if (srcLayout == dstLayout)
 	{
 		return;

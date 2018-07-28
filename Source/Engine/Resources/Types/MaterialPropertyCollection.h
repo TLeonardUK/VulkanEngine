@@ -74,16 +74,16 @@ public:
 struct MaterialPropertyCollection
 {
 private:
-	//int m_dataHash;
 	Dictionary<MaterialPropertyHash, MaterialProperty> m_properties;
+	int m_version;
 
 protected:
 	MaterialProperty* GetOrCreate(MaterialPropertyHash name);
 
 public:
-	//MaterialPropertyCollection();
+	MaterialPropertyCollection();
 
-	// set will update version if value is different.
+	int GetVersion();
 
 	void Add(const MaterialProperty& prop);
 
@@ -119,6 +119,7 @@ public:
 	void Set(MaterialPropertyHash name, Matrix4 value);
 
 	void Set(MaterialPropertyHash name, ResourcePtr<Texture> value);
+	void Set(MaterialPropertyHash name, ResourcePtr<TextureCube> value);
 	void Set(MaterialPropertyHash name, std::shared_ptr<IGraphicsImageView> imageView, std::shared_ptr<IGraphicsSampler> sampler);
 
 };

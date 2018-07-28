@@ -76,8 +76,8 @@ public:
 	virtual void SetVertexBuffer(const std::shared_ptr<IGraphicsVertexBuffer>& buffer);
 	virtual void SetIndexBuffer(const std::shared_ptr<IGraphicsIndexBuffer>& buffer);
 
-	virtual void TransitionResourceSets(std::shared_ptr<IGraphicsResourceSet>* values, int count);
-	virtual void SetResourceSetInstances(std::shared_ptr<IGraphicsResourceSetInstance>* values, int count);
+	virtual void TransitionResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count);
+	virtual void SetResourceSetInstances(const std::shared_ptr<IGraphicsResourceSetInstance>* values, int count);
 
 	virtual void DrawElements(int vertexCount, int instanceCount, int vertexOffset, int instanceOffset);
 	virtual void DrawIndexedElements(int indexCount, int instanceCount, int indexOffset, int vertexOffset, int instanceOffset);

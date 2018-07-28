@@ -96,7 +96,7 @@ void TransformSystem::Tick(
 	}
 
 	// Update all dirty transforms.
-	ParallelFor(dirtyRootsList.size(), [&](int i)
+	ParallelFor(static_cast<int>(dirtyRootsList.size()), [&](int i)
 	{
 		TransformComponent* parent = dirtyRootsList[i]->parent.Get(world);
 		UpdateTransform(world, dirtyRootsList[i], parent);

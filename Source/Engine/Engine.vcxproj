@@ -58,7 +58,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>false</SDLCheck>
+      <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_MBCS;_ITERATOR_DEBUG_LEVEL=0;_SCL_SECURE_NO_WARNINGS=1;USE_PIX=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -85,10 +85,10 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>false</SDLCheck>
+      <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_MBCS;_ITERATOR_DEBUG_LEVEL=0;_SCL_SECURE_NO_WARNINGS=1;USE_PIX=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Pch.h</PrecompiledHeaderFile>
@@ -168,6 +168,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClCompile Include="Rendering\Renderer.cpp" />
     <ClCompile Include="Rendering\RendererEnums.cpp" />
     <ClCompile Include="Rendering\RenderView.cpp" />
+    <ClCompile Include="Rendering\UniformBufferLayout.cpp" />
     <ClCompile Include="Resources\ResourceManager.cpp" />
     <ClCompile Include="Resources\Types\Material.cpp" />
     <ClCompile Include="Resources\Types\MaterialPropertyCollection.cpp" />
@@ -269,6 +270,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Rendering\Renderer.h" />
     <ClInclude Include="Rendering\RendererEnums.h" />
     <ClInclude Include="Rendering\RenderView.h" />
+    <ClInclude Include="Rendering\UniformBufferLayout.h" />
     <ClInclude Include="Resources\Resource.h" />
     <ClInclude Include="Resources\ResourceLoader.h" />
     <ClInclude Include="Resources\ResourceManager.h" />
@@ -295,6 +297,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Types\Color.h" />
     <ClInclude Include="Types\Dictionary.h" />
     <ClInclude Include="Types\Frustum.h" />
+    <ClInclude Include="Types\Hash.h" />
     <ClInclude Include="Types\Math.h" />
     <ClInclude Include="Types\Matrix.h" />
     <ClInclude Include="Types\Matrix2.h" />

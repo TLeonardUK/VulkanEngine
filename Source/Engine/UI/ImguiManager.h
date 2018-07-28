@@ -51,6 +51,8 @@ private:
 	std::shared_ptr<ResourceManager> m_resourceManager;
 		
 	ResourcePtr<Material> m_material;
+	std::shared_ptr<MaterialRenderData> m_materialRenderData;
+
 	std::shared_ptr<IGraphicsIndexBuffer> m_indexBuffer;
 	std::shared_ptr<IGraphicsVertexBuffer> m_vertexBuffer;
 

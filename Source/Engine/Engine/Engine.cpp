@@ -283,7 +283,7 @@ void Engine::TermInput()
 
 bool Engine::InitRenderer()
 {
-	m_renderer = std::make_shared<Renderer>(m_graphics);
+	m_renderer = std::make_shared<Renderer>(m_logger, m_graphics);
 
 	return true;
 }

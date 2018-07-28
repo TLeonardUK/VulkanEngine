@@ -147,6 +147,9 @@ private:
 
 	std::shared_ptr<VulkanMemoryAllocator> m_memoryAllocator;
 
+	int m_garbageCollectScanIndex;
+	static const int MaxGarbageScannedPerFrame = 1000;
+
 	// todo: change to weak pointers, or better yet check if they are unique, if they are wait
 	// x number of frames (how many frames behind we are), before disposing to ensure gpu is finished
 	// with them.

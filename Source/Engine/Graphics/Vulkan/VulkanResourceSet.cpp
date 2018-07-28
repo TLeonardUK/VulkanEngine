@@ -55,7 +55,7 @@ VkDescriptorSet VulkanResourceSet::ConsumeSet()
 	return nullptr;
 }
 
-const Array<VulkanResourceSetBinding>& VulkanResourceSet::GetBindings()
+const Array<VulkanResourceSetBinding>& VulkanResourceSet::GetBindings() const
 {
 	return m_currentBindings;
 }
@@ -124,14 +124,19 @@ void VulkanResourceSet::GetUniformBufferOffsets(uint32_t* destination, int* coun
 	}
 }
 
-std::shared_ptr<IGraphicsResourceSetInstance> VulkanResourceSet::ConsumeInstance()
+std::shared_ptr<IGraphicsResourceSetInstance> VulkanResourceSet::NewInstance()
 {
-	std::shared_ptr<VulkanResourceSetInstance> instance = std::make_shared<VulkanResourceSetInstance>();
-	instance->m_sets[0] = ConsumeSet();
-	instance->m_setCount = 1;
-	instance->m_uboCount = 0;
-
-	GetUniformBufferOffsets(instance->m_uniformBufferOffsets, &instance->m_uboCount);
-
+	std::shared_ptr<IGraphicsResourceSetInstance> instance = std::make_shared<VulkanResourceSetInstance>();
+	UpdateInstance(instance);
 	return instance;
+}
+
+void VulkanResourceSet::UpdateInstance(std::shared_ptr<IGraphicsResourceSetInstance>& instance)
+{
+	VulkanResourceSetInstance* vkInstance = static_cast<VulkanResourceSetInstance*>(&*instance);
+	vkInstance->m_sets[0] = ConsumeSet();
+	vkInstance->m_setCount = 1;
+	vkInstance->m_uboCount = 0;
+
+	GetUniformBufferOffsets(vkInstance->m_uniformBufferOffsets, &vkInstance->m_uboCount);
 }

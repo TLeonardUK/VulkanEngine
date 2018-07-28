@@ -396,6 +396,9 @@
     <ClCompile Include="Threading\ParallelFor.cpp">
       <Filter>Source Files\Threading</Filter>
     </ClCompile>
+    <ClCompile Include="Rendering\UniformBufferLayout.cpp">
+      <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Engine.h">
@@ -759,6 +762,12 @@
       <Filter>Header Files\Threading</Filter>
     </ClInclude>
     <ClInclude Include="Types\Set.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\UniformBufferLayout.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Hash.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
   </ItemGroup>
