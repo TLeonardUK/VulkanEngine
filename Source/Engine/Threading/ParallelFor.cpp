@@ -6,6 +6,8 @@
 
 #include "Engine/Profiling/Profiling.h"
 
+#include "Engine/Types/Math.h"
+
 struct ParallelForData
 {
 	ParallelForSignature_t function;
@@ -98,7 +100,7 @@ void ParallelFor(int count, ParallelForSignature_t function, int granularity, co
 	// todo: grab data in chunks of granularity, rather than individually, more cache coherent.
 
 	std::shared_ptr<ParallelForData> data = std::make_shared<ParallelForData>();
-	data->granularity = (count < granularity * concurrency) ? count / concurrency : granularity;
+	data->granularity = (count < granularity * concurrency) ? (int)Math::Ceil(count / (float)concurrency) : granularity;
 	data->count = count;
 	data->index = 0;
 	data->completedCount = 0;

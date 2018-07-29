@@ -22,10 +22,10 @@ public:
 
 	virtual void Reset() = 0;
 
-	virtual void Begin() = 0;
+	virtual void Begin(const std::shared_ptr<IGraphicsRenderPass>& pass = nullptr, const std::shared_ptr<IGraphicsFramebuffer>& framebuffer = nullptr) = 0;
 	virtual void End() = 0;
 
-	virtual void BeginPass(const std::shared_ptr<IGraphicsRenderPass>& pass, const std::shared_ptr<IGraphicsFramebuffer>& framebuffer) = 0;
+	virtual void BeginPass(const std::shared_ptr<IGraphicsRenderPass>& pass, const std::shared_ptr<IGraphicsFramebuffer>& framebuffer, bool bInline = true) = 0;
 	virtual void EndPass() = 0;
 
 	virtual void BeginSubPass() = 0;
@@ -41,10 +41,13 @@ public:
 	virtual void SetIndexBuffer(const std::shared_ptr<IGraphicsIndexBuffer>& buffer) = 0;
 
 	virtual void TransitionResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count) = 0;
+	virtual void TransitionResourceSets(const Array<std::shared_ptr<IGraphicsResourceSet>*>& values) = 0;
 	virtual void SetResourceSetInstances(const std::shared_ptr<IGraphicsResourceSetInstance>* values, int count) = 0;
 
 	virtual void DrawElements(int vertexCount, int instanceCount, int vertexOffset, int instanceOffset) = 0;
 	virtual void DrawIndexedElements(int indexCount, int instanceCount, int indexOffset, int vertexOffset, int instanceOffset) = 0;
+
+	virtual void Dispatch(const std::shared_ptr<IGraphicsCommandBuffer>& buffer) = 0;
 
 	virtual void Upload(const std::shared_ptr<IGraphicsVertexBuffer>& buffer) = 0;
 	virtual void Upload(const std::shared_ptr<IGraphicsIndexBuffer>& buffer) = 0;

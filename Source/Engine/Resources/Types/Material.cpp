@@ -5,8 +5,11 @@
 #include "Engine/Resources/Types/Material.h"
 #include "Engine/Resources/Types/Shader.h"
 #include "Engine/Rendering/Renderer.h"
+#include "Engine/Utilities/Statistic.h"
 
 const char* Material::Tag = "Material";
+
+Statistic Stat_Resources_MaterialCount("Resources/Material Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 Material::Material(std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer, std::shared_ptr<Logger> logger, const String& name, ResourcePtr<Shader> shader, MaterialPropertyCollection& properties)
 	: m_graphics(graphics)
@@ -17,6 +20,12 @@ Material::Material(std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer
 	, m_dirty(true)
 	, m_properties(properties)
 {
+	Stat_Resources_MaterialCount.Add(1);
+}
+
+Material::~Material()
+{
+	Stat_Resources_MaterialCount.Add(-1);
 }
 
 ResourcePtr<Shader> Material::GetShader()
@@ -156,7 +165,13 @@ void Material::UpdateResources()
 
 	if (m_dirty)
 	{
+		std::lock_guard<std::mutex> lock(m_updateResourcesMutex);
+		if (!m_dirty)
+		{
+			return;
+		}
 		m_dirty = false;
+
 		RecreateResources();
 	}
 }
@@ -235,10 +250,10 @@ void MaterialRenderData::Update(
 
 	if (&*material != &*m_lastKnownMaterial)
 	{
-		m_logger->WriteInfo(LogCategory::Engine, "Mateiral changed from %s to %s",
+		/*m_logger->WriteInfo(LogCategory::Engine, "Mateiral changed from %s to %s",
 			material == nullptr ? "null" : material->GetName().c_str(),
 			m_lastKnownMaterial == nullptr ? "null" : m_lastKnownMaterial->GetName().c_str()
-		);
+		);*/
 
 		m_lastKnownMaterial = material;
 		m_lastMeshPropertiesVersion = -1;

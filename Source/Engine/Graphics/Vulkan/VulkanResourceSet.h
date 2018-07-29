@@ -34,10 +34,17 @@ private:
 	friend class VulkanPipeline;
 	friend class VulkanCommandBuffer;
 
-	VkDescriptorSetLayout GetLayout();
 	VkDescriptorSet ConsumeSet();
 
-	const Array<VulkanResourceSetBinding>& GetBindings() const;
+	VkDescriptorSetLayout GetLayout()
+	{
+		return m_layout;
+	}
+
+	const Array<VulkanResourceSetBinding>& GetBindings() const
+	{
+		return m_currentBindings;
+	}
 
 	void GetUniformBufferOffsets(uint32_t* destination, int* count);
 

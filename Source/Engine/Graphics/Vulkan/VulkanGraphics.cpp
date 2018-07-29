@@ -23,6 +23,7 @@
 #include "Engine/Engine/Logging.h"
 
 #include "Engine/Types/Math.h"
+#include "Engine/Utilities/Statistic.h"
 
 #include "Engine/Build.h"
 
@@ -34,7 +35,7 @@ const Array<const char*> VulkanGraphics::DeviceExtensionsToRequest = {
 };
 
 const Array<const char*> VulkanGraphics::DeviceLayersToRequest = {
-#if 0//defined(_DEBUG)
+#if defined(_DEBUG)
 	"VK_LAYER_LUNARG_standard_validation"
 #endif
 };
@@ -44,7 +45,7 @@ const Array<const char*> VulkanGraphics::InstanceExtensionsToRequest = {
 };
 
 const Array<const char*> VulkanGraphics::InstanceLayersToRequest = {
-#if 0//defined(_DEBUG)
+#if defined(_DEBUG)
 	"VK_LAYER_LUNARG_standard_validation"
 #endif
 }; 
@@ -348,6 +349,7 @@ bool VulkanGraphics::CreateLogicalDevice()
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
 	deviceFeatures.fillModeNonSolid = VK_TRUE;
 	deviceFeatures.depthBiasClamp = VK_TRUE;
+	deviceFeatures.wideLines = VK_TRUE;
 
 	Array<const char*> extensions = DeviceExtensionsToRequest;
 	Array<const char*> layers = DeviceLayersToRequest;
@@ -1356,4 +1358,9 @@ void VulkanGraphics::CollectGarbage()
 std::shared_ptr<IGraphics> VulkanGraphics::Create(std::shared_ptr<Logger> logger, const String& gameName, int gameVersionMajor, int gameVersionMinor, int gameVersionBuild)
 {
 	return std::make_shared<VulkanGraphics>(logger, gameName, gameVersionMajor, gameVersionMinor, gameVersionBuild);
+}
+
+void VulkanGraphics::UpdateStatistics()
+{
+	m_memoryAllocator->UpdateStatistics();
 }

@@ -48,12 +48,7 @@ public:
 	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage) = 0;
 	virtual std::shared_ptr<IGraphicsSampler> CreateSampler(const String& name, const SamplerDescription& settings) = 0;
 
-	// GraphicsDescriptorSetPool pool = CreateDescriptorSetPool(settings)
-	//
-	// GraphicsDescriptorBindingSettings bindingSettings;
-	// bindingSettings.AddBinding("g_ubo1", 0, DescriptorBindingType::UniformBufferObject);
-	//
-	// GraphicsDescriptorSet = pool->Allocate(bindingSettings);
+	virtual void UpdateStatistics() = 0;
 
 	virtual void Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer) = 0;
 

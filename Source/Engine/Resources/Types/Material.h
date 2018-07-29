@@ -86,6 +86,8 @@ private:
 
 	std::shared_ptr<Shader> m_lastUpdatedShader;
 
+	std::mutex m_updateResourcesMutex;
+
 	bool m_dirty;
 
 private:
@@ -100,6 +102,7 @@ public:
 	static const char* Tag;
 
 	Material(std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer, std::shared_ptr<Logger> logger, const String& name, ResourcePtr<Shader> shader, MaterialPropertyCollection& properties);
+	virtual ~Material();
 
 	void UpdateResources();
 

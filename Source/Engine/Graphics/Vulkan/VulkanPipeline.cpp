@@ -7,6 +7,9 @@
 #include "Engine/Graphics/Vulkan/VulkanResourceSet.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
+
+Statistic Stat_Rendering_Vulkan_PipelineCount("Rendering/Vulkan/Pipeline Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VkPrimitiveTopology GraphicsPrimitiveTypeToVk(GraphicsPrimitiveType input)
 {
@@ -173,10 +176,12 @@ VulkanPipeline::VulkanPipeline(
 	, m_logger(logger)
 	, m_name(name)
 {
+	Stat_Rendering_Vulkan_PipelineCount.Add(1);
 }
 
 VulkanPipeline::~VulkanPipeline()
 {
+	Stat_Rendering_Vulkan_PipelineCount.Add(-1);
 	FreeResources();
 }
 
@@ -215,7 +220,7 @@ VkPipelineLayout VulkanPipeline::GetPipelineLayout()
 
 bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new pipeline: %s", m_name.c_str());
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new pipeline: %s", m_name.c_str());
 
 	std::shared_ptr<VulkanRenderPass> vulkanRenderPass = std::static_pointer_cast<VulkanRenderPass>(settings.RenderPass);
 

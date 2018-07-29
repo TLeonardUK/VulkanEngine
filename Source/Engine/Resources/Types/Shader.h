@@ -62,6 +62,7 @@ public:
 	static const char* Tag;
 
 	Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription, FrameBufferTarget target);
+	virtual ~Shader();
 
 	bool GetStage(GraphicsPipelineStage stage, const ShaderStage** result);
 	const Array<ShaderStage>& GetStages();

@@ -4,6 +4,9 @@
 #include "Engine/Graphics/Vulkan/VulkanEnums.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
+
+Statistic Stat_Rendering_Vulkan_RenderPassCount("Rendering/Vulkan/Render Pass Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanRenderPass::VulkanRenderPass(
 	std::shared_ptr<VulkanGraphics> graphics,
@@ -16,10 +19,12 @@ VulkanRenderPass::VulkanRenderPass(
 	, m_logger(logger)
 	, m_name(name)
 {
+	Stat_Rendering_Vulkan_RenderPassCount.Add(1);
 }
 
 VulkanRenderPass::~VulkanRenderPass()
 {
+	Stat_Rendering_Vulkan_RenderPassCount.Add(-1);
 	FreeResources();
 }
 
@@ -51,7 +56,7 @@ GraphicsRenderPassSettings VulkanRenderPass::GetSettings()
 
 bool VulkanRenderPass::Build(const GraphicsRenderPassSettings& settings)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new render pass: %s", m_name.c_str());
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new render pass: %s", m_name.c_str());
 
 	m_settings = settings;
 

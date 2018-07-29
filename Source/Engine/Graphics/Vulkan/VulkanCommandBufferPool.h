@@ -52,7 +52,7 @@ public:
 
 	virtual ~VulkanCommandBufferPool();
 
-	virtual std::shared_ptr<IGraphicsCommandBuffer> Allocate();
+	virtual std::shared_ptr<IGraphicsCommandBuffer> Allocate(bool bPrimary);
 
 	virtual void FreeResources();
 	virtual String GetName();

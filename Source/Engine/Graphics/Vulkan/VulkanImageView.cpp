@@ -6,6 +6,9 @@
 #include "Engine/Graphics/Vulkan/VulkanRenderPass.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
+
+Statistic Stat_Rendering_Vulkan_ImageViewCount("Rendering/Vulkan/Image View Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanImageView::VulkanImageView(
 	std::shared_ptr<VulkanGraphics> graphics,
@@ -18,10 +21,12 @@ VulkanImageView::VulkanImageView(
 	, m_logger(logger)
 	, m_name(name)
 {
+	Stat_Rendering_Vulkan_ImageViewCount.Add(1);
 }
 
 VulkanImageView::~VulkanImageView()
 {
+	Stat_Rendering_Vulkan_ImageViewCount.Add(-1);
 	FreeResources();
 }
 
@@ -41,19 +46,9 @@ String VulkanImageView::GetName()
 	return m_name;
 }
 
-VkImageView VulkanImageView::GetImageView()
-{
-	return m_imageView;
-}
-
-std::shared_ptr<VulkanImage> VulkanImageView::GetVkImage()
-{
-	return m_vulkanImage;
-}
-
 bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image view: %s", m_name.c_str());
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image view: %s", m_name.c_str());
 
 	std::shared_ptr<VulkanImage> vulkanImage = std::static_pointer_cast<VulkanImage>(image);
 

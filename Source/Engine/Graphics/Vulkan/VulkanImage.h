@@ -42,7 +42,7 @@ private:
 
 	std::shared_ptr<VulkanGraphics> m_graphics;
 
-	VkImageLayout m_layout;
+	std::atomic<VkImageLayout> m_layout;
 
 private:
 	friend class VulkanGraphics;

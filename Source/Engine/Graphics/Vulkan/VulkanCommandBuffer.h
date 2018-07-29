@@ -27,6 +27,8 @@ private:
 
 	int m_subPassIndex;
 
+	bool m_primary;
+
 	VulkanPipeline* m_activePipeline;
 	VulkanRenderPass* m_activeRenderPass;
 	VulkanFramebuffer* m_activeFramebuffer;
@@ -43,7 +45,7 @@ private:
 	VkCommandBuffer GetCommandBuffer();
 
 	void TransitionImage(VulkanImage* image, VkImageLayout dstLayout);
-	void TransitionImage(VkImage image, VkFormat format, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout, bool isDepth, int layerCount);
+	void TransitionImage(VkImage image, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout, bool isDepth, int layerCount);
 
 public:
 	VulkanCommandBuffer(
@@ -52,16 +54,17 @@ public:
 		const String& name,
 		VkCommandBuffer buffer,
 		VkCommandPool pool,
-		std::shared_ptr<VulkanGraphics> graphics);
+		std::shared_ptr<VulkanGraphics> graphics,
+		bool bPrimary);
 
 	virtual ~VulkanCommandBuffer();
 
 	virtual void Reset();
 
-	virtual void Begin();
+	virtual void Begin(const std::shared_ptr<IGraphicsRenderPass>& pass = nullptr, const std::shared_ptr<IGraphicsFramebuffer>& framebuffer = nullptr);
 	virtual void End();
 
-	virtual void BeginPass(const std::shared_ptr<IGraphicsRenderPass>& pass, const std::shared_ptr<IGraphicsFramebuffer>& framebuffer);
+	virtual void BeginPass(const std::shared_ptr<IGraphicsRenderPass>& pass, const std::shared_ptr<IGraphicsFramebuffer>& framebuffer, bool bInline = true);
 	virtual void EndPass();
 
 	virtual void BeginSubPass();
@@ -77,10 +80,13 @@ public:
 	virtual void SetIndexBuffer(const std::shared_ptr<IGraphicsIndexBuffer>& buffer);
 
 	virtual void TransitionResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count);
+	virtual void TransitionResourceSets(const Array<std::shared_ptr<IGraphicsResourceSet>*>& values);
 	virtual void SetResourceSetInstances(const std::shared_ptr<IGraphicsResourceSetInstance>* values, int count);
 
 	virtual void DrawElements(int vertexCount, int instanceCount, int vertexOffset, int instanceOffset);
 	virtual void DrawIndexedElements(int indexCount, int instanceCount, int indexOffset, int vertexOffset, int instanceOffset);
+
+	virtual void Dispatch(const std::shared_ptr<IGraphicsCommandBuffer>& buffer);
 
 	virtual void Upload(const std::shared_ptr<IGraphicsVertexBuffer>& buffer);
 	virtual void Upload(const std::shared_ptr<IGraphicsIndexBuffer>& buffer);

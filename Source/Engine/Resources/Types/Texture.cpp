@@ -3,8 +3,11 @@
 #include "Engine/Resources/Types/Texture.h"
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Graphics/GraphicsCommandBuffer.h"
+#include "Engine/Utilities/Statistic.h"
 
 const char* Texture::Tag = "Texture";
+
+Statistic Stat_Resources_TextureCount("Resources/Texture Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 Texture::Texture(std::shared_ptr<Renderer> renderer, std::shared_ptr<IGraphicsImage> image, std::shared_ptr<IGraphicsImageView> imageView, std::shared_ptr<IGraphicsSampler> sampler)
 	: m_image(image)
@@ -13,6 +16,12 @@ Texture::Texture(std::shared_ptr<Renderer> renderer, std::shared_ptr<IGraphicsIm
 	, m_renderer(renderer)
 	, m_dirty(true)
 {
+	Stat_Resources_TextureCount.Add(1);
+}
+
+Texture::~Texture()
+{
+	Stat_Resources_TextureCount.Add(-1);
 }
 
 std::shared_ptr<IGraphicsSampler> Texture::GetSampler()

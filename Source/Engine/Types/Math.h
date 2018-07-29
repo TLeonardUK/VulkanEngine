@@ -47,7 +47,8 @@ namespace Math
 		return sqrtf(in);
 	}
 
-	__forceinline float Abs(float in)
+	template <typename T>
+	T Abs(T in)
 	{
 		return abs(in);
 	}
@@ -57,9 +58,16 @@ namespace Math
 		return 1.0f / sqrtf(in);
 	}
 
-	__forceinline float Squared(float in)
+	template <typename T>
+	T Squared(T in)
 	{
 		return in * in;
+	}
+
+	template <typename T>
+	T Ceil(T in)
+	{
+		return ceil(in);
 	}
 
 	__forceinline uint32_t RoundUpToPowerOfTwo(uint32_t v)

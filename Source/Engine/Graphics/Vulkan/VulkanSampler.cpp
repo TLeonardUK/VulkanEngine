@@ -6,8 +6,11 @@
 #include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
 
 #include <vk_mem_alloc.h>
+
+Statistic Stat_Rendering_Vulkan_SamplerCount("Rendering/Vulkan/Sampler Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanSampler::VulkanSampler(
 	std::shared_ptr<VulkanGraphics> graphics,
@@ -21,10 +24,12 @@ VulkanSampler::VulkanSampler(
 	, m_name(name)
 	, m_sampler(nullptr)
 {
+	Stat_Rendering_Vulkan_SamplerCount.Add(1);
 }
 
 VulkanSampler::~VulkanSampler()
 {
+	Stat_Rendering_Vulkan_SamplerCount.Add(-1);
 	FreeResources();
 }
 
@@ -51,7 +56,7 @@ String VulkanSampler::GetName()
 
 bool VulkanSampler::Build(const SamplerDescription& description)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new sampler: %s", m_name.c_str());
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new sampler: %s", m_name.c_str());
 
 	VkSamplerCreateInfo samplerInfo = {};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;

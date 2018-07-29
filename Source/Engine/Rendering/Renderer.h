@@ -25,6 +25,7 @@ class IGraphicsFramebuffer;
 class IGraphicsImageView;
 class IGraphicsSampler;
 class IGraphicsImage;
+struct Statistic;
 struct GraphicsResourceSetDescription;
 
 extern const MaterialPropertyHash ModelMatrixHash;
@@ -61,9 +62,21 @@ struct MeshInstance
 struct MaterialBatch
 {
 	Material* material;
-
 	Array<MeshInstance> meshInstances;
 	int meshInstanceCount;
+};
+
+struct MaterialRenderSubBatch
+{
+	MaterialBatch* batch;
+	int startIndex;
+	int endIndex;
+};
+
+struct MaterialRenderBatch
+{
+	Material* material;
+	Array<MeshInstance*> meshInstances;
 };
 
 class Renderer
@@ -91,6 +104,30 @@ private:
 		Vector4 color;
 	};
 
+	struct ThreadLocalCommandBufferPoolFrameData
+	{
+		Array<std::shared_ptr<IGraphicsCommandBuffer>> secondaryBuffers;
+		int secondaryBuffersAllocated;
+
+		Array<std::shared_ptr<IGraphicsCommandBuffer>> primaryBuffers;
+		int primaryBuffersAllocated;
+
+		ThreadLocalCommandBufferPoolFrameData()
+			: secondaryBuffersAllocated(0)
+			, primaryBuffersAllocated(0)
+		{
+		}
+	};
+
+	struct ThreadLocalCommandBufferPool
+	{
+		std::mutex mutex;
+		std::shared_ptr<IGraphicsCommandBufferPool> pool;
+		Array<ThreadLocalCommandBufferPoolFrameData> frameData;
+	};
+
+	static const int MaxMeshesPerBatch = 500;
+
 private:
 	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<IGraphics> m_graphics;
@@ -99,9 +136,12 @@ private:
 	int m_frameIndex;
 	int m_frameCounter;
 
-	std::shared_ptr<IGraphicsCommandBufferPool> m_commandBufferPool;
+	static thread_local int m_commandBufferPoolIndexTls;
+
+	std::mutex m_commandBufferPoolsMutex;
+	Array<std::shared_ptr<ThreadLocalCommandBufferPool>> m_commandBufferPools;
+
 	std::shared_ptr<IGraphicsResourceSetPool> m_resourceSetPool;
-	Array<std::shared_ptr<IGraphicsCommandBuffer>> m_commandBuffers;
 
 	std::shared_ptr<IGraphicsRenderPass> m_resolveToSwapChainRenderPass;
 
@@ -145,14 +185,13 @@ private:
 
 	ImguiCallbackToken m_debugMenuCallbackToken;
 
+	Array<Dictionary<Material*, MaterialBatch>> m_asyncMaterialBatches;
 	Dictionary<Material*, MaterialBatch> m_materialBatches;
-
+	Array<MaterialRenderBatch> m_materialRenderBatches;
+	Array<std::shared_ptr<IGraphicsCommandBuffer>> m_batchBuffers;
+	Array<std::shared_ptr<IGraphicsCommandBuffer>> m_batchTransitionBuffers;
+	 
 	Dictionary<size_t, GlobalUniformBuffer> m_globalUniformBuffers;
-
-	// Stats.
-	int m_statMeshesRendered;
-	int m_statBatchesRendered;
-	int m_statTrianglesRendered;
 
 	// Debug functionality.
 	bool m_drawGBufferEnabled;
@@ -191,12 +230,20 @@ private:
 
 	void UpdateGlobalUniformBuffers();
 
+	std::shared_ptr<ThreadLocalCommandBufferPool>& GetCommandBufferPoolForThread();
+	std::shared_ptr<IGraphicsCommandBuffer> RequestSecondaryBuffer();
+	std::shared_ptr<IGraphicsCommandBuffer> RequestPrimaryBuffer();
+
+	void UpdateStatistics();
+	void UpdateCommandBufferPools();
+
 public:
 	Renderer(std::shared_ptr<Logger> m_logger, std::shared_ptr<IGraphics> graphics);
 
 	void QueueRenderCommand(RenderCommandStage stage, RenderCommand::CommandSignature_t callback);
 
 	void InitDebugMenus(std::shared_ptr<ImguiManager> manager);
+	void ShowStatisticTree(Statistic* stat);
 
 	bool Init(std::shared_ptr<ResourceManager> resourceManager);
 	void Dispose();

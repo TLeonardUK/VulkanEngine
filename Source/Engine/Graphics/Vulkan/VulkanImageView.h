@@ -36,8 +36,15 @@ private:
 
 	bool Build(std::shared_ptr<IGraphicsImage> image);
 
-	VkImageView GetImageView();
-	std::shared_ptr<VulkanImage> GetVkImage();
+	VkImageView GetImageView()
+	{
+		return m_imageView;
+	}
+
+	std::shared_ptr<VulkanImage> GetVkImage()
+	{
+		return m_vulkanImage;
+	}
 
 public:
 	VulkanImageView(

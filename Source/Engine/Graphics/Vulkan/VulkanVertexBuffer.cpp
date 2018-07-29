@@ -6,8 +6,11 @@
 #include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
 
 #include <vk_mem_alloc.h>
+
+Statistic Stat_Rendering_Vulkan_VertexBufferCount("Rendering/Vulkan/Vertex Buffer Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanVertexBuffer::VulkanVertexBuffer(
 	VkDevice device,
@@ -22,10 +25,12 @@ VulkanVertexBuffer::VulkanVertexBuffer(
 	, m_memoryAllocator(memoryAllocator)
 	, m_graphics(graphics)
 {
+	Stat_Rendering_Vulkan_VertexBufferCount.Add(1);
 }
 
 VulkanVertexBuffer::~VulkanVertexBuffer()
 {
+	Stat_Rendering_Vulkan_VertexBufferCount.Add(-1);
 	FreeResources();
 }
 
@@ -53,7 +58,7 @@ String VulkanVertexBuffer::GetName()
 
 bool VulkanVertexBuffer::Build(const VertexBufferBindingDescription& binding, int vertexCount)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new vertex buffer: %s", m_name.c_str());
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new vertex buffer: %s", m_name.c_str());
 
 	Array<VkVertexInputBindingDescription> bindingDescriptions;
 	Array<VkVertexInputAttributeDescription> attributeDescriptions;

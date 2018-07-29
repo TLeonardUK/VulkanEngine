@@ -5,6 +5,9 @@
 #include "Engine/Graphics/Vulkan/VulkanRenderPass.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
+
+Statistic Stat_Rendering_Vulkan_ImageCount("Rendering/Vulkan/Image Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanImage::VulkanImage(
 	VkDevice device,
@@ -28,6 +31,7 @@ VulkanImage::VulkanImage(
 	, m_layers(1)
 	, m_graphics(graphics)
 {
+	Stat_Rendering_Vulkan_ImageCount.Add(1);
 }
 
 VulkanImage::VulkanImage(
@@ -48,10 +52,12 @@ VulkanImage::VulkanImage(
 	, m_layers(1)
 	, m_graphics(graphics)
 {
+	Stat_Rendering_Vulkan_ImageCount.Add(1);
 }
 
 VulkanImage::~VulkanImage()
 {
+	Stat_Rendering_Vulkan_ImageCount.Add(-1);
 	FreeResources();
 }
 
@@ -82,7 +88,7 @@ String VulkanImage::GetName()
 
 bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image (%i x %i, %i layers): %s", width, height, layers, m_name.c_str());
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image (%i x %i, %i layers): %s", width, height, layers, m_name.c_str());
 
 	m_mipLevels = 1;
 	if (generateMips)

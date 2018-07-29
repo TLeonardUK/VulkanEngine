@@ -3,8 +3,11 @@
 #include "Engine/Resources/Types/TextureCube.h"
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Graphics/GraphicsCommandBuffer.h"
+#include "Engine/Utilities/Statistic.h"
 
 const char* TextureCube::Tag = "TextureCube";
+
+Statistic Stat_Resources_TextureCubeCount("Resources/Texture Cube Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 TextureCube::TextureCube(std::shared_ptr<Renderer> renderer, std::shared_ptr<IGraphicsImage> image, std::shared_ptr<IGraphicsImageView> imageView, std::shared_ptr<IGraphicsSampler> sampler)
 	: m_image(image)
@@ -13,6 +16,12 @@ TextureCube::TextureCube(std::shared_ptr<Renderer> renderer, std::shared_ptr<IGr
 	, m_renderer(renderer)
 	, m_dirty(true)
 {
+	Stat_Resources_TextureCubeCount.Add(1);
+}
+
+TextureCube::~TextureCube()
+{
+	Stat_Resources_TextureCubeCount.Add(-1);
 }
 
 std::shared_ptr<IGraphicsSampler> TextureCube::GetSampler()

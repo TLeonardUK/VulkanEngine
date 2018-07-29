@@ -72,6 +72,8 @@ private:
 	VkDevice m_device;
 	Array<VkDescriptorPool> m_pools;
 
+	std::mutex m_descriptorSetMutex;
+
 	// todo: Maybe change this to something thats not hard-coded? D:
 	const int MaxAllocations = 10000;
 

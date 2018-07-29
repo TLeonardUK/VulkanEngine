@@ -247,6 +247,8 @@ public:
 	virtual std::shared_ptr<IGraphicsImage> CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage);
 	virtual std::shared_ptr<IGraphicsSampler> CreateSampler(const String& name, const SamplerDescription& settings);
 
+	virtual void UpdateStatistics();
+
 	virtual void Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer);
 
 	virtual void WaitForDeviceIdle();

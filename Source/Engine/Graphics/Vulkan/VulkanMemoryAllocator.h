@@ -86,6 +86,8 @@ public:
 
 	bool Build();
 
+	void UpdateStatistics();
+
 	bool CreateBuffer(int size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryFlags, VmaAllocationCreateFlags allocFlags, VulkanAllocation& allocation);
 	bool CreateImage(const VkImageCreateInfo& createInfo, VmaMemoryUsage memoryFlags, VmaAllocationCreateFlags allocFlags, VulkanAllocation& allocation);
 	void FreeBuffer(const VulkanAllocation& allocation);

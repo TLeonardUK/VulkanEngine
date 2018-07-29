@@ -31,6 +31,7 @@ public:
 	static const char* Tag;
 
 	Texture(std::shared_ptr<Renderer> renderer, std::shared_ptr<IGraphicsImage> image, std::shared_ptr<IGraphicsImageView> imageView, std::shared_ptr<IGraphicsSampler> sampler);
+	virtual ~Texture();
 
 	std::shared_ptr<IGraphicsSampler> GetSampler();
 	std::shared_ptr<IGraphicsImageView> GetImageView();

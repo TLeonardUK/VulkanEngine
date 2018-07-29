@@ -8,8 +8,12 @@
 #include "Engine/Graphics/GraphicsCommandBuffer.h"
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
 
 const char* Model::Tag = "Model";
+
+Statistic Stat_Resources_ModelCount("Resources/Model Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
+Statistic Stat_Resources_MeshCount("Resources/Mesh Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 Model::Model(std::shared_ptr<Logger> logger, std::shared_ptr<Renderer> renderer, std::shared_ptr<IGraphics> graphics, const String& name)
 	: m_graphics(graphics)
@@ -17,6 +21,12 @@ Model::Model(std::shared_ptr<Logger> logger, std::shared_ptr<Renderer> renderer,
 	, m_logger(logger)
 	, m_name(name)
 {
+	Stat_Resources_ModelCount.Add(1);
+}
+
+Model::~Model()
+{
+	Stat_Resources_ModelCount.Add(-1);
 }
 
 std::shared_ptr<Mesh> Model::CreateMesh()
@@ -46,6 +56,12 @@ Mesh::Mesh(std::shared_ptr<Logger> logger, std::shared_ptr<Renderer> renderer, s
 	, m_name(name)
 	, m_dirty(true)
 {
+	Stat_Resources_MeshCount.Add(1);
+}
+
+Mesh::~Mesh()
+{
+	Stat_Resources_MeshCount.Add(-1);
 }
 
 ResourcePtr<Material> Mesh::GetMaterial()
@@ -150,37 +166,44 @@ void Mesh::UpdateResources()
 		return;
 	}
 
-	m_dirty = false;
-
-	// Build description of vertex data.
-	if (!m_material.Get()->GetVertexBufferFormat(m_vertexBufferFormat))
 	{
-		return;
-	}
-
-	// Figure out vertex size.
-	m_interleavedData.resize(m_vertexBufferFormat.vertexSize * m_vertices.size());
-
-	// Get vertex stage so we can build our data.
-	const ShaderStage* vertexStage;
-	if (!shader->GetStage(GraphicsPipelineStage::Vertex, &vertexStage))
-	{
-		return;
-	}
-
-	// Build interleaved vertex data.
-	int bindingOffset = 0;
-	for (auto& stream : vertexStage->Streams)
-	{		
-		GraphicsBindingFormat streamFormat; 
-		int streamSize = 0;
-		bool dataExists = false;
-
-		void* sourceData = nullptr;
-
-		switch (stream.BindTo)
+		std::lock_guard<std::mutex> lock(m_updateResourcesMutex);
+		if (m_dirty == false)
 		{
-		case ShaderVertexStreamBinding::Position:
+			return;
+		}
+
+		m_dirty = false;
+
+		// Build description of vertex data.
+		if (!m_material.Get()->GetVertexBufferFormat(m_vertexBufferFormat))
+		{
+			return;
+		}
+
+		// Figure out vertex size.
+		m_interleavedData.resize(m_vertexBufferFormat.vertexSize * m_vertices.size());
+
+		// Get vertex stage so we can build our data.
+		const ShaderStage* vertexStage;
+		if (!shader->GetStage(GraphicsPipelineStage::Vertex, &vertexStage))
+		{
+			return;
+		}
+
+		// Build interleaved vertex data.
+		int bindingOffset = 0;
+		for (auto& stream : vertexStage->Streams)
+		{
+			GraphicsBindingFormat streamFormat;
+			int streamSize = 0;
+			bool dataExists = false;
+
+			void* sourceData = nullptr;
+
+			switch (stream.BindTo)
+			{
+			case ShaderVertexStreamBinding::Position:
 			{
 				streamFormat = GraphicsBindingFormat::Float3;
 				streamSize = sizeof(Vector3);
@@ -188,7 +211,7 @@ void Mesh::UpdateResources()
 				sourceData = m_vertices.data();
 				break;
 			}
-		case ShaderVertexStreamBinding::Color:
+			case ShaderVertexStreamBinding::Color:
 			{
 				streamFormat = GraphicsBindingFormat::Float4;
 				streamSize = sizeof(Vector4);
@@ -196,7 +219,7 @@ void Mesh::UpdateResources()
 				sourceData = m_colors.data();
 				break;
 			}
-		case ShaderVertexStreamBinding::Normal:
+			case ShaderVertexStreamBinding::Normal:
 			{
 				streamFormat = GraphicsBindingFormat::Float3;
 				streamSize = sizeof(Vector3);
@@ -204,7 +227,7 @@ void Mesh::UpdateResources()
 				sourceData = m_normals.data();
 				break;
 			}
-		case ShaderVertexStreamBinding::TexCoord1:
+			case ShaderVertexStreamBinding::TexCoord1:
 			{
 				streamFormat = GraphicsBindingFormat::Float2;
 				streamSize = sizeof(Vector2);
@@ -212,7 +235,7 @@ void Mesh::UpdateResources()
 				sourceData = dataExists ? m_texCoords[0].data() : nullptr;
 				break;
 			}
-		case ShaderVertexStreamBinding::TexCoord2:
+			case ShaderVertexStreamBinding::TexCoord2:
 			{
 				streamFormat = GraphicsBindingFormat::Float2;
 				streamSize = sizeof(Vector2);
@@ -220,7 +243,7 @@ void Mesh::UpdateResources()
 				sourceData = dataExists ? m_texCoords[1].data() : nullptr;
 				break;
 			}
-		case ShaderVertexStreamBinding::TexCoord3:
+			case ShaderVertexStreamBinding::TexCoord3:
 			{
 				streamFormat = GraphicsBindingFormat::Float2;
 				streamSize = sizeof(Vector2);
@@ -228,7 +251,7 @@ void Mesh::UpdateResources()
 				sourceData = dataExists ? m_texCoords[2].data() : nullptr;
 				break;
 			}
-		case ShaderVertexStreamBinding::TexCoord4:
+			case ShaderVertexStreamBinding::TexCoord4:
 			{
 				streamFormat = GraphicsBindingFormat::Float2;
 				streamSize = sizeof(Vector2);
@@ -236,53 +259,54 @@ void Mesh::UpdateResources()
 				sourceData = dataExists ? m_texCoords[3].data() : nullptr;
 				break;
 			}
-		case ShaderVertexStreamBinding::Internal:
-			{	
+			case ShaderVertexStreamBinding::Internal:
+			{
 				m_logger->WriteWarning(LogCategory::Resources, "[%-30s ] Binding %s has internal format, model cannot bind it.", m_name.c_str(), stream.Name.c_str());
 				break;
 			}
-		}
-
-		if (streamFormat != stream.Format)
-		{
-			String expectedFormat = EnumToString<GraphicsBindingFormat>(stream.Format);
-			String actualFormat = EnumToString<GraphicsBindingFormat>(streamFormat);
-			m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Binding %s has binded format %s that is not same as internal format %s. Data may not be delivered correctly to the vertex shader.", m_name.c_str(), stream.Name.c_str(), expectedFormat.c_str(), actualFormat.c_str());
-		}
-
-		if (!dataExists)
-		{
-			String bindingString = EnumToString<ShaderVertexStreamBinding>(stream.BindTo);
-			m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Binding %s binds to data %s that is not available, zero'd data will be used.", m_name.c_str(), stream.Name.c_str(), bindingString.c_str());
-		}
-
-		// Copy all vertex information.
-		for (int vertIndex = 0; vertIndex < m_vertices.size(); vertIndex++)
-		{
-			char* destination = (m_interleavedData.data() + (vertIndex * m_vertexBufferFormat.vertexSize)) + bindingOffset;
-			if (dataExists)
-			{
-				char* source = (char*)sourceData + (vertIndex * streamSize);
-				memcpy(destination, source, streamSize);
 			}
-			else
+
+			if (streamFormat != stream.Format)
 			{
-				memset(destination, 0, streamSize);
+				String expectedFormat = EnumToString<GraphicsBindingFormat>(stream.Format);
+				String actualFormat = EnumToString<GraphicsBindingFormat>(streamFormat);
+				m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Binding %s has binded format %s that is not same as internal format %s. Data may not be delivered correctly to the vertex shader.", m_name.c_str(), stream.Name.c_str(), expectedFormat.c_str(), actualFormat.c_str());
 			}
+
+			if (!dataExists)
+			{
+				String bindingString = EnumToString<ShaderVertexStreamBinding>(stream.BindTo);
+				m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Binding %s binds to data %s that is not available, zero'd data will be used.", m_name.c_str(), stream.Name.c_str(), bindingString.c_str());
+			}
+
+			// Copy all vertex information.
+			for (int vertIndex = 0; vertIndex < m_vertices.size(); vertIndex++)
+			{
+				char* destination = (m_interleavedData.data() + (vertIndex * m_vertexBufferFormat.vertexSize)) + bindingOffset;
+				if (dataExists)
+				{
+					char* source = (char*)sourceData + (vertIndex * streamSize);
+					memcpy(destination, source, streamSize);
+				}
+				else
+				{
+					memset(destination, 0, streamSize);
+				}
+			}
+			bindingOffset += streamSize;
 		}
-		bindingOffset += streamSize;
+
+		// Build index buffer.
+		m_indexBuffer = m_graphics->CreateIndexBuffer(StringFormat("%s Index Buffer", m_name.c_str()), sizeof(int), (int)m_indices.size());
+		m_indexBuffer->Stage((void*)m_indices.data(), 0, (int)m_indices.size() * sizeof(int));
+
+		// Build vertex buffer.
+		m_vertexBuffer = m_graphics->CreateVertexBuffer(StringFormat("%s Vertex Buffer", m_name.c_str()), m_vertexBufferFormat, (int)m_vertices.size());
+		m_vertexBuffer->Stage((void*)m_interleavedData.data(), 0, (int)m_interleavedData.size());
+
+		m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+			buffer->Upload(m_vertexBuffer);
+			buffer->Upload(m_indexBuffer);
+		});
 	}
-
-	// Build index buffer.
-	m_indexBuffer = m_graphics->CreateIndexBuffer(StringFormat("%s Index Buffer", m_name.c_str()), sizeof(int), (int)m_indices.size());
-	m_indexBuffer->Stage((void*)m_indices.data(), 0, (int)m_indices.size() * sizeof(int));
-
-	// Build vertex buffer.
-	m_vertexBuffer = m_graphics->CreateVertexBuffer(StringFormat("%s Vertex Buffer", m_name.c_str()), m_vertexBufferFormat, (int)m_vertices.size());
-	m_vertexBuffer->Stage((void*)m_interleavedData.data(), 0, (int)m_interleavedData.size());
-
-	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
-		buffer->Upload(m_vertexBuffer);
-		buffer->Upload(m_indexBuffer);
-	});
 }

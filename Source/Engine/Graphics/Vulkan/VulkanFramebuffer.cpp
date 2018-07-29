@@ -7,6 +7,9 @@
 #include "Engine/Graphics/Vulkan/VulkanImageView.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
+
+Statistic Stat_Rendering_Vulkan_FramebufferCount("Rendering/Vulkan/Framebuffer Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanFramebuffer::VulkanFramebuffer(
 	std::shared_ptr<VulkanGraphics> graphics,
@@ -19,10 +22,12 @@ VulkanFramebuffer::VulkanFramebuffer(
 	, m_logger(logger)
 	, m_name(name)
 {
+	Stat_Rendering_Vulkan_FramebufferCount.Add(1);
 }
 
 VulkanFramebuffer::~VulkanFramebuffer()
 {
+	Stat_Rendering_Vulkan_FramebufferCount.Add(-1);
 	FreeResources();
 }
 
@@ -64,7 +69,7 @@ const Array<std::shared_ptr<VulkanImageView>>& VulkanFramebuffer::GetAttachments
 
 bool VulkanFramebuffer::Build(const GraphicsFramebufferSettings& settings)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new framebuffer: %s", m_name.c_str());
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new framebuffer: %s", m_name.c_str());
 
 	Array<VkImageView> attachments;
 	for (std::shared_ptr<IGraphicsImageView> view : settings.attachments)

@@ -4,6 +4,7 @@
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
 
 #include "Engine/Types/Math.h"
+#include "Engine/Utilities/Statistic.h"
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -171,4 +172,20 @@ void VulkanMemoryAllocator::ReleaseUniformBuffer(VulkanUniformBufferAllocation a
 	m_graphics->QueueDisposal([this, allocation]() mutable {
 		ReleaseUniformBufferInternal(allocation);
 	});
+}
+
+extern Statistic Stat_Rendering_Memory_PoolBlockCount;
+extern Statistic Stat_Rendering_Memory_PoolAllocationCount;
+extern Statistic Stat_Rendering_Memory_PoolUsedBytes;
+extern Statistic Stat_Rendering_Memory_PoolUnusedBytes;
+
+void VulkanMemoryAllocator::UpdateStatistics()
+{
+	VmaStats stats;
+	vmaCalculateStats(m_allocator, &stats);
+
+	Stat_Rendering_Memory_PoolBlockCount.Set(stats.total.blockCount);
+	Stat_Rendering_Memory_PoolAllocationCount.Set(stats.total.allocationCount);
+	Stat_Rendering_Memory_PoolUsedBytes.Set(stats.total.usedBytes);
+	Stat_Rendering_Memory_PoolUnusedBytes.Set(stats.total.unusedBytes);	
 }

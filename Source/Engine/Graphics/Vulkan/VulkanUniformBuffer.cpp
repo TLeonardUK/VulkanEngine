@@ -6,8 +6,11 @@
 #include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
 
 #include <vk_mem_alloc.h>
+
+Statistic Stat_Rendering_Vulkan_UniformBufferCount("Rendering/Vulkan/Uniform Buffer Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanUniformBuffer::VulkanUniformBuffer(
 	VkDevice device,
@@ -20,10 +23,12 @@ VulkanUniformBuffer::VulkanUniformBuffer(
 	, m_name(name)
 	, m_memoryAllocator(memoryAllocator)
 {
+	Stat_Rendering_Vulkan_UniformBufferCount.Add(1);
 }
 
 VulkanUniformBuffer::~VulkanUniformBuffer()
 {
+	Stat_Rendering_Vulkan_UniformBufferCount.Add(-1);
 	FreeResources();
 }
 
@@ -43,7 +48,7 @@ String VulkanUniformBuffer::GetName()
 
 bool VulkanUniformBuffer::Build(int bufferSize)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new uniform buffer: %s", m_name.c_str());
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new uniform buffer: %s", m_name.c_str());
 	m_memorySize = bufferSize;
 	m_buffer.Buffer = nullptr;
 	

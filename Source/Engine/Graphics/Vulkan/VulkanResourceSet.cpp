@@ -9,6 +9,9 @@
 #include "Engine/Graphics/Vulkan/VulkanSampler.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
+
+Statistic Stat_Rendering_Vulkan_ResourceSetCount("Rendering/Vulkan/Resource Set Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanResourceSet::VulkanResourceSet(
 	VkDevice device,
@@ -23,10 +26,12 @@ VulkanResourceSet::VulkanResourceSet(
 	, m_pool(pool)
 	, m_layout(layout)
 {
+	Stat_Rendering_Vulkan_ResourceSetCount.Add(1);
 }
 
 VulkanResourceSet::~VulkanResourceSet()
 {
+	Stat_Rendering_Vulkan_ResourceSetCount.Add(-1);
 	FreeResources();
 }
 
@@ -39,11 +44,6 @@ String VulkanResourceSet::GetName()
 	return m_name;
 }
 
-VkDescriptorSetLayout VulkanResourceSet::GetLayout()
-{
-	return m_layout;
-}
-
 VkDescriptorSet VulkanResourceSet::ConsumeSet()
 {
 	VkDescriptorSet output;
@@ -53,11 +53,6 @@ VkDescriptorSet VulkanResourceSet::ConsumeSet()
 	}
 
 	return nullptr;
-}
-
-const Array<VulkanResourceSetBinding>& VulkanResourceSet::GetBindings() const
-{
-	return m_currentBindings;
 }
 
 VulkanResourceSetBinding& VulkanResourceSet::GetBinding(int location, int arrayIndex)

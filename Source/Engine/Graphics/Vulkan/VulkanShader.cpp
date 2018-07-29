@@ -3,6 +3,9 @@
 #include "Engine/Graphics/Vulkan/VulkanShader.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
+
+Statistic Stat_Rendering_Vulkan_ShaderCount("Rendering/Vulkan/Shader Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanShader::VulkanShader(
 	std::shared_ptr<VulkanGraphics> graphics,
@@ -19,10 +22,12 @@ VulkanShader::VulkanShader(
 	, m_entryPoint(entryPoint)
 	, m_stage(stage)
 {
+	Stat_Rendering_Vulkan_ShaderCount.Add(1);
 }
 
 VulkanShader::~VulkanShader()
 {
+	Stat_Rendering_Vulkan_ShaderCount.Add(-1);
 	FreeResources();
 }
 

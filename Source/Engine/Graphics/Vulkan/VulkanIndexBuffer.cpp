@@ -6,8 +6,11 @@
 #include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Utilities/Statistic.h"
 
 #include <vk_mem_alloc.h>
+
+Statistic Stat_Rendering_Vulkan_IndexBufferCount("Rendering/Vulkan/Index Buffer Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
 VulkanIndexBuffer::VulkanIndexBuffer(
 	VkDevice device,
@@ -22,10 +25,12 @@ VulkanIndexBuffer::VulkanIndexBuffer(
 	, m_memoryAllocator(memoryAllocator)
 	, m_graphics(graphics)
 {
+	Stat_Rendering_Vulkan_IndexBufferCount.Add(1);
 }
 
 VulkanIndexBuffer::~VulkanIndexBuffer()
 {
+	Stat_Rendering_Vulkan_IndexBufferCount.Add(-1);
 	FreeResources();
 }
 
@@ -53,7 +58,7 @@ String VulkanIndexBuffer::GetName()
 
 bool VulkanIndexBuffer::Build(int indexSize, int vertexCount)
 {
-	m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new index buffer: %s", m_name.c_str());
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new index buffer: %s", m_name.c_str());
 
 	assert(indexSize == 2 || indexSize == 4);
 

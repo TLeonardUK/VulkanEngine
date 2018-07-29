@@ -35,6 +35,8 @@
 #include "Engine/Components/Camera/RenderCameraViewsSystem.h"
 #include "Engine/Components/Camera/FlyCameraMovementSystem.h"
 
+#include "Engine/Utilities/Statistic.h"
+
 #include "Engine/Profiling/Profiling.h"
 
 // TODO:
@@ -465,6 +467,7 @@ void Engine::MainLoop()
 
 		// Initial event handling and setup.
 		m_imguiManager->StartFrame(m_frameTime);
+		Statistic::NextFrame(m_frameTime);
 		m_platform->PumpMessageQueue();
 		m_input->PollInput();
 

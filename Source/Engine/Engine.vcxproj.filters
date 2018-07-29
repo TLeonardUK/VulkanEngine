@@ -399,6 +399,9 @@
     <ClCompile Include="Rendering\UniformBufferLayout.cpp">
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="Utilities\Statistic.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Engine.h">
@@ -769,6 +772,9 @@
     </ClInclude>
     <ClInclude Include="Types\Hash.h">
       <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities\Statistic.h">
+      <Filter>Header Files\Utilities</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

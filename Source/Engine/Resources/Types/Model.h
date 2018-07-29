@@ -31,6 +31,8 @@ private:
 	std::shared_ptr<IGraphics> m_graphics;
 	std::shared_ptr<Renderer> m_renderer;
 
+	std::mutex m_updateResourcesMutex;
+
 	ResourcePtr<Material> m_material;
 	Array<Vector3> m_vertices;
 	Array<Vector3> m_normals;
@@ -64,6 +66,7 @@ private:
 
 public:
 	Mesh(std::shared_ptr<Logger> logger, std::shared_ptr<Renderer> renderer, std::shared_ptr<IGraphics> graphics, const String& name);
+	~Mesh();
 
 	ResourcePtr<Material> GetMaterial();
 	Bounds GetBounds();
@@ -98,11 +101,11 @@ private:
 
 	void UpdateResources();
 
-
 public:
 	static const char* Tag;
 
 	Model(std::shared_ptr<Logger> logger, std::shared_ptr<Renderer> renderer, std::shared_ptr<IGraphics> graphics, const String& Name);
+	virtual ~Model();
 
 	std::shared_ptr<Mesh> CreateMesh();
 

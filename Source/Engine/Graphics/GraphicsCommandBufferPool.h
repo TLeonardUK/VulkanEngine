@@ -14,6 +14,6 @@ protected:
 public:
 	virtual ~IGraphicsCommandBufferPool() { };
 
-	virtual std::shared_ptr<IGraphicsCommandBuffer> Allocate() = 0;
+	virtual std::shared_ptr<IGraphicsCommandBuffer> Allocate(bool bPrimary) = 0;
 
 };

@@ -196,6 +196,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClCompile Include="UI\ImguiManager.cpp" />
     <ClCompile Include="Utilities\Enum.cpp" />
     <ClCompile Include="Utilities\File.cpp" />
+    <ClCompile Include="Utilities\Statistic.cpp" />
     <ClCompile Include="Windowing\Sdl\SdlWindow.cpp" />
     <ClCompile Include="Windowing\Window.cpp" />
   </ItemGroup>
@@ -321,6 +322,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Utilities\File.h" />
     <ClInclude Include="Utilities\EnumImplementation.h" />
     <ClInclude Include="Utilities\Json.h" />
+    <ClInclude Include="Utilities\Statistic.h" />
     <ClInclude Include="Windowing\Sdl\SdlWindow.h" />
     <ClInclude Include="Windowing\Window.h" />
   </ItemGroup>
