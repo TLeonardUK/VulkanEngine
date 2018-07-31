@@ -73,8 +73,8 @@ void VulkanImage::FreeResources()
 	{
 		if (m_isOwner)
 		{
-			m_graphics->QueueDisposal([m_device = m_device, m_image = m_image]() {
-				vkDestroyImage(m_device, m_image, nullptr);
+			m_graphics->QueueDisposal([m_memoryAllocator = m_memoryAllocator, m_mainImage = m_mainImage]() {
+				m_memoryAllocator->FreeImage(m_mainImage);
 			});
 		}
 		m_image = nullptr;

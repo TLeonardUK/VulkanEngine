@@ -384,7 +384,7 @@ void ImguiManager::EndFrame()
 		material->GetProperties().Set(ImGuiScale, scale);
 		material->GetProperties().Set(ImGuiTranslation, translation);
 		material->GetProperties().Set(ImGuiTexture, m_fontTexture);
-		
+
 		material->UpdateResources();
 		m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
 

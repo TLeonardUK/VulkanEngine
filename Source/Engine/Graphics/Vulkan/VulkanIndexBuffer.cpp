@@ -6,6 +6,7 @@
 #include "Engine/Graphics/Vulkan/VulkanMemoryAllocator.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/Types/Math.h"
 #include "Engine/Utilities/Statistic.h"
 
 #include <vk_mem_alloc.h>
@@ -44,7 +45,7 @@ void VulkanIndexBuffer::FreeResources()
 
 	if (m_gpuBuffer.Allocation != nullptr)
 	{
-		m_graphics->QueueDisposal([m_memoryAllocator = m_memoryAllocator, m_gpuBuffer = m_gpuBuffer]() {
+		m_graphics->QueueDisposal([m_memoryAllocator = m_memoryAllocator, m_gpuBuffer = m_gpuBuffer, m_logger = m_logger, obj=this]() {
 			m_memoryAllocator->FreeBuffer(m_gpuBuffer);
 		});
 		m_gpuBuffer.Allocation = nullptr;

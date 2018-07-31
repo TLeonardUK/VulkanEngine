@@ -20,6 +20,8 @@ struct RenderLine
 	Vector3 End;
 	Color	LineColor;
 
+	RenderLine() = default;
+
 	RenderLine(const Vector3& start, const Vector3& end, const Color& color)
 		: Start(start)
 		, End(end)

@@ -210,6 +210,19 @@ void VulkanGameInstance::Initialize()
 		MeshComponent* meshComponent = world->AddComponent<MeshComponent>(m_environment2);
 		meshComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/exterior.json");
 	}
+	/*{
+		m_environment1 = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
+		rootTransform->localPosition = Vector3::Zero;
+		rootTransform->localScale = Vector3::One;
+		rootTransform->localRotation = Quaternion::Identity;
+		rootTransform->isDirty = true;
+		rootTransform->version = 0;
+
+		MeshComponent* meshComponent = world->AddComponent<MeshComponent>(m_environment1);
+		meshComponent->model = resourceManager->Load<Model>("Engine/Models/SanMiguel/san-miguel.json");
+	}*/
 
 	// Create skybox.
 	{

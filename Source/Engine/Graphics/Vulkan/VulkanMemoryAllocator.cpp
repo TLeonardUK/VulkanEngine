@@ -21,6 +21,7 @@ VulkanMemoryAllocator::VulkanMemoryAllocator(
 	, m_logger(logger)
 	, m_graphics(graphics)
 	, m_deviceInfo(deviceInfo)
+	, m_allocationsActive(0)
 {
 }
 
@@ -58,6 +59,8 @@ bool VulkanMemoryAllocator::CreateBuffer(int size, VkBufferUsageFlags bufferUsag
 
 	allocResult.Allocator = m_allocator;
 
+	m_allocationsActive++;
+
 	return true;
 }
 
@@ -71,12 +74,23 @@ bool VulkanMemoryAllocator::CreateImage(const VkImageCreateInfo& createInfo, Vma
 
 	allocResult.Allocator = m_allocator;
 
+	m_allocationsActive++;
+
 	return true;
 }
 
 void VulkanMemoryAllocator::FreeBuffer(const VulkanAllocation& allocation)
 {
 	vmaDestroyBuffer(m_allocator, allocation.Buffer, allocation.Allocation);
+	m_allocationsActive--;
+	//allocation.Buffer = nullptr;
+	//allocation.Allocation = nullptr;
+}
+
+void VulkanMemoryAllocator::FreeImage(const VulkanAllocation& allocation)
+{
+	vmaDestroyImage(m_allocator, allocation.Image, allocation.Allocation);
+	m_allocationsActive--;
 	//allocation.Buffer = nullptr;
 	//allocation.Allocation = nullptr;
 }

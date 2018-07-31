@@ -155,21 +155,14 @@ std::shared_ptr<IResource> ModelResourceLoader::Load(std::shared_ptr<ResourceMan
 			}
 		}
 
-		if (num_indices == 3)
+		if (num_indices >= 3)
 		{
-			mesh.tmpIndices.push_back(indices[0]);
-			mesh.tmpIndices.push_back(indices[1]);
-			mesh.tmpIndices.push_back(indices[2]);
-		}
-		else if (num_indices == 4)
-		{
-			mesh.tmpIndices.push_back(indices[0]);
-			mesh.tmpIndices.push_back(indices[1]);
-			mesh.tmpIndices.push_back(indices[2]);
-
-			mesh.tmpIndices.push_back(indices[0]);
-			mesh.tmpIndices.push_back(indices[2]);
-			mesh.tmpIndices.push_back(indices[3]);
+			for (int i = 1; i < num_indices - 1; i++)
+			{
+				mesh.tmpIndices.push_back(indices[0]);
+				mesh.tmpIndices.push_back(indices[i]);
+				mesh.tmpIndices.push_back(indices[i + 1]);
+			}
 		}
 		else
 		{
@@ -302,6 +295,11 @@ std::shared_ptr<IResource> ModelResourceLoader::Load(std::shared_ptr<ResourceMan
 		else
 		{
 			material = materialMap[mesh.material];
+		}
+
+		if (mesh.vertices.size() == 0 || mesh.indices.size() == 0)
+		{
+			continue;
 		}
 
 		std::shared_ptr<Mesh> modelMesh = model->CreateMesh();

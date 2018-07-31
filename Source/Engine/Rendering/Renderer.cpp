@@ -315,6 +315,9 @@ void Renderer::CreateSwapChainDependentResources()
 	}
 
 	CreateGBufferResources();
+
+	m_frameIndex = 0;
+	m_frameCounter = 0;
 }
 
 void Renderer::CreateGBufferResources()
@@ -581,7 +584,7 @@ void Renderer::BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, s
 
 	// Draw each batch.
 	m_batchBuffers.resize(m_materialRenderBatches.size());
-	m_batchTransitionBuffers.resize(m_materialRenderBatches.size());
+	//m_batchTransitionBuffers.resize(m_materialRenderBatches.size());
 
 	// Generate command buffers for each batch.
 	ParallelFor(m_materialRenderBatches.size(), [&](int index)
@@ -594,17 +597,17 @@ void Renderer::BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, s
 			transitionBuffer = RequestSecondaryBuffer();
 		}
 		m_batchBuffers[index] = drawBuffer;
-		m_batchTransitionBuffers[index] = transitionBuffer;
+		//m_batchTransitionBuffers[index] = transitionBuffer;
 
 		MaterialRenderBatch& batch = m_materialRenderBatches[index];
 
 		ProfileScope scope(Color::Red, "Render material batch: " + batch.material->m_name);
 
 		// Generate transition buffer.
-		for (int i = 0; i < batch.meshInstances.size(); i++)
-		{
-			transitionBuffer->TransitionResourceSets(&batch.meshInstances[i]->resourceSet, 1);
-		}
+		//for (int i = 0; i < batch.meshInstances.size(); i++)
+		//{
+		//	transitionBuffer->TransitionResourceSets(&batch.meshInstances[i]->resourceSet, 1);
+		//}
 
 		// Generate drawing buffer.
 		drawBuffer->Begin(batch.material->GetRenderPass(), batch.material->GetFrameBuffer());
@@ -654,7 +657,7 @@ void Renderer::BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, s
 		{
 			MaterialRenderBatch& batch = m_materialRenderBatches[i];
 
-			buffer->Dispatch(m_batchTransitionBuffers[i]);
+			//buffer->Dispatch(m_batchTransitionBuffers[i]);
 
 			buffer->BeginPass(batch.material->GetRenderPass(), batch.material->GetFrameBuffer(), false);
 			buffer->BeginSubPass();
@@ -673,7 +676,7 @@ void Renderer::BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, st
 {
 	ProfileScope scope(Color::Red, "Renderer::BuildViewCommandBuffer_Lines");
 
-	Array<uint16_t> lineIndices;
+	Array<uint32_t> lineIndices;
 	Array<DebugLineVertex> lineVerts;
 	lineVerts.resize(view->Lines.size() * 2);
 	lineIndices.resize(view->Lines.size() * 2);
@@ -687,8 +690,8 @@ void Renderer::BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, st
 		lineVerts[(i * 2) + 1].position = line.End;
 		lineVerts[(i * 2) + 1].color = line.LineColor.ToVector();
 
-		lineIndices[(i * 2) + 0] = static_cast<uint16_t>((i * 2) + 0);
-		lineIndices[(i * 2) + 1] = static_cast<uint16_t>((i * 2) + 1);
+		lineIndices[(i * 2) + 0] = static_cast<uint32_t>((i * 2) + 0);
+		lineIndices[(i * 2) + 1] = static_cast<uint32_t>((i * 2) + 1);
 	}
 
 	if (lineVerts.size() == 0)
@@ -706,11 +709,14 @@ void Renderer::BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, st
 
 	if (view->LineIndexBuffer == nullptr || lineIndices.size() > view->LineIndexBuffer->GetCapacity())
 	{
-		view->LineIndexBuffer = m_graphics->CreateIndexBuffer("Debug Line Index Buffer", sizeof(uint16_t), static_cast<int>(lineIndices.size()));
+		view->LineIndexBuffer = m_graphics->CreateIndexBuffer("Debug Line Index Buffer", sizeof(uint32_t), static_cast<int>(lineIndices.size()));
 	}
 
 	view->LineVertexBuffer->Stage(lineVerts.data(), 0, static_cast<int>(lineVerts.size()) * sizeof(DebugLineVertex));
-	view->LineIndexBuffer->Stage(lineIndices.data(), 0, static_cast<int>(lineIndices.size()) * sizeof(uint16_t));
+	view->LineIndexBuffer->Stage(lineIndices.data(), 0, static_cast<int>(lineIndices.size()) * sizeof(uint32_t));
+
+	buffer->Upload(view->LineVertexBuffer);
+	buffer->Upload(view->LineIndexBuffer);
 
 	std::shared_ptr<Material> material = m_debugLineMaterial.Get();
 	material->UpdateResources();
@@ -718,9 +724,6 @@ void Renderer::BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, st
 
 	buffer->TransitionResourceSets(&m_debugLineMaterialRenderData->GetResourceSet(), 1);
 
-	buffer->Upload(view->LineVertexBuffer);
-	buffer->Upload(view->LineIndexBuffer);
-	
 	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 	buffer->BeginSubPass();
 
@@ -994,10 +997,13 @@ void Renderer::UpdateCommandBufferPools()
 
 	for (auto& pool : m_commandBufferPools)
 	{
-		std::lock_guard<std::mutex> lock(pool->mutex);
+		if (pool != nullptr)
+		{
+			std::lock_guard<std::mutex> lock(pool->mutex);
 
-		int frameIndex = m_frameCounter % pool->frameData.size();
-		pool->frameData[frameIndex].primaryBuffersAllocated = 0;
-		pool->frameData[frameIndex].secondaryBuffersAllocated = 0;
+			int frameIndex = m_frameCounter % pool->frameData.size();
+			pool->frameData[frameIndex].primaryBuffersAllocated = 0;
+			pool->frameData[frameIndex].secondaryBuffersAllocated = 0;
+		}
 	}
 }

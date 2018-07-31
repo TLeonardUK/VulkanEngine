@@ -64,6 +64,8 @@ private:
 
 	const uint32_t MaxPoolBufferSize = 8 * 1024 * 1024;
 
+	std::atomic<int> m_allocationsActive;
+
 	std::mutex m_allocationMutex;
 
 private:
@@ -91,6 +93,7 @@ public:
 	bool CreateBuffer(int size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryFlags, VmaAllocationCreateFlags allocFlags, VulkanAllocation& allocation);
 	bool CreateImage(const VkImageCreateInfo& createInfo, VmaMemoryUsage memoryFlags, VmaAllocationCreateFlags allocFlags, VulkanAllocation& allocation);
 	void FreeBuffer(const VulkanAllocation& allocation);
+	void FreeImage(const VulkanAllocation& allocation);
 
 	VulkanUniformBufferAllocation AllocateUniformBuffer(int size);
 	void ReleaseUniformBuffer(VulkanUniformBufferAllocation allocation);

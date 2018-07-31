@@ -79,6 +79,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, BVector2 value)
 	{
 		prop->Format = GraphicsBindingFormat::Bool2;
 		prop->Value_Bool2 = value;
+		m_version++;
 	}
 }
 
@@ -91,6 +92,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, BVector3 value)
 	{
 		prop->Format = GraphicsBindingFormat::Bool3;
 		prop->Value_Bool3 = value;
+		m_version++;
 	}
 }
 
@@ -103,6 +105,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, BVector4 value)
 	{
 		prop->Format = GraphicsBindingFormat::Bool4;
 		prop->Value_Bool4 = value;
+		m_version++;
 	}
 }
 
@@ -115,6 +118,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, int32_t value)
 	{
 		prop->Format = GraphicsBindingFormat::Int;
 		prop->Value_Int = value;
+		m_version++;
 	}
 }
 
@@ -127,6 +131,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, IVector2 value)
 	{
 		prop->Format = GraphicsBindingFormat::Int2;
 		prop->Value_Int2 = value;
+		m_version++;
 	}
 }
 
@@ -139,6 +144,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, IVector3 value)
 	{
 		prop->Format = GraphicsBindingFormat::Int3;
 		prop->Value_Int3 = value;
+		m_version++;
 	}
 }
 
@@ -151,6 +157,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, IVector4 value)
 	{
 		prop->Format = GraphicsBindingFormat::Int4;
 		prop->Value_Int4 = value;
+		m_version++;
 	}
 }
 
@@ -163,6 +170,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, uint32_t value)
 	{
 		prop->Format = GraphicsBindingFormat::UInt;
 		prop->Value_UInt = value;
+		m_version++;
 	}
 }
 
@@ -175,6 +183,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, UVector2 value)
 	{
 		prop->Format = GraphicsBindingFormat::UInt2;
 		prop->Value_UInt2 = value;
+		m_version++;
 	}
 }
 
@@ -187,6 +196,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, UVector3 value)
 	{
 		prop->Format = GraphicsBindingFormat::UInt3;
 		prop->Value_UInt3 = value;
+		m_version++;
 	}
 }
 
@@ -199,6 +209,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, UVector4 value)
 	{
 		prop->Format = GraphicsBindingFormat::UInt4;
 		prop->Value_UInt4 = value;
+		m_version++;
 	}
 }
 
@@ -211,6 +222,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, float value)
 	{
 		prop->Format = GraphicsBindingFormat::Float;
 		prop->Value_Float = value;
+		m_version++;
 	}
 }
 
@@ -223,6 +235,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, Vector2 value)
 	{
 		prop->Format = GraphicsBindingFormat::Float2;
 		prop->Value_Float2 = value;
+		m_version++;
 	}
 }
 
@@ -235,6 +248,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, Vector3 value)
 	{
 		prop->Format = GraphicsBindingFormat::Float3;
 		prop->Value_Float3 = value;
+		m_version++;
 	}
 }
 
@@ -247,6 +261,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, Vector4 value)
 	{
 		prop->Format = GraphicsBindingFormat::Float4;
 		prop->Value_Float4 = value;
+		m_version++;
 	}
 }
 
@@ -259,6 +274,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, double value)
 	{
 		prop->Format = GraphicsBindingFormat::Double;
 		prop->Value_Double = value;
+		m_version++;
 	}
 }
 
@@ -271,6 +287,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, DVector2 value)
 	{
 		prop->Format = GraphicsBindingFormat::Double2;
 		prop->Value_Double2 = value;
+		m_version++;
 	}
 }
 
@@ -283,6 +300,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, DVector3 value)
 	{
 		prop->Format = GraphicsBindingFormat::Double3;
 		prop->Value_Double3 = value;
+		m_version++;
 	}
 }
 
@@ -295,6 +313,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, DVector4 value)
 	{
 		prop->Format = GraphicsBindingFormat::Double4;
 		prop->Value_Double4 = value;
+		m_version++;
 	}
 }
 
@@ -307,6 +326,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, Matrix2 value)
 	{
 		prop->Format = GraphicsBindingFormat::Matrix2;
 		prop->Value_Matrix2 = value;
+		m_version++;
 	}
 }
 
@@ -319,6 +339,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, Matrix3 value)
 	{
 		prop->Format = GraphicsBindingFormat::Matrix3;
 		prop->Value_Matrix3 = value;
+		m_version++;
 	}
 }
 
@@ -331,6 +352,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, Matrix4 value)
 	{
 		prop->Format = GraphicsBindingFormat::Matrix4;
 		prop->Value_Matrix4 = value;
+		m_version++;
 	}
 }
 
@@ -347,6 +369,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, ResourcePtr<Text
 		prop->Value_Texture = value;
 		prop->Value_ImageView = nullptr;
 		prop->Value_ImageSampler = nullptr;
+		m_version++;
 	}
 }
 
@@ -359,6 +382,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, ResourcePtr<Text
 	{
 		prop->Format = GraphicsBindingFormat::TextureCube;
 		prop->Value_TextureCube = value;
+		m_version++;
 	}
 }
 
@@ -375,6 +399,7 @@ void MaterialPropertyCollection::Set(MaterialPropertyHash name, std::shared_ptr<
 		prop->Value_Texture.Reset();
 		prop->Value_ImageView = imageView;
 		prop->Value_ImageSampler = sampler;
+		m_version++;
 	}
 }
 

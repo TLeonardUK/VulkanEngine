@@ -22,6 +22,7 @@
 #include "Engine/Profiling/Profiling.h"
 #include "Engine/Engine/Logging.h"
 
+#include "Engine/Types/Set.h"
 #include "Engine/Types/Math.h"
 #include "Engine/Utilities/Statistic.h"
 
@@ -35,7 +36,7 @@ const Array<const char*> VulkanGraphics::DeviceExtensionsToRequest = {
 };
 
 const Array<const char*> VulkanGraphics::DeviceLayersToRequest = {
-#if defined(_DEBUG)
+#if defined(DEBUG_BUILD) || defined(CHECKED_BUILD)
 	"VK_LAYER_LUNARG_standard_validation"
 #endif
 };
@@ -45,7 +46,7 @@ const Array<const char*> VulkanGraphics::InstanceExtensionsToRequest = {
 };
 
 const Array<const char*> VulkanGraphics::InstanceLayersToRequest = {
-#if defined(_DEBUG)
+#if defined(DEBUG_BUILD) || defined(CHECKED_BUILD)
 	"VK_LAYER_LUNARG_standard_validation"
 #endif
 }; 
@@ -581,6 +582,8 @@ bool VulkanGraphics::CreateSwapChain()
 
 	m_logger->WriteSuccess(LogCategory::Vulkan, "Successfully created swapchain with %i images.", swapChainImageCount);
 
+	m_currentFrame = 0;
+
 	return true;
 }
 
@@ -738,71 +741,6 @@ void VulkanGraphics::Dispose()
 
 	PurgeQueuedDisposals();
 
-
-	/*for (const std::shared_ptr<VulkanIndexBuffer>& buffer : m_indexBuffers)
-	{
-		buffer->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanVertexBuffer>& buffer : m_vertexBuffers)
-	{
-		buffer->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanUniformBuffer>& buffer : m_uniformBuffers)
-	{
-		buffer->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanCommandBufferPool>& pass : m_commandBufferPools)
-	{
-		pass->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanFramebuffer>& buffer : m_framebuffers)
-	{
-		buffer->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanImageView>& view : m_imageViews)
-	{
-		view->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanImage>& image : m_images)
-	{
-		image->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanSampler>& sampler : m_samplers)
-	{
-		sampler->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanPipeline>& pipeline : m_pipelines)
-	{
-		pipeline->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanRenderPass>& pass : m_renderPasses)
-	{
-		pass->FreeResources();
-	}
-	for (const std::shared_ptr<VulkanResourceSetPool>& pass : m_resourceSetPools)
-	{
-		pass->FreeResources();
-	}	
-	for (const std::shared_ptr<VulkanShader>& shader : m_shaders)
-	{
-		shader->FreeResources();
-	}
-
-	m_shaders.clear();	
-	m_samplers.clear();
-	m_images.clear();
-	m_framebuffers.clear();
-	m_imageViews.clear();
-	m_pipelines.clear();
-	m_renderPasses.clear();
-	m_commandBufferPools.clear();
-	m_vertexBuffers.clear();
-	m_indexBuffers.clear();
-	m_uniformBuffers.clear();
-	m_resourceSetPools.clear();
-
-	*/
-
 	for (VkFence& fence : m_frameFences)
 	{
 		vkDestroyFence(m_logicalDevice, fence, nullptr);
@@ -821,12 +759,6 @@ void VulkanGraphics::Dispose()
 
 	m_memoryAllocator->FreeResources();
 	m_memoryAllocator = nullptr;
-
-	if (m_windowSurface != nullptr)
-	{
-		vkDestroySurfaceKHR(m_instance, m_windowSurface, nullptr);
-		m_windowSurface = nullptr;
-	}
 
 	if (m_logicalDevice != nullptr)
 	{
@@ -886,6 +818,8 @@ bool VulkanGraphics::Present()
 	// Acquire next swap chain image.
 	uint32_t imageIndex;
 	VkResult result = vkAcquireNextImageKHR(m_logicalDevice, m_swapChain, std::numeric_limits<uint64_t>::max(), m_imageAvailableSemaphores[swapChainIndex], VK_NULL_HANDLE, &imageIndex);
+	assert(imageIndex == swapChainIndex);
+
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		m_logger->WriteWarning(LogCategory::Vulkan, "Swap chain format out of date, recreating.");
@@ -1264,8 +1198,57 @@ void VulkanGraphics::ReleaseStagingBuffer(VulkanStagingBuffer buffer)
 	});
 }
 
+void VulkanGraphics::ValidateDisposal()
+{
+	// DEBUG DEBUG DEBUG
+	{
+		Set<int> indices;
+		for (size_t i = 0; i < m_queuedDisposalAllocatedIndices.size(); i++)
+		{
+			int tableIndex = m_queuedDisposalAllocatedIndices[i];
+			QueuedDisposal& disposal = m_queuedDisposalTable[tableIndex];
+
+			assert(indices.find(tableIndex) == indices.end());
+			indices.emplace(tableIndex);
+
+			assert(disposal.allocated == true);
+		}
+	}
+	{
+		Set<int> indices;
+		for (size_t i = 0; i < m_queuedDisposalFreeIndices.size(); i++)
+		{
+			int tableIndex = m_queuedDisposalFreeIndices[i];
+			QueuedDisposal& disposal = m_queuedDisposalTable[tableIndex];
+
+			assert(indices.find(tableIndex) == indices.end());
+			indices.emplace(tableIndex);
+
+			assert(disposal.allocated == false);
+		}
+	}
+	// DEBUG DEBUG DEBUG
+
+	// DEBUG DEBUG DEBUG
+	{
+		for (size_t i = 0; i < m_queuedDisposalFreeIndices.size(); i++)
+		{
+			int tableIndex = m_queuedDisposalFreeIndices[i];
+			assert(std::find(m_queuedDisposalAllocatedIndices.begin(), m_queuedDisposalAllocatedIndices.end(), tableIndex) == m_queuedDisposalAllocatedIndices.end());
+		}
+		for (size_t i = 0; i < m_queuedDisposalAllocatedIndices.size(); i++)
+		{
+			int tableIndex = m_queuedDisposalAllocatedIndices[i];
+			assert(std::find(m_queuedDisposalFreeIndices.begin(), m_queuedDisposalFreeIndices.end(), tableIndex) == m_queuedDisposalFreeIndices.end());
+		}
+	}
+	// DEBUG DEBUG DEBUG
+}
+
 void VulkanGraphics::QueueDisposal(QueuedDisposal::DisposalFunction_t function)
 {
+	std::lock_guard<std::mutex> lock(m_queuedDisposalMutex);
+
 	if (m_queuedDisposalFreeIndices.size() == 0)
 	{
 		int index = static_cast<int>(m_queuedDisposalTable.size());
@@ -1273,46 +1256,70 @@ void VulkanGraphics::QueueDisposal(QueuedDisposal::DisposalFunction_t function)
 		m_queuedDisposalFreeIndices.push_back(index);
 	}
 
-	int index = m_queuedDisposalFreeIndices.back();
+	//ValidateDisposal();
+
+	int index = m_queuedDisposalFreeIndices[m_queuedDisposalFreeIndices.size() - 1];
 	m_queuedDisposalFreeIndices.pop_back();
 	m_queuedDisposalAllocatedIndices.push_back(index);
 
 	QueuedDisposal& disposal = m_queuedDisposalTable[index];
 	disposal.function = std::move(function);
 	disposal.frameIndex = m_currentFrame;
+	disposal.allocated = true;
+
+	//ValidateDisposal();
 }
 
 void VulkanGraphics::PurgeQueuedDisposals()
 {
+	std::lock_guard<std::mutex> lock(m_queuedDisposalMutex);
+
+	//ValidateDisposal();
+
 	for (size_t i = 0; i < m_queuedDisposalAllocatedIndices.size(); i++)
 	{
-		QueuedDisposal& disposal = m_queuedDisposalTable[m_queuedDisposalAllocatedIndices[i]];
+		int tableIndex = m_queuedDisposalAllocatedIndices[i];
+		QueuedDisposal& disposal = m_queuedDisposalTable[tableIndex];
+
 		disposal.function();
+
+		assert(disposal.allocated == true);
+		disposal.allocated = false;
+		disposal.function = nullptr;
 	}
 
 	m_queuedDisposalAllocatedIndices.clear();
+	m_queuedDisposalFreeIndices.clear();
 	for (int i = 0; i < m_queuedDisposalTable.size(); i++)
 	{
 		m_queuedDisposalFreeIndices.push_back(i);
 	}
+
+	//ValidateDisposal();
 }
 
 void VulkanGraphics::UpdateQueuedDisposals()
 {
+	std::lock_guard<std::mutex> lock(m_queuedDisposalMutex);
+
 	size_t count = m_queuedDisposalAllocatedIndices.size();
 
 	for (int i = 0; i < count; )
 	{
 		int tableIndex = m_queuedDisposalAllocatedIndices[i];
 		QueuedDisposal& disposal = m_queuedDisposalTable[tableIndex];
+
 		if (disposal.frameIndex <= GetSafeRecycleFrameIndex())
 		{
 			disposal.function();
 
+			assert(disposal.allocated);
+			disposal.allocated = false;
+			disposal.function = nullptr;
+
 			m_queuedDisposalFreeIndices.push_back(tableIndex);
 			m_queuedDisposalAllocatedIndices[i] = m_queuedDisposalAllocatedIndices[count - 1];
 			count--;
-			i--;
 		}
 		else
 		{
@@ -1321,6 +1328,8 @@ void VulkanGraphics::UpdateQueuedDisposals()
 	}
 
 	m_queuedDisposalAllocatedIndices.resize(count);
+
+	//ValidateDisposal();
 }
 
 void VulkanGraphics::CollectGarbage()

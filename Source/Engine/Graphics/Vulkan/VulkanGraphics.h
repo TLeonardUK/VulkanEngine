@@ -83,6 +83,7 @@ struct QueuedDisposal
 
 	int frameIndex;
 	DisposalFunction_t function;
+	bool allocated;
 };
 
 class VulkanGraphics 
@@ -139,6 +140,7 @@ private:
 	VkExtent2D m_swapChainExtent;
 	bool m_swapChainRegeneratedThisFrame;
 
+	std::mutex m_queuedDisposalMutex;
 	Array<QueuedDisposal> m_queuedDisposalTable;
 	Array<int> m_queuedDisposalAllocatedIndices;
 	Array<int> m_queuedDisposalFreeIndices;
@@ -214,6 +216,8 @@ private:
 	void UpdateQueuedDisposals();
 
 	void CollectGarbage();
+
+	void ValidateDisposal();
 
 public:
 	VulkanGraphics(

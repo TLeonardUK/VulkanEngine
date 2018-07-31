@@ -187,6 +187,7 @@ bool VulkanResourceSetPool::CreateNewPool()
 	poolInfo.poolSizeCount = 1;
 	poolInfo.pPoolSizes = poolSizes.data();
 	poolInfo.maxSets = MaxAllocations;
+	poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	VkDescriptorPool pool;
 	CheckVkResultReturnOnFail(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &pool));
