@@ -359,7 +359,7 @@ void ImguiManager::EndFrame()
 	m_vertexBuffer->Stage(vertexData.data(), 0, (int)vertexData.size());
 	m_indexBuffer->Stage(indexData.data(), 0, (int)indexData.size());
 
-	m_renderer->QueueRenderCommand(RenderCommandStage::PostViewsRendered, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+	m_renderer->QueueRenderCommand(RenderCommandStage::PostRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 
 		int swapWidth = m_renderer->GetSwapChainWidth();
 		int swapHeight = m_renderer->GetSwapChainHeight();
@@ -388,10 +388,9 @@ void ImguiManager::EndFrame()
 		material->UpdateResources();
 		m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
 
-		std::shared_ptr<IGraphicsResourceSet> resourceSet = m_materialRenderData->GetResourceSet();
-		std::shared_ptr<IGraphicsResourceSetInstance> resourceSetInstance = resourceSet->NewInstance();
+		const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = m_materialRenderData->GetResourceSets();
 
-		buffer->TransitionResourceSets(&resourceSet, 1);
+		buffer->TransitionResourceSets(resourceSets.data(), resourceSets.size());
 
 		buffer->Upload(m_vertexBuffer);
 		buffer->Upload(m_indexBuffer);
@@ -404,7 +403,7 @@ void ImguiManager::EndFrame()
 
 		buffer->SetIndexBuffer(m_indexBuffer);
 		buffer->SetVertexBuffer(m_vertexBuffer);
-		buffer->SetResourceSetInstances(&resourceSetInstance, 1);
+		buffer->SetResourceSets(resourceSets.data(), resourceSets.size());
 
 		ImTextureID lastTextureId = 0;
 
@@ -430,11 +429,11 @@ void ImguiManager::EndFrame()
 							material->GetProperties().Set(ImGuiTexture, iter->second.view, m_fontTexture.Get()->GetSampler());
 						}
 					}
-					material->UpdateResources();
 
-					resourceSetInstance = resourceSet->NewInstance();
-					buffer->SetResourceSetInstances(&resourceSetInstance, 1);
-
+					m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
+					const Array<std::shared_ptr<IGraphicsResourceSet>>& newResourceSets = m_materialRenderData->GetResourceSets();
+					buffer->SetResourceSets(newResourceSets.data(), newResourceSets.size());
+					
 					lastTextureId = cmd->TextureId;
 				}
 

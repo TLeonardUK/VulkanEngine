@@ -1,0 +1,4 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/depth_only.json"
+}

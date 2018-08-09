@@ -41,6 +41,8 @@ enum class FrustumCorners
 struct Frustum
 {
 public:
+	static const Frustum Empty;
+
 	Plane planes[(int)FrustumPlanes::Count];
 
 	Frustum() = default;

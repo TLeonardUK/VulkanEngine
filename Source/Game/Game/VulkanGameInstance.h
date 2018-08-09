@@ -22,6 +22,7 @@ protected:
 	Entity m_skybox;
 	Entity m_environment1;
 	Entity m_environment2;
+	Entity m_directionalLight;
 
 public:
 	VulkanGameInstance(std::shared_ptr<Engine> engine);

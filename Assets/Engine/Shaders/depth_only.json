@@ -1,0 +1,69 @@
+{
+    "Type": "Shader",    
+   
+    "FrameBuffer": "DepthBuffer",
+    
+    "Stages":
+    {
+        "Vertex":
+        {
+            "ShaderPath": "Engine/Shaders/depth_only.vert",
+            "EntryPoint": "main",
+            "VertexStreams":
+            {
+                "inPosition":
+                {
+                    "Format": "Float3",
+                    "Location": 0,
+                    "BindTo": "Position"
+                }
+            }
+        },
+        "Fragment":
+        {
+            "ShaderPath": "Engine/Shaders/depth_only.frag",
+            "EntryPoint": "main"
+        }
+    },
+    "Bindings":
+    {   
+        "meshProperties":
+        {
+            "Type": "UniformBufferObject",
+            "Binding": 0,
+			"Set": 0,
+			"Frequency": "Mesh",
+            "Fields":
+            {
+                "model":
+                {
+                    "Format": "Matrix4",
+                    "Location": 0,
+                    "BindTo": "ModelMatrix"
+                }
+            }
+        },	
+        "globalProperties":
+        {
+            "Type": "UniformBufferObject",
+            "Binding": 0,
+			"Set": 1,
+			"Frequency": "Global",
+            "Fields":
+            {                     
+                "view":
+                {
+                    "Format": "Matrix4",
+                    "Location": 0,
+                    "BindTo": "ViewMatrix"
+                },                        
+                "proj":
+                {
+                    "Format": "Matrix4",
+                    "Location": 1,
+                    "BindTo": "ProjectionMatrix"
+                }
+            }
+        }
+    }
+}

@@ -2,27 +2,17 @@
 #include "Pch.h"
 
 #include "Engine/Resources/Types/Model.h"
+#include "Engine/Resources/Types/MaterialRenderData.h"
 #include "Engine/Types/OrientedBounds.h"
 
-#include "Engine/Components/Component.h"
+#include "Engine/ECS/Component.h"
 
-// Describes an individual static mesh.
+struct ModelComponent;
+
+// Describes a sub-mesh of a model component.
 struct MeshComponent
 {
-	ResourcePtr<Model> model;
-	Array<OrientedBounds> bounds;
+	std::shared_ptr<Mesh> mesh;
+	std::shared_ptr<MaterialRenderData> renderData[(int)MaterialVariant::Count];
 	MaterialPropertyCollection properties;
-
-	Array<std::shared_ptr<MaterialRenderData>> renderData;
-
-	uint64_t lastBoundsUpdateTransformVersion;
-	std::shared_ptr<Model> lastBoundsUpdateModel;
-};
-
-// Changes the model of a mesh component.
-struct SetMeshModelMessage
-{
-	ComponentRef<MeshComponent> component;
-
-	ResourcePtr<Model> model;
 };

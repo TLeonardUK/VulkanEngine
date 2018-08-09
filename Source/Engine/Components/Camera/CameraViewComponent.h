@@ -7,25 +7,27 @@
 // Describes a camera viewport that will be rendered during the frame.
 struct CameraViewComponent
 {
-	Rect viewport;
+	Rect viewport = Rect::Empty;
 
-	float depthMin;
-	float depthMax;
+	float depthMin = 1.0f;
+	float depthMax = 1000.0f;
 
-	float fov;
+	float fov = 45.0f;
 
-	Frustum frustum;
+	Frustum frustum = Frustum::Empty;
+	Matrix4 viewMatrix = Matrix4::Identity;
+	Matrix4 projectionMatrix = Matrix4::Identity;
 };
 
 // Changes the projection settings of a camera view.
 struct SetCameraViewProjectionMessage
 {
-	ComponentRef<CameraViewComponent> component;
+	ComponentRef<CameraViewComponent> component = NoEntity;
 
-	Rect viewport;
+	Rect viewport = Rect::Empty;
 
-	float depthMin;
-	float depthMax;
+	float depthMin = 1.0f;
+	float depthMax = 1000.0f;
 
-	float fov;
+	float fov = 45.0f;
 };

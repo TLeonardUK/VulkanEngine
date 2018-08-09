@@ -40,7 +40,7 @@ private:
 	Array<Vector4> m_colors;
 	Array<int> m_indices;
 
-	Array<char> m_interleavedData;
+	//Array<char> m_interleavedData;
 
 	std::shared_ptr<Material> m_lastUpdatedMaterial;
 	std::shared_ptr<Shader> m_lastUpdatedShader;
@@ -57,9 +57,10 @@ private:
 private:
 	friend class Model;
 	friend class Renderer;
+	friend class MeshBatcher;
 
-	std::shared_ptr<IGraphicsIndexBuffer> GetIndexBuffer();
-	std::shared_ptr<IGraphicsVertexBuffer> GetVertexBuffer();
+	const std::shared_ptr<IGraphicsIndexBuffer>& GetIndexBuffer();
+	const std::shared_ptr<IGraphicsVertexBuffer>& GetVertexBuffer();
 	int GetIndexCount();
 
 	void UpdateResources();

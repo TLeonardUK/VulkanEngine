@@ -81,7 +81,7 @@ public:
 
 	virtual void TransitionResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count);
 	virtual void TransitionResourceSets(const Array<std::shared_ptr<IGraphicsResourceSet>*>& values);
-	virtual void SetResourceSetInstances(const std::shared_ptr<IGraphicsResourceSetInstance>* values, int count);
+	virtual void SetResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count);
 
 	virtual void DrawElements(int vertexCount, int instanceCount, int vertexOffset, int instanceOffset);
 	virtual void DrawIndexedElements(int indexCount, int instanceCount, int indexOffset, int vertexOffset, int instanceOffset);

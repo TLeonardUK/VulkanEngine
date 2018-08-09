@@ -58,24 +58,6 @@
     <Filter Include="Header Files\Types">
       <UniqueIdentifier>{71df9094-1da4-431f-939b-b8d60621066d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Components">
-      <UniqueIdentifier>{5c500065-e978-4e77-881d-d66dbd290d49}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Components">
-      <UniqueIdentifier>{ffeee4a5-b3cc-4a84-ae68-bf0d3aad9253}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Components\Camera">
-      <UniqueIdentifier>{b4f738bf-970f-4740-a91e-fb4a11b4af5d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Components\Camera">
-      <UniqueIdentifier>{47ace416-6250-4a5c-b273-143d3ddbd27e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Components\Transform">
-      <UniqueIdentifier>{23dc04a9-065a-4541-b7b0-ce314b0398f9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Components\Transform">
-      <UniqueIdentifier>{81ec6447-46a4-4ead-8a38-3d23a27c621e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Input">
       <UniqueIdentifier>{0bd8c044-6a2d-422d-9584-516ccc99636d}</UniqueIdentifier>
     </Filter>
@@ -151,17 +133,62 @@
     <Filter Include="Source Files\Threading">
       <UniqueIdentifier>{453faf6a-63d6-41ca-a5d4-78afc7b19b3f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Components\Mesh">
-      <UniqueIdentifier>{d092b1ff-051d-49e6-93a9-6cff847ff6b8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Components\Mesh">
-      <UniqueIdentifier>{fc98fbcf-8268-4855-babd-3450653bde70}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Components\Debug">
-      <UniqueIdentifier>{8c78539c-21b4-4b40-80df-1ea79a9d8477}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Profiling">
       <UniqueIdentifier>{6afdb67f-c8e0-41b6-8ba0-bc2458084302}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems">
+      <UniqueIdentifier>{394e2cc9-ec40-4ff2-bd89-dcdc5e4b8e57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Systems">
+      <UniqueIdentifier>{f96679c4-0355-4453-ac4d-97fa3f1804fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components">
+      <UniqueIdentifier>{8364a69b-c966-46eb-9df4-a5d150cf6724}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Components">
+      <UniqueIdentifier>{aba95d87-1df5-4337-abac-f882209da611}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Camera">
+      <UniqueIdentifier>{5d4b5ccf-b7d4-49b3-8da1-a23db0de2ea1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Lighting">
+      <UniqueIdentifier>{8da312bb-2d57-4cc7-85d2-510aafc72a30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Mesh">
+      <UniqueIdentifier>{56600b14-f215-4b72-a575-3d3947425d68}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Components\Transform">
+      <UniqueIdentifier>{f09aa514-3778-4967-b1ad-231ae89c2f4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ECS">
+      <UniqueIdentifier>{1ff43e06-6696-421a-8f7b-f95b72dcd46f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ECS">
+      <UniqueIdentifier>{163abe37-0aeb-4662-8e72-16ddf35641ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Systems\Camera">
+      <UniqueIdentifier>{6c368074-d232-4556-ad9c-83af251c7512}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\Camera">
+      <UniqueIdentifier>{342ee1d6-9df3-4abc-ba82-3c20a4e96e56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Systems\Mesh">
+      <UniqueIdentifier>{34fa93e6-0f3f-4f47-ba1b-c3393633eda0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\Mesh">
+      <UniqueIdentifier>{6856c570-9e15-40d6-bd32-9b601fe91823}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\Transform">
+      <UniqueIdentifier>{707e755f-aa96-4cca-8087-961c4abc43cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Systems\Transform">
+      <UniqueIdentifier>{bec8ec28-7c89-4fb4-8b35-9296de1cf637}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Systems\Render">
+      <UniqueIdentifier>{d0e5e3a3-0c34-4021-b0e0-4d78921b1625}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Systems\Render">
+      <UniqueIdentifier>{3a31e629-9b8b-4ead-9458-e47f9e8c4d03}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -252,12 +279,6 @@
     <ClCompile Include="Graphics\Vulkan\VulkanSampler.cpp">
       <Filter>Source Files\Graphics\Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="Components\Component.cpp">
-      <Filter>Source Files\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Transform\TransformComponent.cpp">
-      <Filter>Source Files\Components\Transform</Filter>
-    </ClCompile>
     <ClCompile Include="Rendering\Renderer.cpp">
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
@@ -339,24 +360,6 @@
     <ClCompile Include="Types\Timeout.cpp">
       <Filter>Source Files\Types</Filter>
     </ClCompile>
-    <ClCompile Include="Components\World.cpp">
-      <Filter>Source Files\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\System.cpp">
-      <Filter>Source Files\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\AspectCollection.cpp">
-      <Filter>Source Files\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Aspect.cpp">
-      <Filter>Source Files\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Camera\RenderCameraViewsSystem.cpp">
-      <Filter>Source Files\Components\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Mesh\MeshComponent.cpp">
-      <Filter>Source Files\Components\Mesh</Filter>
-    </ClCompile>
     <ClCompile Include="Types\Vector.cpp">
       <Filter>Source Files\Types</Filter>
     </ClCompile>
@@ -369,26 +372,11 @@
     <ClCompile Include="Pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Components\Transform\TransformUtils.cpp">
-      <Filter>Source Files\Components\Transform</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Camera\FlyCameraMovementSystem.cpp">
-      <Filter>Source Files\Components\Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Transform\TransformSystem.cpp">
-      <Filter>Source Files\Components\Transform</Filter>
-    </ClCompile>
-    <ClCompile Include="Components\Mesh\MeshBoundsUpdateSystem.cpp">
-      <Filter>Source Files\Components\Mesh</Filter>
-    </ClCompile>
     <ClCompile Include="Resources\Types\TextureCube.cpp">
       <Filter>Source Files\Resources\Types</Filter>
     </ClCompile>
     <ClCompile Include="Resources\Types\TextureCubeResourceLoader.cpp">
       <Filter>Source Files\Resources\Types</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphics\Vulkan\VulkanResourceSetInstance.cpp">
-      <Filter>Source Files\Graphics\Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Types\Color.cpp">
       <Filter>Source Files\Types</Filter>
@@ -401,6 +389,66 @@
     </ClCompile>
     <ClCompile Include="Utilities\Statistic.cpp">
       <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\Types\MaterialRenderData.cpp">
+      <Filter>Source Files\Resources\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\Rectangle.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\Frustum.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\OctTree.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\Sphere.cpp">
+      <Filter>Source Files\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="ECS\Aspect.cpp">
+      <Filter>Source Files\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="ECS\AspectCollection.cpp">
+      <Filter>Source Files\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="ECS\Component.cpp">
+      <Filter>Source Files\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="ECS\System.cpp">
+      <Filter>Source Files\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="ECS\World.cpp">
+      <Filter>Source Files\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Camera\FlyCameraMovementSystem.cpp">
+      <Filter>Source Files\Systems\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Mesh\MeshBoundsUpdateSystem.cpp">
+      <Filter>Source Files\Systems\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Transform\TransformUtils.cpp">
+      <Filter>Source Files\Systems\Transform</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Transform\TransformSystem.cpp">
+      <Filter>Source Files\Systems\Transform</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Mesh\ModelMeshCreationSystem.cpp">
+      <Filter>Source Files\Systems\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Transform\SpatialIndexSystem.cpp">
+      <Filter>Source Files\Systems\Transform</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Render\RenderDebugSystem.cpp">
+      <Filter>Source Files\Systems\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Render\RenderDirectionalShadowMapSystem.cpp">
+      <Filter>Source Files\Systems\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Render\RenderCameraViewSystem.cpp">
+      <Filter>Source Files\Systems\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\MeshBatcher.cpp">
+      <Filter>Source Files\Rendering</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -542,12 +590,6 @@
     <ClInclude Include="Graphics\Vulkan\VulkanSampler.h">
       <Filter>Header Files\Graphics\Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Components\Component.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Transform\TransformComponent.h">
-      <Filter>Header Files\Components\Transform</Filter>
-    </ClInclude>
     <ClInclude Include="Input\Input.h">
       <Filter>Header Files\Input</Filter>
     </ClInclude>
@@ -641,9 +683,6 @@
     <ClInclude Include="UI\ImguiManager.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
-    <ClInclude Include="Components\World.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
     <ClInclude Include="Rendering\RendererEnums.h">
       <Filter>Header Files\Rendering</Filter>
     </ClInclude>
@@ -662,21 +701,6 @@
     <ClInclude Include="Types\Timeout.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Components\System.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Aspect.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\AspectCollection.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Camera\CameraViewComponent.h">
-      <Filter>Header Files\Components\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Camera\RenderCameraViewsSystem.h">
-      <Filter>Header Files\Components\Camera</Filter>
-    </ClInclude>
     <ClInclude Include="Types\Vector.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
@@ -691,9 +715,6 @@
     </ClInclude>
     <ClInclude Include="Types\Rectangle.h">
       <Filter>Header Files\Types</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Mesh\MeshComponent.h">
-      <Filter>Header Files\Components\Mesh</Filter>
     </ClInclude>
     <ClInclude Include="Types\Vector2.h">
       <Filter>Header Files\Types</Filter>
@@ -719,44 +740,17 @@
     <ClInclude Include="Pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Components\Transform\TransformUtils.h">
-      <Filter>Header Files\Components\Transform</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Camera\FlyCameraComponent.h">
-      <Filter>Header Files\Components\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Camera\FlyCameraMovementSystem.h">
-      <Filter>Header Files\Components\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\MessageQueue.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\ComponentPool.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="Components\Transform\TransformSystem.h">
-      <Filter>Header Files\Components\Transform</Filter>
-    </ClInclude>
     <ClInclude Include="Types\Bounds.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\OrientedBounds.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Components\Mesh\MeshBoundsUpdateSystem.h">
-      <Filter>Header Files\Components\Mesh</Filter>
-    </ClInclude>
     <ClInclude Include="Resources\Types\TextureCube.h">
       <Filter>Header Files\Resources\Types</Filter>
     </ClInclude>
     <ClInclude Include="Resources\Types\TextureCubeResourceLoader.h">
       <Filter>Header Files\Resources\Types</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\Vulkan\VulkanResourceSetInstance.h">
-      <Filter>Header Files\Graphics\Vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphics\GraphicsResourceSetInstance.h">
-      <Filter>Header Files\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Profiling\Profiling.h">
       <Filter>Header Files\Profiling</Filter>
@@ -775,6 +769,90 @@
     </ClInclude>
     <ClInclude Include="Utilities\Statistic.h">
       <Filter>Header Files\Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\Types\MaterialRenderData.h">
+      <Filter>Header Files\Resources\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\OctTree.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Sphere.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\Aspect.h">
+      <Filter>Header Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\AspectCollection.h">
+      <Filter>Header Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\Component.h">
+      <Filter>Header Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\ComponentPool.h">
+      <Filter>Header Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\MessageQueue.h">
+      <Filter>Header Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\System.h">
+      <Filter>Header Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="ECS\World.h">
+      <Filter>Header Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Camera\CameraViewComponent.h">
+      <Filter>Header Files\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Camera\FlyCameraComponent.h">
+      <Filter>Header Files\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Lighting\DirectionalLightComponent.h">
+      <Filter>Header Files\Components\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Mesh\MeshComponent.h">
+      <Filter>Header Files\Components\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Transform\TransformComponent.h">
+      <Filter>Header Files\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Camera\FlyCameraMovementSystem.h">
+      <Filter>Header Files\Systems\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Mesh\MeshBoundsUpdateSystem.h">
+      <Filter>Header Files\Systems\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Transform\TransformSystem.h">
+      <Filter>Header Files\Systems\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Transform\TransformUtils.h">
+      <Filter>Header Files\Systems\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Transform\BoundsComponent.h">
+      <Filter>Header Files\Components\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Mesh\ModelComponent.h">
+      <Filter>Header Files\Components\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Mesh\ModelMeshCreationSystem.h">
+      <Filter>Header Files\Systems\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Transform\SpatialIndexSystem.h">
+      <Filter>Header Files\Systems\Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\HashArray.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Render\RenderDirectionalShadowMapSystem.h">
+      <Filter>Header Files\Systems\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Render\RenderDebugSystem.h">
+      <Filter>Header Files\Systems\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Render\RenderCameraViewSystem.h">
+      <Filter>Header Files\Systems\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\MeshBatcher.h">
+      <Filter>Header Files\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

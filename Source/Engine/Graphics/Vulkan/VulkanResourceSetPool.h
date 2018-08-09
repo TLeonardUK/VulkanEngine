@@ -45,10 +45,11 @@ class VulkanResourceSetPool
 	, public IVulkanResource
 {
 private:
-	struct CachedDescriptors
+	struct CachedDescriptor
 	{
 		std::size_t bindingsHashCode;
 		int lastFrameUsed;
+		int allocationCount;
 		VkDescriptorSetLayout layout;
 		VkDescriptorSet set;
 		VkDescriptorPool pool;
@@ -61,16 +62,27 @@ private:
 		VkDescriptorSetLayout layout;
 	};
 
-	Array<CachedLayout> m_layouts;
-	Array<std::shared_ptr<CachedDescriptors>> m_descriptors;
-	MultiDictionary<size_t, std::shared_ptr<CachedDescriptors>> m_descriptorsMap;
+	struct DescriptorList
+	{
+		Array<std::shared_ptr<CachedDescriptor>> descriptors;
+		MultiDictionary<size_t, std::shared_ptr<CachedDescriptor>> descriptorsMap;
+
+		void Add(std::shared_ptr<CachedDescriptor> descriptor);
+		void Remove(std::shared_ptr<CachedDescriptor> descriptor);
+		std::shared_ptr<CachedDescriptor> Get(size_t hash, VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings);
+	};
 
 	String m_name;
 	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<VulkanGraphics> m_graphics;
 
+	DescriptorList m_allocatedDescriptors;
+	DescriptorList m_pendingFreeDescriptors;
+	DescriptorList m_freeDescriptors;
+
 	VkDevice m_device;
 	Array<VkDescriptorPool> m_pools;
+	Array<CachedLayout> m_layouts;
 
 	std::mutex m_descriptorSetMutex;
 
@@ -83,13 +95,16 @@ private:
 
 	bool Build();
 
-	bool RequestDescriptorSetForThisFrame(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings, VkDescriptorSet& output);
 	VkDescriptorSetLayout RequestLayout(const GraphicsResourceSetDescription& description);
 	bool WriteDescriptorSet(VkDescriptorSet set, const Array<VulkanResourceSetBinding>& bindings);
 
-	bool AllocateSet(VkDescriptorSetLayout layout, VkDescriptorSet& resultSet, VkDescriptorPool& resultPool);
-	bool PruneDescriptors();
+	bool CreateNewSet(VkDescriptorSetLayout layout, VkDescriptorSet& resultSet, VkDescriptorPool& resultPool);
 	bool CreateNewPool();
+
+	std::shared_ptr<CachedDescriptor> AllocDescriptorSet(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings);
+	void FreeDescriptorSet(const std::shared_ptr<CachedDescriptor>& set);
+
+	void FlushPendingFree();
 
 public:
 	VulkanResourceSetPool(

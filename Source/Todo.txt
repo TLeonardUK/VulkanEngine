@@ -1,33 +1,26 @@
-make component manager thread-safe
-make component manager lockless.
-force vulkan to defer deletion of ALL buffers, (gpu buffer etc) for safe disposal time.
 
 
+TODO:
+- fix vk warnings.
+- light frustum generation.
+- shadow mask generation
+- Make view/shadow/etc rendering overlappable. Will involve removing resource-updates along with the global properties array.
+- debug util to show shadow maps.
+- cascade shadow maps for directional.
 
-- Resource freeing in vulkan (ref counted, defered for x frames)
-- cube maps
-- gbuffer
+
 - shadows
 - lighting
 - pbr
 - environment maps
 - ddebug menu
 
-- don't update descriptor sets that haven't changed
-- shared descriptor sets if they have the same layout and are boudn to the same things
-- vertex/index staging buffers need double buffering to deal with staging while cpu is updating them.
-- uniform buffers need to be made dynamic in some way so we can update as we draw each instance.
-
-- per frame uniform stack allocator
-- dynamic offset
-- descriptor set pooled by uniform offsets / samplers
-- change uniform owner to mesh not material
-- add material instances
-
 - make task manager use fibers.
  - make task manager dependencies be virtual types and event-waitable so we can have things like IOCompleteDependency, TaskCompleteDependency, etc.
 - change IO to be async.
 - change loading to use async io and yield fiber when waiting.
+
+
 
 
 

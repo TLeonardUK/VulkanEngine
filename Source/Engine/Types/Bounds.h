@@ -82,4 +82,45 @@ public:
 		corners[(int)BoundsCorners::BackBottomLeft] = Vector3(min.x, min.y, max.z);
 		corners[(int)BoundsCorners::BackBottomRight] = Vector3(max.x, min.y, max.z);
 	}
+
+	void GetSubDevisions(Bounds subDevisions[8]) const
+	{
+		Vector3 center = GetCenter();
+
+		subDevisions[0] = Bounds(Vector3(min.x, min.y, min.z), Vector3(center.x, center.y, center.z));
+		subDevisions[1] = Bounds(Vector3(min.x, center.y, min.z), Vector3(center.x, max.y, center.z));
+		subDevisions[2] = Bounds(Vector3(center.x, min.y, min.z), Vector3(max.x, center.y, center.z));
+		subDevisions[3] = Bounds(Vector3(center.x, center.y, min.z), Vector3(max.x, max.y, center.z));
+		subDevisions[4] = Bounds(Vector3(min.x, min.y, center.z), Vector3(center.x, center.y, max.z));
+		subDevisions[5] = Bounds(Vector3(min.x, center.y, center.z), Vector3(center.x, max.y, max.z));
+		subDevisions[6] = Bounds(Vector3(center.x, min.y, center.z), Vector3(max.x, center.y, max.z));
+		subDevisions[7] = Bounds(Vector3(center.x, center.y, center.z), Vector3(max.x, max.y, max.z));
+	}
+
+	bool Intersects(const Bounds& bounds) const
+	{
+		if (max.x < bounds.min.x ||
+			max.y < bounds.min.y ||
+			max.z < bounds.min.z ||
+			min.x > bounds.max.x ||
+			min.y > bounds.max.y ||
+			min.z > bounds.max.z)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	bool Contains(const Bounds& bounds) const
+	{
+		if ((bounds.min.x >= min.x && bounds.max.x <= max.x) &&
+			(bounds.min.y >= min.y && bounds.max.y <= max.y) &&
+			(bounds.min.z >= min.z && bounds.max.z <= max.z))
+		{
+			return true;
+		}
+
+		return false;
+	}
 };

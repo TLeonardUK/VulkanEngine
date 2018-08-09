@@ -16,6 +16,8 @@ class IGraphicsVertexBuffer;
 class Renderer;
 struct VertexBufferBindingDescription;
 class IInput;
+class MaterialRenderData;
+
 
 struct SDL_Window;
 
@@ -41,6 +43,7 @@ private:
 	struct StoredImage
 	{
 		std::shared_ptr<IGraphicsImageView> view;
+		std::shared_ptr<MaterialRenderData> renderData;
 	};
 
 	std::shared_ptr<Logger> m_logger;

@@ -3,6 +3,7 @@
 
 #include "Engine/Types/Vector.h"
 #include "Engine/Types/Quaternion.h"
+#include "Engine/Profiling/Profiling.h"
 
 template <typename T>
 struct BaseMatrix4

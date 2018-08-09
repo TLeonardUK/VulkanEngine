@@ -12,7 +12,9 @@
 #include "Engine/Components/Camera/CameraViewComponent.h"
 #include "Engine/Components/Camera/FlyCameraComponent.h"
 #include "Engine/Components/Mesh/MeshComponent.h"
+#include "Engine/Components/Mesh/ModelComponent.h"
 #include "Engine/Components/Transform/TransformComponent.h"
+#include "Engine/Components/Lighting/DirectionalLightComponent.h"
 
 VulkanGameInstance::VulkanGameInstance(std::shared_ptr<Engine> engine)
 	: IGameInstance(engine)
@@ -174,69 +176,66 @@ void VulkanGameInstance::Initialize()
 				TransformComponent* rootTransform = world->AddComponent<TransformComponent>(cube);
 				rootTransform->localPosition = Vector3((float)x, (float)y, (float)z) * Vector3(10.0f, 10.0f, 10.0f);
 				rootTransform->localScale = Vector3(5.0f, 5.0f, 5.0f);
-				rootTransform->localRotation = Quaternion::Identity;
-				rootTransform->isDirty = true;
-				rootTransform->version = 0;
 
-				MeshComponent* meshComponent = world->AddComponent<MeshComponent>(cube);
-				meshComponent->model = resourceManager->Load<Model>("Engine/Models/Default.json");
+				ModelComponent* modelComponent = world->AddComponent<ModelComponent>(cube);
+				modelComponent->model = resourceManager->Load<Model>("Engine/Models/Default.json");
 			}
 		}
 	}*/
 
-	{
+	/*{
 		m_environment1 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
 		rootTransform->localPosition = Vector3(2.0f, 2.0f, 2.0f);
-		rootTransform->localScale = Vector3::One;
-		rootTransform->localRotation = Quaternion::Identity;
-		rootTransform->isDirty = true;
-		rootTransform->version = 0;
 
-		MeshComponent* meshComponent = world->AddComponent<MeshComponent>(m_environment1);
-		meshComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/interior.json");
+		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
+		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/interior.json");
 	}
 	{
 		m_environment2 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment2);
-		rootTransform->localPosition = Vector3::Zero;
-		rootTransform->localScale = Vector3::One;
-		rootTransform->localRotation = Quaternion::Identity;
-		rootTransform->isDirty = true;
-		rootTransform->version = 0;
 
-		MeshComponent* meshComponent = world->AddComponent<MeshComponent>(m_environment2);
-		meshComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/exterior.json");
+		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment2);
+		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/exterior.json");
 	}
-	/*{
+	{
 		m_environment1 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
-		rootTransform->localPosition = Vector3::Zero;
-		rootTransform->localScale = Vector3::One;
-		rootTransform->localRotation = Quaternion::Identity;
-		rootTransform->isDirty = true;
-		rootTransform->version = 0;
 
-		MeshComponent* meshComponent = world->AddComponent<MeshComponent>(m_environment1);
-		meshComponent->model = resourceManager->Load<Model>("Engine/Models/SanMiguel/san-miguel.json");
+		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
+		modelComponent->model = resourceManager->Load<Model>("Engine/Models/SanMiguel/san-miguel.json");
 	}*/
+	
+	{
+		m_environment1 = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
+
+		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
+		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
+	}
 
 	// Create skybox.
 	{
 		m_skybox = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_skybox);
-		rootTransform->localPosition = Vector3::Zero;
-		rootTransform->localScale = Vector3::One;
-		rootTransform->localRotation = Quaternion::Identity;
-		rootTransform->isDirty = true;
-		rootTransform->version = 0;
 
-		MeshComponent* meshComponent = world->AddComponent<MeshComponent>(m_skybox);
-		meshComponent->model = resourceManager->Load<Model>("Engine/Models/Skyboxes/blue_sky.json");
+		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_skybox);
+		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Skyboxes/blue_sky.json");
+	}
+
+	// Create directional light.
+	{
+		m_directionalLight = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_directionalLight);
+
+		DirectionalLightComponent* lightComponent = world->AddComponent<DirectionalLightComponent>(m_directionalLight);
+		lightComponent->isShadowCasting = true;
 	}
 
 	// Create debug fly camera.
@@ -244,20 +243,15 @@ void VulkanGameInstance::Initialize()
 		m_camera = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_camera);
-		rootTransform->localPosition = Vector3::Zero;
-		rootTransform->localScale = Vector3::One;
-		rootTransform->localRotation = Quaternion::Identity;
-		rootTransform->isDirty = true;
-		rootTransform->version = 0;
 
 		CameraViewComponent* cameraView = world->AddComponent<CameraViewComponent>(m_camera);
-		cameraView->depthMin = 1.0f;
-		cameraView->depthMax = 100000.0f;
+		cameraView->depthMin = 5.0f;
+		cameraView->depthMax = 15000.0f;
 		cameraView->fov = 65.0f;
 		cameraView->viewport = Rect(0.0f, 0.0f, 1.0f, 1.0f);
 
 		FlyCameraComponent* flyCamera = world->AddComponent<FlyCameraComponent>(m_camera);
-		flyCamera->movementSpeed = 5.0f;
+		flyCamera->movementSpeed = 50.0f;
 		flyCamera->mouseSensitivity = 500.0f;
 	}
 

@@ -34,6 +34,7 @@ public:
 	String Name;
 	GraphicsBindingType Type;
 	int Binding;
+	int Set;
 	String BindTo;
 	MaterialPropertyHash BindToHash;
 	UniformBufferLayout UniformBufferLayout;

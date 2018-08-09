@@ -131,7 +131,15 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 		}
 	}
 
-	std::shared_ptr<Material> material = std::make_shared<Material>(m_graphics, m_renderer, m_logger, resource->Path, shader, properties);
+	std::shared_ptr<Material> material = std::make_shared<Material>(
+		m_graphics, 
+		m_renderer, 
+		m_logger, 
+		resource->Path, 
+		shader, 
+		properties, 
+		std::weak_ptr<Material>(),
+		MaterialVariant::Normal);
 
 	manager->AddResourceLoadedCallback(resource, [=]() {
 		m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {

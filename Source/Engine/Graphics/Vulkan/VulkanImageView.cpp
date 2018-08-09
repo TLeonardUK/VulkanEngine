@@ -54,7 +54,11 @@ bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image)
 
 	m_vulkanImage = vulkanImage;
 
-	bool isDepth = (vulkanImage->GetVkFormat() == VK_FORMAT_D24_UNORM_S8_UINT);
+	bool isDepth = (
+		vulkanImage->GetVkFormat() == VK_FORMAT_D24_UNORM_S8_UINT ||
+		vulkanImage->GetVkFormat() == VK_FORMAT_D16_UNORM);
+	
+	bool isStencil = (vulkanImage->GetVkFormat() == VK_FORMAT_D24_UNORM_S8_UINT);
 
 	VkImageViewCreateInfo createViewInfo = {};
 	createViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -73,8 +77,25 @@ bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image)
 		assert(false);
 	}
 
+	VkImageAspectFlags aspectFlags = 0;
+
+	if (isDepth)
+	{
+		aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+	
+	if (isStencil)
+	{
+		aspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+	
+	if (!isDepth && !isStencil)
+	{
+		aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+	
 	createViewInfo.format = vulkanImage->GetVkFormat();
-	createViewInfo.subresourceRange.aspectMask = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+	createViewInfo.subresourceRange.aspectMask = aspectFlags;
 	createViewInfo.subresourceRange.baseMipLevel = 0;
 	createViewInfo.subresourceRange.baseArrayLayer = 0;
 	createViewInfo.subresourceRange.layerCount = vulkanImage->GetLayers();

@@ -58,6 +58,12 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 			return false;
 		}
 
+		if (bindingJson.count("Set") == 0)
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding '%s' does not include required paramater 'Set'.", resource->Path.c_str(), bindingName.c_str());
+			return false;
+		}
+
 		if (binding.Type != GraphicsBindingType::UniformBufferObject)
 		{
 			if (bindingJson.count("BindTo") == 0)
@@ -157,6 +163,7 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 		}
 
 		binding.Binding = bindingJson["Binding"];
+		binding.Set = bindingJson["Set"];
 		binding.Name = bindingName;		
 
 		bindings.push_back(binding);

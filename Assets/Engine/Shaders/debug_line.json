@@ -41,6 +41,7 @@
         {
             "Type": "UniformBufferObject",
             "Binding": 0,
+			"Set": 0,
 			"Frequency": "Global",
             "Fields":
             {                       

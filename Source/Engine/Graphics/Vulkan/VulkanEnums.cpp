@@ -14,6 +14,7 @@ VkFormat GraphicsFormatToVkFormat(GraphicsFormat format)
 	case GraphicsFormat::UNORM_R16G16B16:		return VK_FORMAT_R16G16B16_UNORM;
 	case GraphicsFormat::UNORM_R16G16B16A16:	return VK_FORMAT_R16G16B16A16_UNORM;
 	case GraphicsFormat::UNORM_D24_UINT_S8:		return VK_FORMAT_D24_UNORM_S8_UINT;
+	case GraphicsFormat::UNORM_D16:				return VK_FORMAT_D16_UNORM;
 	}
 
 	assert(false);
@@ -32,6 +33,7 @@ int GraphicsFormatBytesPerPixel(GraphicsFormat format)
 	case GraphicsFormat::UNORM_R16G16B16:		return 6;
 	case GraphicsFormat::UNORM_R16G16B16A16:	return 8;
 	case GraphicsFormat::UNORM_D24_UINT_S8:		return 4;
+	case GraphicsFormat::UNORM_D16:				return 2;
 	}
 
 	assert(false);
@@ -50,6 +52,7 @@ GraphicsFormat VkFormatToGraphicsFormat(VkFormat format)
 	case VK_FORMAT_R16G16B16_UNORM:		return GraphicsFormat::UNORM_R16G16B16;
 	case VK_FORMAT_R16G16B16A16_UNORM:	return GraphicsFormat::UNORM_R16G16B16A16;
 	case VK_FORMAT_D24_UNORM_S8_UINT:	return GraphicsFormat::UNORM_D24_UINT_S8;
+	case VK_FORMAT_D16_UNORM:			return GraphicsFormat::UNORM_D16;
 	}
 
 	assert(false);

@@ -70,6 +70,7 @@
             "Type": "UniformBufferObject",
             "Binding": 0,
 			"Frequency": "Mesh",
+			"Set": 0,
             "Fields":
             {                       
                 "scale":
@@ -90,6 +91,7 @@
         {
             "Type": "Sampler",
             "Binding": 1,
+			"Set": 0,
             "BindTo": "ImGuiTexture"
         }
     }

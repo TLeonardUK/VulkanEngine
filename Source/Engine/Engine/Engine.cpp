@@ -29,11 +29,16 @@
 #include "Engine/UI/ImguiManager.h"
 
 #include "Engine/Components/Transform/TransformComponent.h"
-#include "Engine/Components/Transform/TransformSystem.h"
-#include "Engine/Components/Mesh/MeshBoundsUpdateSystem.h"
 #include "Engine/Components/Camera/CameraViewComponent.h"
-#include "Engine/Components/Camera/RenderCameraViewsSystem.h"
-#include "Engine/Components/Camera/FlyCameraMovementSystem.h"
+
+#include "Engine/Systems/Transform/TransformSystem.h"
+#include "Engine/Systems/Transform/SpatialIndexSystem.h"
+#include "Engine/Systems/Mesh/MeshBoundsUpdateSystem.h"
+#include "Engine/Systems/Mesh/ModelMeshCreationSystem.h"
+#include "Engine/Systems/Camera/FlyCameraMovementSystem.h"
+#include "Engine/Systems/Render/RenderCameraViewSystem.h"
+#include "Engine/Systems/Render/RenderDebugSystem.h"
+#include "Engine/Systems/Render/RenderDirectionalShadowMapSystem.h"
 
 #include "Engine/Utilities/Statistic.h"
 
@@ -409,10 +414,21 @@ bool Engine::InitWorld()
 		return false;
 	}
 
-	m_world->AddSystem<TransformSystem>();
-	m_world->AddSystem<MeshBoundsUpdateSystem>();
-	m_world->AddSystem<RenderCameraViewsSystem>(m_world, m_renderer);
+	// Camera
 	m_world->AddSystem<FlyCameraMovementSystem>(m_input, m_renderer, m_imguiManager);
+
+	// Mesh
+	m_world->AddSystem<MeshBoundsUpdateSystem>(m_renderer);
+	m_world->AddSystem<ModelMeshCreationSystem>();
+
+	// Render
+	m_world->AddSystem<RenderDebugSystem>(m_world, m_renderer, m_resourceManager, m_graphics);
+	m_world->AddSystem<RenderCameraViewSystem>(m_world, m_renderer);
+	m_world->AddSystem<RenderDirectionalShadowMapSystem>(m_world, m_renderer, m_resourceManager, m_graphics);
+
+	// Transform
+	m_world->AddSystem<TransformSystem>();
+	m_world->AddSystem<SpatialIndexSystem>();
 
 	return true;
 }

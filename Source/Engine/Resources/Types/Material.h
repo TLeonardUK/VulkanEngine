@@ -29,44 +29,38 @@ class Logger;
 class Renderer;
 struct ShaderBindingField;
 
-// Gets object-specific data required for rendering this material.
-class MaterialRenderData
+struct MaterialResourceSet
 {
-private:
-	Array<std::shared_ptr<IGraphicsUniformBuffer>> m_uniformBuffers;
-	std::shared_ptr<IGraphicsResourceSet> m_resourceSet;
-	std::shared_ptr<IGraphicsResourceSetInstance> m_resourceSetInstance;
-
-	std::shared_ptr<Material> m_lastKnownMaterial = nullptr;
-	int m_lastMeshPropertiesVersion = -1;
-	int m_lastMaterialPropertiesVersion = -1;
-
-	std::shared_ptr<Logger> m_logger;
-	std::shared_ptr<Renderer> m_renderer;
-	std::shared_ptr<IGraphics> m_graphics;
-
-private:
-	void Recreate();
-	void UpdateBindings(MaterialPropertyCollection* meshPropertiesCollection);
-	MaterialProperty* GetMaterialPropertyFromCollections(MaterialPropertyHash hash, MaterialPropertyCollection** collections, int collectionCount);
+public:
+	String name;
+	GraphicsResourceSetDescription description;
+	std::shared_ptr<IGraphicsResourceSet> set;
+	Array<ShaderBinding> bindings;
+	bool isGlobal;
+	size_t hashCode;
 
 public:
-	MaterialRenderData(
-		const std::shared_ptr<Logger>& logger,
+	void CalculateHashCode();
+	void UpdateBindings(
 		const std::shared_ptr<Renderer>& renderer,
-		const std::shared_ptr<IGraphics>& graphics);
+		const std::shared_ptr<Logger>& logger,
+		const Array<std::shared_ptr<IGraphicsUniformBuffer>>& meshUbos,
+		MaterialPropertyCollection* meshPropertiesCollection, 
+		MaterialPropertyCollection* materialPropertiesCollection,
+		const std::shared_ptr<IGraphicsResourceSet>& updateSet
+	);
+};
 
-	void Update(
-		const std::shared_ptr<Material>& material,
-		MaterialPropertyCollection* meshPropertiesCollection);
-
-	const std::shared_ptr<IGraphicsResourceSet>& GetResourceSet();
-	const std::shared_ptr<IGraphicsResourceSetInstance>& GetResourceSetInstance();
-
+enum class MaterialVariant
+{
+	Normal,
+	DepthOnly,
+	Count
 };
 
 class Material
 	: public IResource
+	, public std::enable_shared_from_this<Material>
 {
 private:
 	std::shared_ptr<Logger> m_logger;
@@ -80,13 +74,18 @@ private:
 
 	std::shared_ptr<IGraphicsPipeline> m_pipeline;
 	std::shared_ptr<IGraphicsPipeline> m_wireframePipeline;
-	
-	GraphicsResourceSetDescription m_resourceSetDescription;
-	std::shared_ptr<IGraphicsResourceSet> m_resourceSet;
 
+	Array<MaterialResourceSet> m_resourceSets;
+	Array<MaterialResourceSet> m_depthOnlyResourceSets;
+	
 	std::shared_ptr<Shader> m_lastUpdatedShader;
 
 	std::mutex m_updateResourcesMutex;
+
+	bool m_variantsCreated;
+	std::weak_ptr<Material> m_variantParent;
+	MaterialVariant m_variant;
+	std::shared_ptr<Material> m_variants[(int)MaterialVariant::Count];
 
 	bool m_dirty;
 
@@ -98,10 +97,21 @@ private:
 
 	void RecreateResources();
 
+	void GetResourceSetsForShader(std::shared_ptr<Shader>& shader, Array<MaterialResourceSet>& resourceSets);
+
 public:
 	static const char* Tag;
 
-	Material(std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer, std::shared_ptr<Logger> logger, const String& name, ResourcePtr<Shader> shader, MaterialPropertyCollection& properties);
+	Material(
+		std::shared_ptr<IGraphics> graphics, 
+		std::shared_ptr<Renderer> renderer, 
+		std::shared_ptr<Logger> logger,
+		const String& name, 
+		ResourcePtr<Shader> shader, 
+		MaterialPropertyCollection& properties, 
+		std::weak_ptr<Material> variantParent,
+		MaterialVariant variant);
+
 	virtual ~Material();
 
 	void UpdateResources();
@@ -111,10 +121,13 @@ public:
 
 	std::shared_ptr<IGraphicsPipeline> GetPipeline();
 	std::shared_ptr<IGraphicsPipeline> GetWireframePipeline();
-	GraphicsResourceSetDescription GetResourceSetDescription();
+	
+	const Array<MaterialResourceSet>& GetResourceSets();
+
+	std::shared_ptr<Material> GetVariant(MaterialVariant variant);
 
 	String GetName();
-	bool GetVertexBufferFormat(VertexBufferBindingDescription& format);
+	bool GetVertexBufferFormat(VertexBufferBindingDescription& format, Array<ShaderVertexStream> remapToStreams = {});
 
 	MaterialPropertyCollection& GetProperties();
 

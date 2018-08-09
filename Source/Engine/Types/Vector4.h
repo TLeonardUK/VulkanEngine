@@ -102,7 +102,11 @@ public:
 	// Helper functions.
 	T Length() const
 	{
-		return sqrt(Dot(*this, *this));
+		return sqrt(SquaredLength());
+	}
+	T SquaredLength() const
+	{
+		return Dot(*this, *this);
 	}
 	BaseVector4 Normalize() const
 	{

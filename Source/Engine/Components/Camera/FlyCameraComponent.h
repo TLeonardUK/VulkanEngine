@@ -6,10 +6,10 @@
 // Describes the fly camera movement behaviour.
 struct FlyCameraComponent
 {
-	float movementSpeed;
-	float mouseSensitivity;
+	float movementSpeed = 100.0f;
+	float mouseSensitivity = 100.0f;
 
-	Vector3 viewRotationEuler;
+	Vector3 viewRotationEuler = Vector3::Zero;
 };
 
 // Changes the movement configuration of a fly camera component.
@@ -17,6 +17,6 @@ struct SetFlyCameraConfigMessage
 {
 	ComponentRef<FlyCameraComponent> component;
 
-	float movementSpeed;
-	float mouseSensitivity;
+	float movementSpeed = 100.0f;
+	float mouseSensitivity = 100.0f;
 };

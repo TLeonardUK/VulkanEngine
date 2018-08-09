@@ -23,6 +23,7 @@ private:
 
 	VkDevice m_device;
 	VkDescriptorSetLayout m_layout;
+	std::shared_ptr<VulkanResourceSetPool::CachedDescriptor> m_descriptorSet;
 
 	std::shared_ptr<VulkanResourceSetPool> m_pool;
 
@@ -34,8 +35,6 @@ private:
 	friend class VulkanPipeline;
 	friend class VulkanCommandBuffer;
 
-	VkDescriptorSet ConsumeSet();
-
 	VkDescriptorSetLayout GetLayout()
 	{
 		return m_layout;
@@ -46,9 +45,14 @@ private:
 		return m_currentBindings;
 	}
 
+	void UpdateDescriptorSet();
+
 	void GetUniformBufferOffsets(uint32_t* destination, int* count);
+	void GetDescriptorSets(VkDescriptorSet* destination, int* count);
 
 	VulkanResourceSetBinding& GetBinding(int location, int arrayIndex);
+
+	void UpdateResources();
 
 public:
 	VulkanResourceSet(
@@ -62,9 +66,6 @@ public:
 
 	virtual bool UpdateBinding(int location, int arrayIndex, std::shared_ptr<IGraphicsUniformBuffer> buffer);
 	virtual bool UpdateBinding(int location, int arrayIndex, std::shared_ptr<IGraphicsSampler> sampler, std::shared_ptr<IGraphicsImageView> imageView);
-
-	virtual std::shared_ptr<IGraphicsResourceSetInstance> NewInstance();
-	virtual void UpdateInstance(std::shared_ptr<IGraphicsResourceSetInstance>& instance);
 
 	virtual void FreeResources();
 	virtual String GetName();

@@ -74,12 +74,12 @@ Bounds Mesh::GetBounds()
 	return m_bounds;
 }
 
-std::shared_ptr<IGraphicsIndexBuffer> Mesh::GetIndexBuffer()
+const std::shared_ptr<IGraphicsIndexBuffer>& Mesh::GetIndexBuffer()
 {
 	return m_indexBuffer;
 }
 
-std::shared_ptr<IGraphicsVertexBuffer> Mesh::GetVertexBuffer()
+const std::shared_ptr<IGraphicsVertexBuffer>& Mesh::GetVertexBuffer()
 {
 	return m_vertexBuffer;
 }
@@ -182,7 +182,8 @@ void Mesh::UpdateResources()
 		}
 
 		// Figure out vertex size.
-		m_interleavedData.resize(m_vertexBufferFormat.vertexSize * m_vertices.size());
+		Array<char> interleavedData;
+		interleavedData.resize(m_vertexBufferFormat.vertexSize * m_vertices.size());
 
 		// Get vertex stage so we can build our data.
 		const ShaderStage* vertexStage;
@@ -282,7 +283,7 @@ void Mesh::UpdateResources()
 			// Copy all vertex information.
 			for (int vertIndex = 0; vertIndex < m_vertices.size(); vertIndex++)
 			{
-				char* destination = (m_interleavedData.data() + (vertIndex * m_vertexBufferFormat.vertexSize)) + bindingOffset;
+				char* destination = (interleavedData.data() + (vertIndex * m_vertexBufferFormat.vertexSize)) + bindingOffset;
 				if (dataExists)
 				{
 					char* source = (char*)sourceData + (vertIndex * streamSize);
@@ -302,7 +303,7 @@ void Mesh::UpdateResources()
 
 		// Build vertex buffer.
 		m_vertexBuffer = m_graphics->CreateVertexBuffer(StringFormat("%s Vertex Buffer", m_name.c_str()), m_vertexBufferFormat, (int)m_vertices.size());
-		m_vertexBuffer->Stage((void*)m_interleavedData.data(), 0, (int)m_interleavedData.size());
+		m_vertexBuffer->Stage((void*)interleavedData.data(), 0, (int)interleavedData.size());
 
 		m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 			buffer->Upload(m_vertexBuffer);

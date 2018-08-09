@@ -7,7 +7,7 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Engine/FrameTime.h"
-#include "Engine/Components/World.h"
+#include "Engine/ECS/World.h"
 
 class IPlatform;
 class IWindow;

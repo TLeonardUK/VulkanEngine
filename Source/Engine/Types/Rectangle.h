@@ -3,6 +3,8 @@
 
 struct Rect
 {
+	static const Rect Empty;
+
 	float x, y, width, height;
 
 	Rect() = default;

@@ -42,7 +42,7 @@ const Array<const char*> VulkanGraphics::DeviceLayersToRequest = {
 };
 
 const Array<const char*> VulkanGraphics::InstanceExtensionsToRequest = {
-	  VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+	VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 };
 
 const Array<const char*> VulkanGraphics::InstanceLayersToRequest = {

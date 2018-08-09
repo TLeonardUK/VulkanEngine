@@ -40,19 +40,22 @@
         "gbuffer0":
         {
             "Type": "Sampler",
-            "Binding": 1,
+            "Binding": 0,
+			"Set": 0,
             "BindTo": "GBuffer0"
         },
         "gbuffer1":
         {
             "Type": "Sampler",
-            "Binding": 2,
+            "Binding": 1,
+			"Set": 0,
             "BindTo": "GBuffer1"
         },
         "gbuffer2":
         {
             "Type": "Sampler",
-            "Binding": 3,
+            "Binding": 2,
+			"Set": 0,
             "BindTo": "GBuffer2"
         }
     }

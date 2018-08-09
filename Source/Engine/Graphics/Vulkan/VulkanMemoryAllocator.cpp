@@ -100,6 +100,7 @@ bool VulkanMemoryAllocator::Build()
 	VmaAllocatorCreateInfo allocatorInfo = {};
 	allocatorInfo.physicalDevice = m_physicalDevice;
 	allocatorInfo.device = m_device;
+	//allocatorInfo.preferredLargeHeapBlockSize = 1024 * 16;
 	
 	CheckVkResultReturnOnFail(vmaCreateAllocator(&allocatorInfo, &m_allocator));
 
@@ -200,6 +201,6 @@ void VulkanMemoryAllocator::UpdateStatistics()
 
 	Stat_Rendering_Memory_PoolBlockCount.Set(stats.total.blockCount);
 	Stat_Rendering_Memory_PoolAllocationCount.Set(stats.total.allocationCount);
-	Stat_Rendering_Memory_PoolUsedBytes.Set(stats.total.usedBytes);
-	Stat_Rendering_Memory_PoolUnusedBytes.Set(stats.total.unusedBytes);	
+	Stat_Rendering_Memory_PoolUsedBytes.Set((double)stats.total.usedBytes);
+	Stat_Rendering_Memory_PoolUnusedBytes.Set((double)stats.total.unusedBytes);
 }

@@ -8,7 +8,6 @@
 #include "Engine/Graphics/Vulkan/VulkanVertexBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanIndexBuffer.h"
 #include "Engine/Graphics/Vulkan/VulkanResourceSet.h"
-#include "Engine/Graphics/Vulkan/VulkanResourceSetInstance.h"
 #include "Engine/Graphics/Vulkan/VulkanImage.h"
 #include "Engine/Graphics/Vulkan/VulkanImageView.h"
 
@@ -209,8 +208,22 @@ void VulkanCommandBuffer::Clear(const std::shared_ptr<IGraphicsImage>& image, Co
 	clearValue.depthStencil.depth = depth;
 	clearValue.depthStencil.stencil = static_cast<uint32_t>(stencil);
 
+	VkImageAspectFlags aspectFlags = 0;
+	if (vulkanImage->IsDepth())
+	{
+		aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+	if (vulkanImage->IsStencil())
+	{
+		aspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+	if (!vulkanImage->IsDepth() && !vulkanImage->IsStencil())
+	{
+		aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+
 	VkImageSubresourceRange imageRange = {};
-	imageRange.aspectMask = vulkanImage->IsDepth() ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+	imageRange.aspectMask = aspectFlags;
 	imageRange.levelCount = 1;
 	imageRange.layerCount = 1;
 
@@ -308,26 +321,24 @@ void VulkanCommandBuffer::TransitionResourceSets(const Array<std::shared_ptr<IGr
 	}
 }
 
-void VulkanCommandBuffer::SetResourceSetInstances(const std::shared_ptr<IGraphicsResourceSetInstance>* values, int count)
+void VulkanCommandBuffer::SetResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count)
 {
+	if (count == 0)
+	{
+		return;
+	}
+
 	assert(m_activePipeline != nullptr);
 
-	uint32_t descriptorSetCount = 0;
-	uint32_t uboOffsetCount = 0;
+	int descriptorSetCount = 0;
+	int uboOffsetCount = 0;
 
 	for (int i = 0; i < count; i++)
 	{
-		std::shared_ptr<VulkanResourceSetInstance> vulkanBufferInstance = std::static_pointer_cast<VulkanResourceSetInstance>(values[i]);
-		for (int j = 0; j < vulkanBufferInstance->m_setCount; j++)
-		{
-			assert(descriptorSetCount < VulkanGraphics::MAX_BOUND_DESCRIPTOR_SETS);
-			m_descriptorSetBuffer[descriptorSetCount++] = vulkanBufferInstance->m_sets[j];
-		}
-		for (int j = 0; j < vulkanBufferInstance->m_uboCount; j++)
-		{
-			assert(uboOffsetCount < VulkanGraphics::MAX_BOUND_UBO);
-			m_uniformBufferOffsetBuffer[uboOffsetCount++] = vulkanBufferInstance->m_uniformBufferOffsets[j];
-		}
+		std::shared_ptr<VulkanResourceSet> vulkanBuffer = std::static_pointer_cast<VulkanResourceSet>(values[i]);
+		vulkanBuffer->UpdateResources();
+		vulkanBuffer->GetUniformBufferOffsets(m_uniformBufferOffsetBuffer, &uboOffsetCount);
+		vulkanBuffer->GetDescriptorSets(m_descriptorSetBuffer, &descriptorSetCount);
 	}
 
 	vkCmdBindDescriptorSets(

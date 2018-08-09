@@ -10,7 +10,7 @@ class IGraphicsFramebuffer;
 class IGraphicsIndexBuffer;
 class IGraphicsVertexBuffer;
 class IGraphicsPipeline;
-class IGraphicsResourceSetInstance;
+class IGraphicsResourceSet;
 
 class IGraphicsCommandBuffer
 {
@@ -42,7 +42,7 @@ public:
 
 	virtual void TransitionResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count) = 0;
 	virtual void TransitionResourceSets(const Array<std::shared_ptr<IGraphicsResourceSet>*>& values) = 0;
-	virtual void SetResourceSetInstances(const std::shared_ptr<IGraphicsResourceSetInstance>* values, int count) = 0;
+	virtual void SetResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count) = 0;
 
 	virtual void DrawElements(int vertexCount, int instanceCount, int vertexOffset, int instanceOffset) = 0;
 	virtual void DrawIndexedElements(int indexCount, int instanceCount, int indexOffset, int vertexOffset, int instanceOffset) = 0;

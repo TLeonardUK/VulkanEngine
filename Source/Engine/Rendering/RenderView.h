@@ -10,10 +10,10 @@ struct MeshComponent;
 struct RenderMesh
 {
 	MeshComponent* MeshComponent;
-	std::shared_ptr<Mesh> Mesh;
-	int MeshIndex;
+	Mesh* Mesh;
 };
 
+/*
 struct RenderLine
 {
 	Vector3 Start;
@@ -50,4 +50,4 @@ private:
 	std::shared_ptr<IGraphicsVertexBuffer> LineVertexBuffer;
 	std::shared_ptr<IGraphicsIndexBuffer> LineIndexBuffer;
 
-};
+};*/

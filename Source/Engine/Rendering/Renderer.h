@@ -7,6 +7,7 @@
 #include "Engine/Resources/Types/MaterialPropertyCollection.h"
 #include "Engine/Resources/Types/Model.h"
 #include "Engine/Resources/Types/Material.h"
+#include "Engine/Resources/Types/MaterialRenderData.h"
 
 #include "Engine/Rendering/RenderView.h"
 
@@ -38,8 +39,11 @@ extern const MaterialPropertyHash GBuffer2Hash;
 
 enum class RenderCommandStage
 {
-	PreRender,
-	PostViewsRendered
+	PreRender,	// Before primary render buffers.
+	Shadow,		// Shadow map rendering.
+	Render,		// During primary render buffers.
+	Debug,		// Debug rendering stage.
+	PostRender, // After gbuffer etc has completed.
 };
 
 struct RenderCommand
@@ -48,35 +52,6 @@ struct RenderCommand
 
 	RenderCommandStage stage;
 	CommandSignature_t command;
-};
-
-struct MeshInstance
-{
-	std::shared_ptr<IGraphicsResourceSet> resourceSet;
-	std::shared_ptr<IGraphicsResourceSetInstance> resourceSetInstance;
-	std::shared_ptr<IGraphicsIndexBuffer> indexBuffer;
-	std::shared_ptr<IGraphicsVertexBuffer> vertexBuffer;
-	int indexCount;
-};
-
-struct MaterialBatch
-{
-	Material* material;
-	Array<MeshInstance> meshInstances;
-	int meshInstanceCount;
-};
-
-struct MaterialRenderSubBatch
-{
-	MaterialBatch* batch;
-	int startIndex;
-	int endIndex;
-};
-
-struct MaterialRenderBatch
-{
-	Material* material;
-	Array<MeshInstance*> meshInstances;
 };
 
 class Renderer
@@ -88,6 +63,10 @@ private:
 		std::shared_ptr<IGraphicsUniformBuffer> buffer;
 		UniformBufferLayout layout;
 	};
+	struct GlobalResourceSet
+	{
+		MaterialResourceSet description;
+	};
 
 	// todo: I do not like this manual vertex binding, may cause issues with
 	// renderers with non-c style packing. We should just create a model out of the 
@@ -98,10 +77,10 @@ private:
 		Vector2 uv;
 	};
 
-	struct DebugLineVertex
+	struct QueuedBuffer
 	{
-		Vector3 position;
-		Vector4 color;
+		RenderCommandStage stage;
+		std::shared_ptr<IGraphicsCommandBuffer> buffer;
 	};
 
 	struct ThreadLocalCommandBufferPoolFrameData
@@ -126,8 +105,6 @@ private:
 		Array<ThreadLocalCommandBufferPoolFrameData> frameData;
 	};
 
-	static const int MaxMeshesPerBatch = 500;
-
 private:
 	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<IGraphics> m_graphics;
@@ -144,7 +121,6 @@ private:
 	std::shared_ptr<IGraphicsResourceSetPool> m_resourceSetPool;
 
 	std::shared_ptr<IGraphicsRenderPass> m_resolveToSwapChainRenderPass;
-
 	std::shared_ptr<IGraphicsRenderPass> m_gbufferRenderPass;
 
 	Array<std::shared_ptr<IGraphicsFramebuffer>> m_swapChainFramebuffers;
@@ -160,10 +136,6 @@ private:
 	std::recursive_mutex m_queuedRenderCommandsMutex;
 	Array<RenderCommand> m_queuedRenderCommands;
 
-	std::mutex m_renderViewsMutex;
-	Array<std::shared_ptr<RenderView>> m_renderViews;
-	Array<std::shared_ptr<RenderView>> m_freeRenderViews;
-
 	static const int GBufferImageCount = 3;
 	std::shared_ptr<IGraphicsImage> m_gbufferImages[GBufferImageCount];
 	std::shared_ptr<IGraphicsImageView> m_gbufferViews[GBufferImageCount];
@@ -176,8 +148,8 @@ private:
 	ResourcePtr<Material> m_clearGBufferMaterial;
 	std::shared_ptr<MaterialRenderData> m_clearGBufferMaterialRenderData;
 
-	ResourcePtr<Material> m_debugLineMaterial;
-	std::shared_ptr<MaterialRenderData> m_debugLineMaterialRenderData;
+	ResourcePtr<Shader> m_depthOnlyShader;
+	std::shared_ptr<IGraphicsRenderPass> m_depthOnlyRenderPass;
 
 	std::shared_ptr<IGraphicsVertexBuffer> m_fullscreenQuadVertexBuffer;
 	std::shared_ptr<IGraphicsIndexBuffer> m_fullscreenQuadIndexBuffer;
@@ -185,13 +157,11 @@ private:
 
 	ImguiCallbackToken m_debugMenuCallbackToken;
 
-	Array<Dictionary<Material*, MaterialBatch>> m_asyncMaterialBatches;
-	Dictionary<Material*, MaterialBatch> m_materialBatches;
-	Array<MaterialRenderBatch> m_materialRenderBatches;
-	Array<std::shared_ptr<IGraphicsCommandBuffer>> m_batchBuffers;
-	Array<std::shared_ptr<IGraphicsCommandBuffer>> m_batchTransitionBuffers;
-	 
 	Dictionary<size_t, GlobalUniformBuffer> m_globalUniformBuffers;
+	Dictionary<size_t, GlobalResourceSet> m_globalResourceSets;
+
+	std::mutex m_queuedBuffersMutex;
+	Array<QueuedBuffer> m_queuedBuffers;
 
 	// Debug functionality.
 	bool m_drawGBufferEnabled;
@@ -213,34 +183,22 @@ private:
 
 	void SwapChainModified();
 
-	void BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer);
-
-	void BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer);
-	void BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer);
-	void BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer);
+	void BuildPreRenderCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer);
+	void BuildPostRenderCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer);
 
 	std::shared_ptr<IGraphicsResourceSet> AllocateResourceSet(const GraphicsResourceSetDescription& set);
 
 	void RunQueuedCommands(RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer> buffer);
 
-	std::shared_ptr<IGraphicsRenderPass> GetRenderPassForTarget(FrameBufferTarget target);
-	std::shared_ptr<IGraphicsFramebuffer> GetFramebufferForTarget(FrameBufferTarget target);
-
 	void DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material, std::shared_ptr<MaterialRenderData>* materialRenderData);
 
-	void UpdateGlobalUniformBuffers();
-
 	std::shared_ptr<ThreadLocalCommandBufferPool>& GetCommandBufferPoolForThread();
-	std::shared_ptr<IGraphicsCommandBuffer> RequestSecondaryBuffer();
-	std::shared_ptr<IGraphicsCommandBuffer> RequestPrimaryBuffer();
-
+	
 	void UpdateStatistics();
 	void UpdateCommandBufferPools();
 
 public:
 	Renderer(std::shared_ptr<Logger> m_logger, std::shared_ptr<IGraphics> graphics);
-
-	void QueueRenderCommand(RenderCommandStage stage, RenderCommand::CommandSignature_t callback);
 
 	void InitDebugMenus(std::shared_ptr<ImguiManager> manager);
 	void ShowStatisticTree(Statistic* stat);
@@ -251,18 +209,37 @@ public:
 
 	bool IsRenderingFrozen();
 	bool IsDrawBoundsEnabled();
+	bool IsWireframeEnabled();
 
-	std::shared_ptr<RenderView> QueueView();
+	void UpdateGlobalResources();
+	void UpdateGlobalResourceSets();
+	void UpdateGlobalUniformBuffers();
 
 	MaterialPropertyCollection& GetGlobalMaterialProperties();
 	int GetSwapChainWidth();
 	int GetSwapChainHeight();
 
+	ResourcePtr<Shader> GetDepthOnlyShader();
+
+	std::shared_ptr<IGraphicsRenderPass> GetRenderPassForTarget(FrameBufferTarget target);
+	std::shared_ptr<IGraphicsFramebuffer> GetFramebufferForTarget(FrameBufferTarget target);
+
 	std::shared_ptr<IGraphicsFramebuffer> GetCurrentFramebuffer();
 
-	void RegisterGlobalUniformBuffer(const UniformBufferLayout& layout);
+	std::shared_ptr<IGraphicsUniformBuffer> RegisterGlobalUniformBuffer(const UniformBufferLayout& layout);
 	std::shared_ptr<IGraphicsUniformBuffer> GetGlobalUniformBuffer(uint64_t hashCode);
 
+	std::shared_ptr<IGraphicsResourceSet> RegisterGlobalResourceSet(const MaterialResourceSet& set);
+	std::shared_ptr<IGraphicsResourceSet> GetGlobalResourceSet(uint64_t hashCode);
+	
 	void UpdateMaterialRenderData(std::shared_ptr<MaterialRenderData>* data, const std::shared_ptr<Material>& material, MaterialPropertyCollection* collection);
+
+	std::shared_ptr<IGraphicsCommandBuffer> RequestSecondaryBuffer();
+	std::shared_ptr<IGraphicsCommandBuffer> RequestPrimaryBuffer();
+
+	void QueuePrimaryBuffer(RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer);
+
+	void QueueRenderCommand(RenderCommandStage stage, RenderCommand::CommandSignature_t callback);
+
 
 };

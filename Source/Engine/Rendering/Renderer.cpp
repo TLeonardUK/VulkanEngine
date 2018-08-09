@@ -11,7 +11,6 @@
 
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsResourceSet.h"
-#include "Engine/Graphics/GraphicsResourceSetInstance.h"
 
 #include "Engine/UI/ImguiManager.h"
 
@@ -215,11 +214,11 @@ void Renderer::CreateResources()
 {
 	m_resourceSetPool = m_graphics->CreateResourceSetPool("Main Resource Set Pool");
 
-	// todo: we should abstract this all into rendering-task classes.
-	m_resolveToSwapchainMaterial = m_resourceManager->Load<Material>("Engine/Materials/resolve_to_swapchain.json");
 	m_clearGBufferMaterial = m_resourceManager->Load<Material>("Engine/Materials/clear_gbuffer.json");
-	m_debugLineMaterial = m_resourceManager->Load<Material>("Engine/Materials/debug_line.json");
-	m_debugLineMaterial.WaitUntilLoaded();
+	m_resolveToSwapchainMaterial = m_resourceManager->Load<Material>("Engine/Materials/resolve_to_swapchain.json");
+	m_depthOnlyShader = m_resourceManager->Load<Shader>("Engine/Shaders/depth_only.json");
+
+	m_resourceManager->WaitUntilIdle();
 
 	VertexBufferBindingDescription description;
 	m_resolveToSwapchainMaterial.Get()->GetVertexBufferFormat(description);
@@ -262,6 +261,7 @@ void Renderer::FreeSwapChainDependentResources()
 	m_depthBufferImage = nullptr;
 	m_depthBufferView = nullptr;
 	m_resolveToSwapChainRenderPass = nullptr;
+	m_depthOnlyRenderPass = nullptr;
 	m_swapChainFramebuffers.clear();
 
 	for (int i = 0; i < m_commandBufferPools.size(); i++)
@@ -279,20 +279,34 @@ void Renderer::FreeSwapChainDependentResources()
 
 void Renderer::CreateSwapChainDependentResources()
 {
-	// Create render pass.
-	GraphicsRenderPassSettings renderPassSettings;
-	renderPassSettings.transitionToPresentFormat = true;
-	renderPassSettings.AddColorAttachment(m_graphics->GetSwapChainFormat(), true);
-	renderPassSettings.AddDepthAttachment(GraphicsFormat::UNORM_D24_UINT_S8);
-
-	GraphicsSubPassIndex subPass1 = renderPassSettings.AddSubPass();
-	renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
-
-	m_resolveToSwapChainRenderPass = m_graphics->CreateRenderPass("Swap Chain Render Pass", renderPassSettings);
-
 	m_swapChainViews = m_graphics->GetSwapChainViews();
 	m_swapChainWidth = m_swapChainViews[0]->GetWidth();
 	m_swapChainHeight = m_swapChainViews[0]->GetHeight();
+
+	// Create render pass.
+	{
+		GraphicsRenderPassSettings renderPassSettings;
+		renderPassSettings.transitionToPresentFormat = true;
+		renderPassSettings.AddColorAttachment(m_graphics->GetSwapChainFormat(), true);
+		renderPassSettings.AddDepthAttachment(GraphicsFormat::UNORM_D24_UINT_S8);
+
+		GraphicsSubPassIndex subPass1 = renderPassSettings.AddSubPass();
+		renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
+
+		m_resolveToSwapChainRenderPass = m_graphics->CreateRenderPass("Swap Chain Render Pass", renderPassSettings);
+	}
+
+	// Create depth-only render pass.
+	{
+		GraphicsRenderPassSettings renderPassSettings;
+		renderPassSettings.transitionToPresentFormat = false;
+		renderPassSettings.AddDepthAttachment(GraphicsFormat::UNORM_D16);
+
+		GraphicsSubPassIndex subPass1 = renderPassSettings.AddSubPass();
+		renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
+
+		m_depthOnlyRenderPass = m_graphics->CreateRenderPass("Depth Only Render Pass", renderPassSettings);
+	}
 
 	// Create depth buffer.
 	m_depthBufferImage = m_graphics->CreateImage("Depth Buffer", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::UNORM_D24_UINT_S8, false, GraphicsUsage::DepthAttachment);
@@ -377,9 +391,9 @@ std::shared_ptr<IGraphicsResourceSet>  Renderer::AllocateResourceSet(const Graph
 	return m_resourceSetPool->Allocate(set);
 }
 
-void Renderer::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer)
+void Renderer::BuildPreRenderCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
-	ProfileScope scope(Color::Red, "Renderer::BuildCommandBuffer");
+	ProfileScope scope(Color::Red, "Renderer::BuildPreRenderCommandBuffer");
 
 	buffer->Reset();
 	buffer->Begin();
@@ -392,25 +406,26 @@ void Renderer::BuildCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer
 	// Clear G-Buffer
 	DrawFullScreenQuad(buffer, m_clearGBufferMaterial.Get(), &m_clearGBufferMaterialRenderData);
 
-	// Render all views to gbuffer.
-	for (auto& view : m_renderViews)
-	{
-		BuildViewCommandBuffer(view, buffer);
-	}
+	buffer->End();
+}
+
+void Renderer::BuildPostRenderCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer)
+{
+	ProfileScope scope(Color::Red, "Renderer::BuildPostRenderCommandBuffer");
+
+	buffer->Reset();
+	buffer->Begin();
+
+	// todo: Transition gbuffer to read-access.
 
 	// Resolve to framebuffer.
 	DrawFullScreenQuad(buffer, m_resolveToSwapchainMaterial.Get(), &m_resolveToSwapchainMaterialRenderData);
 
-	RunQueuedCommands(RenderCommandStage::PostViewsRendered, buffer);
+	// todo: Transition gbuffer to shader-access.
+
+	RunQueuedCommands(RenderCommandStage::PostRender, buffer);
 
 	buffer->End();
-
-	// Clear frame-specific render views.
-	for (auto& iter : m_renderViews)
-	{
-		m_freeRenderViews.push_back(iter);
-	}
-	m_renderViews.clear();
 }
 
 void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material, std::shared_ptr<MaterialRenderData>* materialRenderData)
@@ -425,7 +440,10 @@ void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer
 		m_fullscreenQuadsUploaded = true;
 	}
 
-	buffer->TransitionResourceSets(&(*materialRenderData)->GetResourceSet(), 1);
+
+	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = (*materialRenderData)->GetResourceSets();
+
+	buffer->TransitionResourceSets(resourceSets.data(), resourceSets.size());
 
 	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 	buffer->BeginSubPass();
@@ -437,7 +455,7 @@ void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer
 	buffer->SetIndexBuffer(m_fullscreenQuadIndexBuffer);
 	buffer->SetVertexBuffer(m_fullscreenQuadVertexBuffer);
 
-	buffer->SetResourceSetInstances(&(*materialRenderData)->GetResourceSet()->NewInstance(), 1);
+	buffer->SetResourceSets(resourceSets.data(), resourceSets.size());
 
 	buffer->DrawIndexedElements(6, 1, 0, 0, 0);
 
@@ -445,372 +463,70 @@ void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer
 	buffer->EndPass();
 }
 
-void Renderer::BuildViewCommandBuffer_Meshes(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer)
-{
-	ProfileScope scope(Color::Red, "Renderer::BuildViewCommandBuffer_Meshes");
-
-	// Batch meshes by material.
-	int concurrency = TaskManager::AsyncInstance->GetConcurrency();
-	int chunkSize = (int)Math::Ceil(view->Meshes.size() / (float)concurrency);
-
-	// Resize the batch lists so they have enough space for each material.
-	{
-		ProfileScope scope(Color::Red, "Resize Batch Lists");
-
-		m_asyncMaterialBatches.resize(concurrency);
-		m_materialRenderBatches.clear();
-	}
-
-	// Batch all meshes in parallel.
-	ParallelFor(concurrency, [&](int index)
-	{
-		ProfileScope scope(Color::Red, "Batch meshes");
-
-		Dictionary<Material*, MaterialBatch>& batches = m_asyncMaterialBatches[index];
-
-		for (auto& iter : batches)
-		{
-			iter.second.meshInstanceCount = 0;
-			if (iter.second.meshInstances.size() < view->Meshes.size())
-			{
-				iter.second.meshInstances.resize(view->Meshes.size());
-			}
-		}
-
-		// todo: batch in parallel, each thread makes its own list, which is then combined.
-		int startIndex = (index * chunkSize);
-		int endIndex = Math::Min((int)view->Meshes.size(), startIndex + chunkSize);
-
-		for (int i = startIndex; i < endIndex; i++)
-		{
-			ProfileScope scope(Color::Red, "Mesh");
-			auto& visibleMesh = view->Meshes[i];
-
-			Material* material = &*visibleMesh.Mesh->GetMaterial().Get();
-			MaterialBatch* batch = nullptr;
-
-			auto batchIter = batches.find(material);
-			if (batchIter != batches.end())
-			{
-				batch = &batchIter->second;
-			}
-			else
-			{
-				batches.emplace(material, MaterialBatch());
-
-				batch = &batches[material];
-				batch->material = material;
-				batch->meshInstanceCount = 0;
-				batch->meshInstances.resize(view->Meshes.size());
-			}
-
-			// Update mesh state.
-			visibleMesh.Mesh->UpdateResources();
-
-			UpdateMaterialRenderData(
-				&visibleMesh.MeshComponent->renderData[visibleMesh.MeshIndex],
-				visibleMesh.Mesh->GetMaterial().Get(),
-				&visibleMesh.MeshComponent->properties);
-
-			std::shared_ptr<MaterialRenderData>& renderData = visibleMesh.MeshComponent->renderData[visibleMesh.MeshIndex];
-
-			// Create new instance.
-			MeshInstance& instance = batch->meshInstances[batch->meshInstanceCount++];
-			instance.resourceSet = renderData->GetResourceSet();
-			// todo: don't request new descriptor set if binding has not changed.
-			{
-				ProfileScope scope(Color::Red, "Resource Set Request");
-				instance.resourceSetInstance = renderData->GetResourceSetInstance();
-			}
-			instance.indexBuffer = visibleMesh.Mesh->GetIndexBuffer();
-			instance.vertexBuffer = visibleMesh.Mesh->GetVertexBuffer();
-			instance.indexCount = visibleMesh.Mesh->GetIndexCount();
-
-			Stat_Rendering_Budgets_MeshesRendered.Add(1);
-			Stat_Rendering_Budgets_TrianglesRendered.Add(instance.indexCount / 3);
-		}
-	}, 1, "Mesh Batching");
-
-	// Make list of all batch types available.
-	int totalMeshInstances = 0;
-	{
-		ProfileScope scope(Color::Red, "Combine Batches");
-
-		for (int i = 0; i < concurrency; i++)
-		{
-			for (auto& iter : m_asyncMaterialBatches[i])
-			{
-				if (iter.second.meshInstanceCount > 0)
-				{
-					int instanceOffset = 0;
-					while (instanceOffset < iter.second.meshInstanceCount)
-					{
-						MaterialRenderBatch* batch = nullptr;
-
-						for (int j = 0; j < m_materialRenderBatches.size(); j++)
-						{
-							if (m_materialRenderBatches[j].material == iter.first &&
-								m_materialRenderBatches[j].meshInstances.size() < MaxMeshesPerBatch)
-							{
-								batch = &m_materialRenderBatches[j];
-								break;
-							}
-						}
-
-						if (batch == nullptr)
-						{
-							m_materialRenderBatches.push_back(MaterialRenderBatch());
-							batch = &m_materialRenderBatches[m_materialRenderBatches.size() - 1];
-
-							batch->material = iter.first;
-						}
-
-						int spaceAvailable = MaxMeshesPerBatch - batch->meshInstances.size();
-						int itemsLeft = iter.second.meshInstanceCount - instanceOffset;
-						int itemsToAdd = Math::Min(spaceAvailable, itemsLeft);
-
-						batch->meshInstances.reserve(batch->meshInstances.size() + itemsToAdd);
-						for (int k = 0; k < itemsToAdd; k++)
-						{
-							batch->meshInstances.push_back(&iter.second.meshInstances[instanceOffset + k]);
-						}
-						instanceOffset += itemsToAdd;
-						totalMeshInstances += itemsToAdd;
-					}
-				}
-			}
-		}
-	}
-
-	// Draw each batch.
-	m_batchBuffers.resize(m_materialRenderBatches.size());
-	//m_batchTransitionBuffers.resize(m_materialRenderBatches.size());
-
-	// Generate command buffers for each batch.
-	ParallelFor(m_materialRenderBatches.size(), [&](int index)
-	{
-		std::shared_ptr<IGraphicsCommandBuffer> drawBuffer;
-		std::shared_ptr<IGraphicsCommandBuffer> transitionBuffer;
-		{
-			ProfileScope scope2(Color::White, "Allocate Buffer");
-			drawBuffer = RequestSecondaryBuffer();
-			transitionBuffer = RequestSecondaryBuffer();
-		}
-		m_batchBuffers[index] = drawBuffer;
-		//m_batchTransitionBuffers[index] = transitionBuffer;
-
-		MaterialRenderBatch& batch = m_materialRenderBatches[index];
-
-		ProfileScope scope(Color::Red, "Render material batch: " + batch.material->m_name);
-
-		// Generate transition buffer.
-		//for (int i = 0; i < batch.meshInstances.size(); i++)
-		//{
-		//	transitionBuffer->TransitionResourceSets(&batch.meshInstances[i]->resourceSet, 1);
-		//}
-
-		// Generate drawing buffer.
-		drawBuffer->Begin(batch.material->GetRenderPass(), batch.material->GetFrameBuffer());
-
-		if (m_drawWireframeEnabled)
-		{
-			drawBuffer->SetPipeline(batch.material->GetWireframePipeline());
-		}
-		else
-		{
-			drawBuffer->SetPipeline(batch.material->GetPipeline());
-		}
-
-		drawBuffer->SetScissor(
-			static_cast<int>(view->Viewport.x),
-			static_cast<int>(view->Viewport.y),
-			static_cast<int>(view->Viewport.width),
-			static_cast<int>(view->Viewport.height)
-		);
-		drawBuffer->SetViewport(
-			static_cast<int>(view->Viewport.x),
-			static_cast<int>(view->Viewport.y),
-			static_cast<int>(view->Viewport.width),
-			static_cast<int>(view->Viewport.height)
-		);
-
-		{
-			ProfileScope scope(Color::Black, "Draw Meshes");
-			for (int i = 0; i < batch.meshInstances.size(); i++)
-			{
-				MeshInstance& instance = *batch.meshInstances[i];
-				drawBuffer->SetIndexBuffer(instance.indexBuffer);
-				drawBuffer->SetVertexBuffer(instance.vertexBuffer);
-				drawBuffer->SetResourceSetInstances(&instance.resourceSetInstance, 1);
-				drawBuffer->DrawIndexedElements(instance.indexCount, 1, 0, 0, 0);
-			}
-		}
-
-		drawBuffer->End();
-
-	}, 1, "Command Buffer Creation");
-
-	// Dispatch all buffers.
-	{
-		ProfileScope scope(Color::Red, "Dispatch Buffers");
-		for (int i = 0; i < m_batchBuffers.size(); i++)
-		{
-			MaterialRenderBatch& batch = m_materialRenderBatches[i];
-
-			//buffer->Dispatch(m_batchTransitionBuffers[i]);
-
-			buffer->BeginPass(batch.material->GetRenderPass(), batch.material->GetFrameBuffer(), false);
-			buffer->BeginSubPass();
-
-			buffer->Dispatch(m_batchBuffers[i]);
-
-			buffer->EndSubPass();
-			buffer->EndPass();
-		}
-	}
-
-	Stat_Rendering_Budgets_BatchesRendered.Add(m_batchBuffers.size());
-}
-
-void Renderer::BuildViewCommandBuffer_Lines(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer)
-{
-	ProfileScope scope(Color::Red, "Renderer::BuildViewCommandBuffer_Lines");
-
-	Array<uint32_t> lineIndices;
-	Array<DebugLineVertex> lineVerts;
-	lineVerts.resize(view->Lines.size() * 2);
-	lineIndices.resize(view->Lines.size() * 2);
-
-	for (size_t i = 0; i < view->Lines.size(); i++)
-	{
-		RenderLine& line = view->Lines[i];
-
-		lineVerts[(i * 2) + 0].position = line.Start;
-		lineVerts[(i * 2) + 0].color = line.LineColor.ToVector();
-		lineVerts[(i * 2) + 1].position = line.End;
-		lineVerts[(i * 2) + 1].color = line.LineColor.ToVector();
-
-		lineIndices[(i * 2) + 0] = static_cast<uint32_t>((i * 2) + 0);
-		lineIndices[(i * 2) + 1] = static_cast<uint32_t>((i * 2) + 1);
-	}
-
-	if (lineVerts.size() == 0)
-	{
-		return;
-	}
-
-	if (view->LineVertexBuffer == nullptr || lineVerts.size() > view->LineVertexBuffer->GetCapacity())
-	{
-		VertexBufferBindingDescription description;
-		m_debugLineMaterial.Get()->GetVertexBufferFormat(description);
-
-		view->LineVertexBuffer = m_graphics->CreateVertexBuffer("Debug Line Vertex Buffer", description, static_cast<int>(lineVerts.size()));
-	}
-
-	if (view->LineIndexBuffer == nullptr || lineIndices.size() > view->LineIndexBuffer->GetCapacity())
-	{
-		view->LineIndexBuffer = m_graphics->CreateIndexBuffer("Debug Line Index Buffer", sizeof(uint32_t), static_cast<int>(lineIndices.size()));
-	}
-
-	view->LineVertexBuffer->Stage(lineVerts.data(), 0, static_cast<int>(lineVerts.size()) * sizeof(DebugLineVertex));
-	view->LineIndexBuffer->Stage(lineIndices.data(), 0, static_cast<int>(lineIndices.size()) * sizeof(uint32_t));
-
-	buffer->Upload(view->LineVertexBuffer);
-	buffer->Upload(view->LineIndexBuffer);
-
-	std::shared_ptr<Material> material = m_debugLineMaterial.Get();
-	material->UpdateResources();
-	UpdateMaterialRenderData(&m_debugLineMaterialRenderData, material, &m_globalMaterialProperties);
-
-	buffer->TransitionResourceSets(&m_debugLineMaterialRenderData->GetResourceSet(), 1);
-
-	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
-	buffer->BeginSubPass();
-
-	buffer->SetPipeline(material->GetPipeline());
-	buffer->SetScissor(
-		static_cast<int>(view->Viewport.x),
-		static_cast<int>(view->Viewport.y),
-		static_cast<int>(view->Viewport.width),
-		static_cast<int>(view->Viewport.height)
-	);
-	buffer->SetViewport(
-		static_cast<int>(view->Viewport.x),
-		static_cast<int>(view->Viewport.y),
-		static_cast<int>(view->Viewport.width),
-		static_cast<int>(view->Viewport.height)
-	);
-
-	buffer->SetIndexBuffer(view->LineIndexBuffer);
-	buffer->SetVertexBuffer(view->LineVertexBuffer);
-	buffer->SetResourceSetInstances(&m_debugLineMaterialRenderData->GetResourceSet()->NewInstance(), 1);
-
-	buffer->DrawIndexedElements(static_cast<int>(view->Lines.size() * 2), 1, 0, 0, 0);
-
-	buffer->EndSubPass();
-	buffer->EndPass();
-}
-
-void Renderer::BuildViewCommandBuffer(std::shared_ptr<RenderView> view, std::shared_ptr<IGraphicsCommandBuffer> buffer)
-{
-	ProfileScope scope(Color::Red, "Renderer::BuildViewCommandBuffer");
-
-	m_globalMaterialProperties.Set(ViewMatrixHash, view->ViewMatrix);
-	m_globalMaterialProperties.Set(ProjectionMatrixHash, view->ProjectionMatrix);
-	m_globalMaterialProperties.Set(CameraPositionHash, view->CameraPosition);
-
-	// Update global buffers.
-	UpdateGlobalUniformBuffers();
-
-	// TODO: Z Pre Pass
-
-	// Draw the scene.
-	BuildViewCommandBuffer_Meshes(view, buffer);
-	BuildViewCommandBuffer_Lines(view, buffer);
-
-	// pipeline sync here.
-
-	// TODO: Light accumulation.
-
-	// resolve gbuffer layouts to read access?
-}
-
 void Renderer::Present()
 {
 	ProfileScope scope(Color::Red, "Renderer::Present");
 
-	// Reset command buffers for this frame.
-	UpdateCommandBufferPools();
+	// Allocate and build a pre-render command buffer.
+	std::shared_ptr<IGraphicsCommandBuffer> preRenderCommandBuffer = RequestPrimaryBuffer();
+	BuildPreRenderCommandBuffer(preRenderCommandBuffer);
+	QueuePrimaryBuffer(RenderCommandStage::PreRender, preRenderCommandBuffer);
 
-	// Allocate and build a primary command buffer.
-	std::shared_ptr<IGraphicsCommandBuffer> commandBuffer = RequestPrimaryBuffer();
-	BuildCommandBuffer(commandBuffer);
-	m_graphics->Dispatch(commandBuffer);
+	// Allocate and build a post-render command buffer.
+	std::shared_ptr<IGraphicsCommandBuffer> postRenderCommandBuffer = RequestPrimaryBuffer();
+	BuildPostRenderCommandBuffer(postRenderCommandBuffer);
+	QueuePrimaryBuffer(RenderCommandStage::PostRender, postRenderCommandBuffer);
 
+	// Sort queues.
+	std::sort(m_queuedBuffers.begin(), m_queuedBuffers.end(),
+		[](const QueuedBuffer& a, const QueuedBuffer& b) -> bool
+	{
+		return (int)a.stage < (int)b.stage;
+	});
+
+	// Dispatch all buffers.
+	Array<std::shared_ptr<IGraphicsCommandBuffer>> buffers;
+	for (auto& buffer : m_queuedBuffers)
+	{
+		m_graphics->Dispatch(buffer.buffer);
+	}
+	m_queuedBuffers.clear();
+
+	// Increment frame counter.
 	m_frameCounter++;
 	m_frameIndex = m_frameCounter % m_swapChainViews.size();
 
+	// Present.
 	if (m_graphics->Present())
 	{
 		SwapChainModified();
 	}
+
+	// Reset command buffers for this frame.
+	UpdateCommandBufferPools();
 }
 
-void Renderer::RegisterGlobalUniformBuffer(const UniformBufferLayout& layout)
+std::shared_ptr<IGraphicsUniformBuffer> Renderer::RegisterGlobalUniformBuffer(const UniformBufferLayout& layout)
 {
 	// Already exists?
-	if (GetGlobalUniformBuffer(layout.HashCode) != nullptr)
+	std::shared_ptr<IGraphicsUniformBuffer> originalBuffer = GetGlobalUniformBuffer(layout.HashCode);
+	if (originalBuffer != nullptr)
 	{
-		return;
+		return originalBuffer;
 	}
 
 	int dataSize = layout.GetSize();
+
+	GraphicsResourceSetDescription description;
+	description.AddBinding(layout.Name, 0, GraphicsBindingType::UniformBufferObject);
 
 	GlobalUniformBuffer buffer;
 	buffer.layout = layout;
 	buffer.buffer = m_graphics->CreateUniformBuffer(StringFormat("Global UBO (%s)", layout.Name.c_str()), dataSize);
 
 	m_globalUniformBuffers.emplace(layout.HashCode, buffer);
+
+	return buffer.buffer;
 }
 
 std::shared_ptr<IGraphicsUniformBuffer> Renderer::GetGlobalUniformBuffer(uint64_t hashCode)
@@ -822,6 +538,56 @@ std::shared_ptr<IGraphicsUniformBuffer> Renderer::GetGlobalUniformBuffer(uint64_
 	}
 
 	return iter->second.buffer;
+}
+
+std::shared_ptr<IGraphicsResourceSet> Renderer::RegisterGlobalResourceSet(const MaterialResourceSet& set)
+{
+	// Already exists?
+	std::shared_ptr<IGraphicsResourceSet> originalBuffer = GetGlobalResourceSet(set.hashCode);
+	if (originalBuffer != nullptr)
+	{
+		return originalBuffer;
+	}
+
+	GlobalResourceSet buffer;
+	buffer.description = set;
+
+	m_globalResourceSets.emplace(set.hashCode, buffer);
+
+	return buffer.description.set;
+}
+
+std::shared_ptr<IGraphicsResourceSet> Renderer::GetGlobalResourceSet(uint64_t hashCode)
+{
+	auto iter = m_globalResourceSets.find(hashCode);
+	if (iter == m_globalResourceSets.end())
+	{
+		return nullptr;
+	}
+
+	return iter->second.description.set;
+}
+
+void Renderer::UpdateGlobalResources()
+{
+	UpdateGlobalUniformBuffers();
+	UpdateGlobalResourceSets();
+}
+
+void Renderer::UpdateGlobalResourceSets()
+{
+	Array<std::shared_ptr<IGraphicsUniformBuffer>> emptyUboList;
+
+	for (auto& set : m_globalResourceSets)
+	{
+		set.second.description.UpdateBindings(
+			shared_from_this(),
+			m_logger,
+			emptyUboList,
+			&m_globalMaterialProperties,
+			nullptr,
+			set.second.description.set);
+	}
 }
 
 void Renderer::UpdateGlobalUniformBuffers()
@@ -851,6 +617,11 @@ int Renderer::GetSwapChainHeight()
 	return m_swapChainHeight;
 }
 
+ResourcePtr<Shader> Renderer::GetDepthOnlyShader()
+{
+	return m_depthOnlyShader;
+}
+
 std::shared_ptr<IGraphicsFramebuffer> Renderer::GetCurrentFramebuffer()
 {
 	return m_swapChainFramebuffers[m_frameIndex];
@@ -866,22 +637,9 @@ bool Renderer::IsDrawBoundsEnabled()
 	return m_drawBoundsEnabled;
 }
 
-std::shared_ptr<RenderView> Renderer::QueueView()
+bool Renderer::IsWireframeEnabled()
 {
-	std::lock_guard<std::mutex> lock(m_renderViewsMutex);
-
-	if (m_freeRenderViews.size() > 0)
-	{
-		std::shared_ptr<RenderView> back = m_freeRenderViews.back();
-		m_freeRenderViews.pop_back();
-		m_renderViews.push_back(back);
-		return back;
-	}
-
-	std::shared_ptr<RenderView> view = std::make_shared<RenderView>();
-	m_renderViews.push_back(view);
-
-	return view;
+	return m_drawWireframeEnabled;
 }
 
 std::shared_ptr<IGraphicsRenderPass> Renderer::GetRenderPassForTarget(FrameBufferTarget target)
@@ -895,6 +653,10 @@ std::shared_ptr<IGraphicsRenderPass> Renderer::GetRenderPassForTarget(FrameBuffe
 	case FrameBufferTarget::SwapChain:
 		{
 			return m_resolveToSwapChainRenderPass;
+		}
+	case FrameBufferTarget::DepthBuffer:
+		{
+			return m_depthOnlyRenderPass;
 		}
 	}
 
@@ -912,6 +674,10 @@ std::shared_ptr<IGraphicsFramebuffer> Renderer::GetFramebufferForTarget(FrameBuf
 	case FrameBufferTarget::SwapChain:
 		{
 			return GetCurrentFramebuffer();
+		}
+	case FrameBufferTarget::DepthBuffer:
+		{
+			return nullptr;
 		}
 	}
 
@@ -1006,4 +772,14 @@ void Renderer::UpdateCommandBufferPools()
 			pool->frameData[frameIndex].secondaryBuffersAllocated = 0;
 		}
 	}
+}
+
+void Renderer::QueuePrimaryBuffer(RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer)
+{
+	std::lock_guard<std::mutex> lock(m_queuedBuffersMutex);
+
+	QueuedBuffer qbuffer;
+	qbuffer.stage = stage;
+	qbuffer.buffer = buffer;
+	m_queuedBuffers.push_back(qbuffer);
 }

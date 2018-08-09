@@ -6,12 +6,21 @@
 #include "Engine/Resources/Types/Shader.h"
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Utilities/Statistic.h"
+#include "Engine/Types/Hash.h"
 
 const char* Material::Tag = "Material";
 
 Statistic Stat_Resources_MaterialCount("Resources/Material Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
-Material::Material(std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer> renderer, std::shared_ptr<Logger> logger, const String& name, ResourcePtr<Shader> shader, MaterialPropertyCollection& properties)
+Material::Material(
+	std::shared_ptr<IGraphics> graphics, 
+	std::shared_ptr<Renderer> renderer, 
+	std::shared_ptr<Logger> logger, 
+	const String& name, 
+	ResourcePtr<Shader> shader, 
+	MaterialPropertyCollection& properties, 
+	std::weak_ptr<Material> variantParent,
+	MaterialVariant variant)
 	: m_graphics(graphics)
 	, m_renderer(renderer)
 	, m_logger(logger)
@@ -19,6 +28,9 @@ Material::Material(std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer
 	, m_shader(shader)
 	, m_dirty(true)
 	, m_properties(properties)
+	, m_variantParent(variantParent)
+	, m_variantsCreated(false)
+	, m_variant(variant)
 {
 	Stat_Resources_MaterialCount.Add(1);
 }
@@ -26,6 +38,11 @@ Material::Material(std::shared_ptr<IGraphics> graphics, std::shared_ptr<Renderer
 Material::~Material()
 {
 	Stat_Resources_MaterialCount.Add(-1);
+}
+
+std::shared_ptr<Material> Material::GetVariant(MaterialVariant variant)
+{
+	return m_variants[(int)variant];
 }
 
 ResourcePtr<Shader> Material::GetShader()
@@ -48,7 +65,7 @@ String Material::GetName()
 	return m_name;
 }
 
-bool Material::GetVertexBufferFormat(VertexBufferBindingDescription& vertexBufferFormat)
+bool Material::GetVertexBufferFormat(VertexBufferBindingDescription& vertexBufferFormat, Array<ShaderVertexStream> remapToStreams)
 {
 	std::shared_ptr<Shader> shader = m_shader.Get();
 
@@ -60,6 +77,14 @@ bool Material::GetVertexBufferFormat(VertexBufferBindingDescription& vertexBuffe
 	{
 		m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not calculate vertex buffer format. Shader does not have a vertex pipeline stage defined.", m_name.c_str());
 		return false;
+	}
+
+	// If we are a variant, get format from parent, so we can re-use index/vert buffers created
+	// for the base material.
+	std::shared_ptr<Material> parent = m_variantParent.lock();
+	if (parent != nullptr)
+	{
+		return parent->GetVertexBufferFormat(vertexBufferFormat, vertexStage->Streams);
 	}
 
 	// Figure out vertex size.
@@ -79,6 +104,8 @@ bool Material::GetVertexBufferFormat(VertexBufferBindingDescription& vertexBuffe
 		}
 	}
 	vertexBufferFormat.SetVertexSize(vertexSize);
+
+	int remappedStreamCount = 0;
 
 	// Build interleaved vertex data.
 	int bindingOffset = 0;
@@ -142,16 +169,36 @@ bool Material::GetVertexBufferFormat(VertexBufferBindingDescription& vertexBuffe
 		}
 		}
 
-		vertexBufferFormat.AddAttribute(stream.Name, stream.Location, streamFormat, vertexSize, bindingOffset);
+		if (remapToStreams.size() > 0)
+		{
+			for (auto& remapStream : remapToStreams)
+			{
+				if (remapStream.BindTo == stream.BindTo)
+				{
+					vertexBufferFormat.AddAttribute(remapStream.Name, remapStream.Location, streamFormat, vertexSize, bindingOffset);
+					remappedStreamCount++;
+				}
+			}
+		}
+		else
+		{
+			vertexBufferFormat.AddAttribute(stream.Name, stream.Location, streamFormat, vertexSize, bindingOffset);
+		}
 		bindingOffset += streamSize;
+	}
+
+	if (remapToStreams.size() > 0 && remappedStreamCount != remapToStreams.size())
+	{
+		m_logger->WriteWarning(LogCategory::Resources, "[0x%08x %-30s] variant %i of 0x%08x Parent of variant material does not contain vertex streams that variant wants to bind. Material variant may not behave correctly.", this, m_name.c_str(), m_variant, this);
+		return false;
 	}
 
 	return true;
 }
 
-GraphicsResourceSetDescription Material::GetResourceSetDescription()
+const Array<MaterialResourceSet>& Material::GetResourceSets()
 {
-	return m_resourceSetDescription;
+	return m_resourceSets;
 }
 
 void Material::UpdateResources()
@@ -159,6 +206,8 @@ void Material::UpdateResources()
 	std::shared_ptr<Shader> shader = m_shader.Get();
 	if (shader != m_lastUpdatedShader)
 	{
+		//printf("[0x%08x %-30s], shader changed from 0x%08x to 0x%08x\n",
+		//	this, GetName().c_str(), &*m_lastUpdatedShader, &*shader);
 		m_lastUpdatedShader = shader;
 		m_dirty = true;
 	}
@@ -172,7 +221,92 @@ void Material::UpdateResources()
 		}
 		m_dirty = false;
 
+		//printf("[0x%08x %-30s] Recreated due to dirty state\n", this, GetName().c_str());
 		RecreateResources();
+	}
+
+	// Create variants if not already made.
+	if (!m_variantsCreated && m_variantParent.lock() == nullptr)
+	{
+		m_variants[(int)MaterialVariant::Normal] = shared_from_this();
+		m_variants[(int)MaterialVariant::DepthOnly] = std::make_shared<Material>(
+			m_graphics,
+			m_renderer,
+			m_logger,
+			m_name + " (Depth Only)",
+			m_renderer->GetDepthOnlyShader(),
+			m_properties,
+			shared_from_this(),
+			MaterialVariant::DepthOnly
+		);
+		m_variantsCreated = true;
+	}
+
+	// Update variants.
+	for (int i = 0; i < (int)MaterialVariant::Count; i++)
+	{
+		if (static_cast<MaterialVariant>(i) != MaterialVariant::Normal && m_variants[i] != nullptr)
+		{
+			m_variants[i]->UpdateResources();
+		}
+	}
+}
+
+void Material::GetResourceSetsForShader(std::shared_ptr<Shader>& shader, Array<MaterialResourceSet>& resourceSets)
+{
+	const Array<ShaderBinding>& bindings = shader->GetBindings();
+	resourceSets.clear();
+
+	// Count all resource sets in use.
+	int totalSets = 0;
+	for (const ShaderBinding& binding : bindings)
+	{
+		if (binding.Set + 1 > totalSets)
+		{
+			totalSets = binding.Set + 1;
+		}
+	}
+	for (int i = 0; i < totalSets; i++)
+	{
+		MaterialResourceSet set;
+		set.description = {};
+		set.isGlobal = true;
+		set.set = nullptr;
+		set.hashCode = 1;
+		set.name = m_name;
+
+		resourceSets.push_back(set);
+	}
+
+	// Generate descriptors set descriptions..
+	for (const ShaderBinding& binding : bindings)
+	{
+		resourceSets[binding.Set].description.AddBinding(binding.Name, binding.Binding, binding.Type);
+		resourceSets[binding.Set].bindings.push_back(binding);
+
+		// If ubo is a global, make sure to register it with the renderer to be filled.
+		if (binding.Type == GraphicsBindingType::UniformBufferObject &&
+			binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Global)
+		{
+			m_renderer->RegisterGlobalUniformBuffer(binding.UniformBufferLayout);
+		}
+		else
+		{
+			resourceSets[binding.Set].isGlobal = false;
+		}
+	}
+
+	// Allocate/Register each resource-set.
+	for (auto& set : m_resourceSets)
+	{
+		set.CalculateHashCode();
+
+		set.set = m_renderer->AllocateResourceSet(set.description);
+
+		if (set.isGlobal)
+		{
+			set.set = m_renderer->RegisterGlobalResourceSet(set);
+		}
 	}
 }
 
@@ -181,40 +315,36 @@ void Material::RecreateResources()
 	std::shared_ptr<Shader> shader = m_shader.Get();
 
 	VertexBufferBindingDescription vertexBufferFormat;
-	if (!GetVertexBufferFormat(vertexBufferFormat))
+
+	//printf("[0x%08x %-30s] Recreating resources for shader variant %i\n", this, GetName().c_str(), m_variant);
+
+	if (!GetVertexBufferFormat(vertexBufferFormat, {}))
 	{
 		return;
 	}
 
-	// Create resource set and uniform buffers as appropriate.
-	m_resourceSetDescription = {};
-
-	const Array<ShaderBinding>& bindings = shader->GetBindings();
-	for (const ShaderBinding& binding : bindings)
-	{
-		m_resourceSetDescription.AddBinding(binding.Name, binding.Binding, binding.Type);
-
-		// If ubo is a global, make sure to register it with the renderer to be filled.
-		if (binding.Type == GraphicsBindingType::UniformBufferObject &&
-			binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Global)
-		{
-			m_renderer->RegisterGlobalUniformBuffer(binding.UniformBufferLayout);
-		}
-	}
-
-	m_resourceSet = m_renderer->AllocateResourceSet(m_resourceSetDescription);
+	GetResourceSetsForShader(shader, m_resourceSets);
 
 	// Create pipeline.
-	GraphicsPipelineSettings pipelineSettings = shader->GetPipelineDescription();
-	pipelineSettings.RenderPass = GetRenderPass();
-	pipelineSettings.VertexFormatDescription = vertexBufferFormat;
-	pipelineSettings.HasVertexFormatDescription = true;
-	pipelineSettings.ResourceSets.push_back(m_resourceSet);
+	GraphicsPipelineSettings pipelineSettings;
+	{
+		pipelineSettings = shader->GetPipelineDescription();
+		pipelineSettings.RenderPass = GetRenderPass();
+		pipelineSettings.VertexFormatDescription = vertexBufferFormat;
+		pipelineSettings.HasVertexFormatDescription = true;
+		for (auto& set : m_resourceSets)
+		{
+			pipelineSettings.ResourceSets.push_back(set.set);
+		}
 
-	m_pipeline = m_graphics->CreatePipeline(StringFormat("%s Pipeline", m_name.c_str()), pipelineSettings);
+		m_pipeline = m_graphics->CreatePipeline(StringFormat("%s Pipeline", m_name.c_str()), pipelineSettings);
+	}
 
-	pipelineSettings.PolygonMode = GraphicsPolygonMode::Line;
-	m_wireframePipeline = m_graphics->CreatePipeline(StringFormat("%s Pipeline (Wireframe)", m_name.c_str()), pipelineSettings);
+	// Create wireframe pipeline.
+	{
+		pipelineSettings.PolygonMode = GraphicsPolygonMode::Line;
+		m_wireframePipeline = m_graphics->CreatePipeline(StringFormat("%s Pipeline (Wireframe)", m_name.c_str()), pipelineSettings);
+	}
 }
 
 MaterialPropertyCollection& Material::GetProperties()
@@ -232,69 +362,7 @@ std::shared_ptr<IGraphicsFramebuffer> Material::GetFrameBuffer()
 	return  m_renderer->GetFramebufferForTarget(m_shader.Get()->GetTarget());
 }
 
-MaterialRenderData::MaterialRenderData(
-	const std::shared_ptr<Logger>& logger,
-	const std::shared_ptr<Renderer>& renderer,
-	const std::shared_ptr<IGraphics>& graphics)
-	: m_logger(logger)
-	, m_renderer(renderer)
-	, m_graphics(graphics)
-{
-}
-
-void MaterialRenderData::Update(
-	const std::shared_ptr<Material>& material,
-	MaterialPropertyCollection* meshPropertiesCollection)
-{
-	bool regenerate = true;
-
-	if (&*material != &*m_lastKnownMaterial)
-	{
-		/*m_logger->WriteInfo(LogCategory::Engine, "Mateiral changed from %s to %s",
-			material == nullptr ? "null" : material->GetName().c_str(),
-			m_lastKnownMaterial == nullptr ? "null" : m_lastKnownMaterial->GetName().c_str()
-		);*/
-
-		m_lastKnownMaterial = material;
-		m_lastMeshPropertiesVersion = -1;
-		m_lastMaterialPropertiesVersion = -1;
-
-		Recreate();
-	}
-
-	int meshPropertiesVersion = (meshPropertiesCollection != nullptr ? meshPropertiesCollection->GetVersion() : m_lastMeshPropertiesVersion);
-	int materialPropertiesVersion = material->GetProperties().GetVersion();
-
-	if (meshPropertiesVersion != m_lastMeshPropertiesVersion ||
-		materialPropertiesVersion != m_lastMaterialPropertiesVersion)
-	{
-		UpdateBindings(meshPropertiesCollection);
-
-		m_lastMaterialPropertiesVersion = materialPropertiesVersion;
-		m_lastMeshPropertiesVersion = meshPropertiesVersion;
-	}
-}
-
-const std::shared_ptr<IGraphicsResourceSet>& MaterialRenderData::GetResourceSet()
-{
-	return m_resourceSet;
-}
-
-const std::shared_ptr<IGraphicsResourceSetInstance>& MaterialRenderData::GetResourceSetInstance()
-{
-	if (m_resourceSetInstance == nullptr)
-	{
-		m_resourceSetInstance = m_resourceSet->NewInstance();
-	}
-	else
-	{
-		m_resourceSet->UpdateInstance(m_resourceSetInstance);
-	}
-
-	return m_resourceSetInstance;
-}
-
-MaterialProperty* MaterialRenderData::GetMaterialPropertyFromCollections(MaterialPropertyHash hash, MaterialPropertyCollection** collections, int collectionCount)
+MaterialProperty* GetMaterialPropertyFromCollections(MaterialPropertyHash hash, MaterialPropertyCollection** collections, int collectionCount)
 {
 	MaterialProperty* prop = nullptr;
 
@@ -310,39 +378,35 @@ MaterialProperty* MaterialRenderData::GetMaterialPropertyFromCollections(Materia
 	return nullptr;
 }
 
-void MaterialRenderData::Recreate()
+void MaterialResourceSet::CalculateHashCode()
 {
-	m_resourceSet = m_renderer->AllocateResourceSet(m_lastKnownMaterial->GetResourceSetDescription());
+	hashCode = 1;
 
-	const Array<ShaderBinding>& bindings = m_lastKnownMaterial->GetShader().Get()->GetBindings();
+	CombineHash(hashCode, bindings.size());
 
-	m_uniformBuffers.clear();
-
-	for (const ShaderBinding& binding : bindings)
+	for (ShaderBinding& binding : bindings)
 	{
-		if (binding.Type == GraphicsBindingType::UniformBufferObject)
-		{
-			if (binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Mesh)
-			{
-				int dataSize = binding.UniformBufferLayout.GetSize();
-
-				std::shared_ptr<IGraphicsUniformBuffer> uniformBuffer = m_graphics->CreateUniformBuffer(
-					StringFormat("%s (%s)", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str()),
-					dataSize);
-
-				m_uniformBuffers.push_back(uniformBuffer);
-			}
-		}
+		CombineHash(hashCode, binding.Binding);
+		CombineHash(hashCode, binding.Set);
+		CombineHash(hashCode, binding.BindTo);
+		CombineHash(hashCode, binding.Name);
+		CombineHash(hashCode, binding.Type);
+		CombineHash(hashCode, binding.UniformBufferLayout.HashCode);
 	}
 }
 
-void MaterialRenderData::UpdateBindings(MaterialPropertyCollection* meshPropertiesCollection)
+void MaterialResourceSet::UpdateBindings(
+	const std::shared_ptr<Renderer>& renderer,
+	const std::shared_ptr<Logger>& logger,
+	const Array<std::shared_ptr<IGraphicsUniformBuffer>>& meshUbos,
+	MaterialPropertyCollection* meshPropertiesCollection,
+	MaterialPropertyCollection* materialPropertiesCollection,
+	const std::shared_ptr<IGraphicsResourceSet>& updateSet
+)
 {
-	Array<ShaderBinding> bindings = m_lastKnownMaterial->GetShader().Get()->GetBindings();
-
 	MaterialPropertyCollection* meshFrequencyPropertyCollections[2] = {
 		meshPropertiesCollection,
-		&m_lastKnownMaterial->GetProperties()
+		materialPropertiesCollection,
 	};
 
 	int meshUboIndex = 0;
@@ -357,19 +421,20 @@ void MaterialRenderData::UpdateBindings(MaterialPropertyCollection* meshProperti
 
 				if (binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Global)
 				{
-					buffer = m_renderer->GetGlobalUniformBuffer(binding.UniformBufferLayout.HashCode);
+					buffer = renderer->GetGlobalUniformBuffer(binding.UniformBufferLayout.HashCode);
 				}
 				else if (binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Mesh)
 				{
-					buffer = m_uniformBuffers[meshUboIndex++];
-					binding.UniformBufferLayout.FillBuffer(m_logger, buffer, meshFrequencyPropertyCollections, 2);
+					buffer = meshUbos[meshUboIndex++];
+					binding.UniformBufferLayout.FillBuffer(logger, buffer, meshFrequencyPropertyCollections, 2);
 				}
 				else
 				{
 					assert(false);
 				}
 
-				m_resourceSet->UpdateBinding(binding.Binding, 0, buffer);
+				updateSet->UpdateBinding(binding.Binding, 0, buffer);
+
 				break;
 			}
 		case GraphicsBindingType::Sampler:
@@ -377,7 +442,7 @@ void MaterialRenderData::UpdateBindings(MaterialPropertyCollection* meshProperti
 				MaterialProperty* matBinding = GetMaterialPropertyFromCollections(binding.BindToHash, meshFrequencyPropertyCollections, 2);
 				if (matBinding == nullptr)
 				{
-					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property '%s' does not exist.", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str(), binding.BindTo.c_str());
+					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property '%s' does not exist.", name.c_str(), binding.Name.c_str(), binding.BindTo.c_str());
 					continue;
 				}
 
@@ -386,7 +451,7 @@ void MaterialRenderData::UpdateBindings(MaterialPropertyCollection* meshProperti
 					String expectedFormat = EnumToString<GraphicsBindingFormat>(GraphicsBindingFormat::Texture);
 					String actualFormat = EnumToString<GraphicsBindingFormat>(matBinding->Format);
 
-					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property format is '%s' expected '%s'.", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
+					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property format is '%s' expected '%s'.", name.c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
 					continue;
 				}
 
@@ -394,11 +459,11 @@ void MaterialRenderData::UpdateBindings(MaterialPropertyCollection* meshProperti
 				if (matBinding->Value_ImageSampler == nullptr &&
 					matBinding->Value_ImageView == nullptr)
 				{
-					m_resourceSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
+					updateSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
 				}
 				else
 				{
-					m_resourceSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
+					updateSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
 				}
 
 				break;
@@ -408,7 +473,7 @@ void MaterialRenderData::UpdateBindings(MaterialPropertyCollection* meshProperti
 				MaterialProperty* matBinding = GetMaterialPropertyFromCollections(binding.BindToHash, meshFrequencyPropertyCollections, 2);
 				if (matBinding == nullptr)
 				{
-					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property '%s' does not exist.", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str(), binding.BindTo.c_str());
+					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property '%s' does not exist.", name.c_str(), binding.Name.c_str(), binding.BindTo.c_str());
 					continue;
 				}
 
@@ -417,7 +482,7 @@ void MaterialRenderData::UpdateBindings(MaterialPropertyCollection* meshProperti
 					String expectedFormat = EnumToString<GraphicsBindingFormat>(GraphicsBindingFormat::TextureCube);
 					String actualFormat = EnumToString<GraphicsBindingFormat>(matBinding->Format);
 
-					m_logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property format is '%s' expected '%s'.", m_lastKnownMaterial->GetName().c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
+					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property format is '%s' expected '%s'.", name.c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
 					continue;
 				}
 
@@ -425,11 +490,11 @@ void MaterialRenderData::UpdateBindings(MaterialPropertyCollection* meshProperti
 				if (matBinding->Value_ImageSampler == nullptr &&
 					matBinding->Value_ImageView == nullptr)
 				{
-					m_resourceSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
+					updateSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
 				}
 				else
 				{
-					m_resourceSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
+					updateSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
 				}
 
 				break;

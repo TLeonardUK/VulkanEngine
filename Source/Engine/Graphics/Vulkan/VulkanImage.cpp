@@ -103,7 +103,9 @@ bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format
 	m_format = GraphicsFormatToVkFormat(format);
 	m_layerSize = width * height * GraphicsFormatBytesPerPixel(format);
 	m_memorySize = m_layerSize * layers;
-	m_isDepth = (format == GraphicsFormat::UNORM_D24_UINT_S8);
+	m_isDepth = (
+		format == GraphicsFormat::UNORM_D24_UINT_S8 ||
+		format == GraphicsFormat::UNORM_D16);
 
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -185,6 +187,11 @@ VkExtent3D VulkanImage::GetVkExtents()
 bool VulkanImage::IsDepth()
 {
 	return m_isDepth;
+}
+
+bool VulkanImage::IsStencil()
+{
+	return (m_format == VK_FORMAT_D24_UNORM_S8_UINT);
 }
 
 int VulkanImage::GetWidth()

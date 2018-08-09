@@ -169,18 +169,11 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Components\Aspect.cpp" />
-    <ClCompile Include="Components\AspectCollection.cpp" />
-    <ClCompile Include="Components\Camera\FlyCameraMovementSystem.cpp" />
-    <ClCompile Include="Components\Camera\RenderCameraViewsSystem.cpp" />
-    <ClCompile Include="Components\Component.cpp" />
-    <ClCompile Include="Components\Mesh\MeshBoundsUpdateSystem.cpp" />
-    <ClCompile Include="Components\Mesh\MeshComponent.cpp" />
-    <ClCompile Include="Components\System.cpp" />
-    <ClCompile Include="Components\Transform\TransformComponent.cpp" />
-    <ClCompile Include="Components\Transform\TransformUtils.cpp" />
-    <ClCompile Include="Components\Transform\TransformSystem.cpp" />
-    <ClCompile Include="Components\World.cpp" />
+    <ClCompile Include="ECS\Aspect.cpp" />
+    <ClCompile Include="ECS\AspectCollection.cpp" />
+    <ClCompile Include="ECS\Component.cpp" />
+    <ClCompile Include="ECS\System.cpp" />
+    <ClCompile Include="ECS\World.cpp" />
     <ClCompile Include="Engine\Engine.cpp" />
     <ClCompile Include="Engine\GameInstance.cpp" />
     <ClCompile Include="Engine\Logging.cpp" />
@@ -204,7 +197,6 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClCompile Include="Graphics\Vulkan\VulkanPipeline.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanRenderPass.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanResourceSet.cpp" />
-    <ClCompile Include="Graphics\Vulkan\VulkanResourceSetInstance.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanResourceSetPool.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanSampler.cpp" />
     <ClCompile Include="Graphics\Vulkan\VulkanShader.cpp" />
@@ -218,6 +210,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Checked|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Platform\Sdl\SdlPlatform.cpp" />
+    <ClCompile Include="Rendering\MeshBatcher.cpp" />
     <ClCompile Include="Rendering\Renderer.cpp" />
     <ClCompile Include="Rendering\RendererEnums.cpp" />
     <ClCompile Include="Rendering\RenderView.cpp" />
@@ -225,6 +218,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClCompile Include="Resources\ResourceManager.cpp" />
     <ClCompile Include="Resources\Types\Material.cpp" />
     <ClCompile Include="Resources\Types\MaterialPropertyCollection.cpp" />
+    <ClCompile Include="Resources\Types\MaterialRenderData.cpp" />
     <ClCompile Include="Resources\Types\MaterialResourceLoader.cpp" />
     <ClCompile Include="Resources\Types\Model.cpp" />
     <ClCompile Include="Resources\Types\ModelResourceLoader.cpp" />
@@ -234,15 +228,28 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClCompile Include="Resources\Types\TextureCube.cpp" />
     <ClCompile Include="Resources\Types\TextureCubeResourceLoader.cpp" />
     <ClCompile Include="Resources\Types\TextureResourceLoader.cpp" />
+    <ClCompile Include="Systems\Camera\FlyCameraMovementSystem.cpp" />
+    <ClCompile Include="Systems\Mesh\MeshBoundsUpdateSystem.cpp" />
+    <ClCompile Include="Systems\Mesh\ModelMeshCreationSystem.cpp" />
+    <ClCompile Include="Systems\Render\RenderDebugSystem.cpp" />
+    <ClCompile Include="Systems\Render\RenderDirectionalShadowMapSystem.cpp" />
+    <ClCompile Include="Systems\Render\RenderCameraViewSystem.cpp" />
+    <ClCompile Include="Systems\Transform\SpatialIndexSystem.cpp" />
+    <ClCompile Include="Systems\Transform\TransformSystem.cpp" />
+    <ClCompile Include="Systems\Transform\TransformUtils.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />
     <ClCompile Include="Threading\ParallelFor.cpp" />
     <ClCompile Include="Threading\TaskManager.cpp" />
     <ClCompile Include="Types\Color.cpp" />
+    <ClCompile Include="Types\Frustum.cpp" />
     <ClCompile Include="Types\Math.cpp" />
     <ClCompile Include="Types\Matrix.cpp" />
+    <ClCompile Include="Types\OctTree.cpp" />
     <ClCompile Include="Types\Quaternion.cpp" />
+    <ClCompile Include="Types\Rectangle.cpp" />
+    <ClCompile Include="Types\Sphere.cpp" />
     <ClCompile Include="Types\String.cpp" />
     <ClCompile Include="Types\Timeout.cpp" />
     <ClCompile Include="Types\Vector.cpp" />
@@ -255,22 +262,20 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Build.h" />
-    <ClInclude Include="Components\Aspect.h" />
-    <ClInclude Include="Components\AspectCollection.h" />
     <ClInclude Include="Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Components\Camera\FlyCameraComponent.h" />
-    <ClInclude Include="Components\Camera\FlyCameraMovementSystem.h" />
-    <ClInclude Include="Components\Camera\RenderCameraViewsSystem.h" />
-    <ClInclude Include="Components\Component.h" />
-    <ClInclude Include="Components\ComponentPool.h" />
-    <ClInclude Include="Components\Mesh\MeshBoundsUpdateSystem.h" />
+    <ClInclude Include="Components\Lighting\DirectionalLightComponent.h" />
     <ClInclude Include="Components\Mesh\MeshComponent.h" />
-    <ClInclude Include="Components\MessageQueue.h" />
-    <ClInclude Include="Components\System.h" />
+    <ClInclude Include="Components\Mesh\ModelComponent.h" />
+    <ClInclude Include="Components\Transform\BoundsComponent.h" />
     <ClInclude Include="Components\Transform\TransformComponent.h" />
-    <ClInclude Include="Components\Transform\TransformUtils.h" />
-    <ClInclude Include="Components\Transform\TransformSystem.h" />
-    <ClInclude Include="Components\World.h" />
+    <ClInclude Include="ECS\Aspect.h" />
+    <ClInclude Include="ECS\AspectCollection.h" />
+    <ClInclude Include="ECS\Component.h" />
+    <ClInclude Include="ECS\ComponentPool.h" />
+    <ClInclude Include="ECS\MessageQueue.h" />
+    <ClInclude Include="ECS\System.h" />
+    <ClInclude Include="ECS\World.h" />
     <ClInclude Include="Engine\Engine.h" />
     <ClInclude Include="Engine\FrameTime.h" />
     <ClInclude Include="Engine\GameInstance.h" />
@@ -292,7 +297,6 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Graphics\GraphicsShader.h" />
     <ClInclude Include="Graphics\GraphicsUniformBuffer.h" />
     <ClInclude Include="Graphics\GraphicsVertexBuffer.h" />
-    <ClInclude Include="Graphics\GraphicsResourceSetInstance.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanCommandBuffer.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanCommandBufferPool.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanDeviceInfo.h" />
@@ -301,7 +305,6 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Graphics\Vulkan\VulkanEnums.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanFramebuffer.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanGraphics.h" />
-    <ClInclude Include="Graphics\Vulkan\VulkanResourceSetInstance.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanImage.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanImageView.h" />
     <ClInclude Include="Graphics\Vulkan\VulkanIndexBuffer.h" />
@@ -321,6 +324,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\Sdl\SdlPlatform.h" />
     <ClInclude Include="Profiling\Profiling.h" />
+    <ClInclude Include="Rendering\MeshBatcher.h" />
     <ClInclude Include="Rendering\Renderer.h" />
     <ClInclude Include="Rendering\RendererEnums.h" />
     <ClInclude Include="Rendering\RenderView.h" />
@@ -330,6 +334,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Resources\ResourceManager.h" />
     <ClInclude Include="Resources\Types\Material.h" />
     <ClInclude Include="Resources\Types\MaterialPropertyCollection.h" />
+    <ClInclude Include="Resources\Types\MaterialRenderData.h" />
     <ClInclude Include="Resources\Types\MaterialResourceLoader.h" />
     <ClInclude Include="Resources\Types\Model.h" />
     <ClInclude Include="Resources\Types\ModelResourceLoader.h" />
@@ -339,6 +344,15 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Resources\Types\TextureCube.h" />
     <ClInclude Include="Resources\Types\TextureCubeResourceLoader.h" />
     <ClInclude Include="Resources\Types\TextureResourceLoader.h" />
+    <ClInclude Include="Systems\Camera\FlyCameraMovementSystem.h" />
+    <ClInclude Include="Systems\Mesh\MeshBoundsUpdateSystem.h" />
+    <ClInclude Include="Systems\Mesh\ModelMeshCreationSystem.h" />
+    <ClInclude Include="Systems\Render\RenderDebugSystem.h" />
+    <ClInclude Include="Systems\Render\RenderDirectionalShadowMapSystem.h" />
+    <ClInclude Include="Systems\Render\RenderCameraViewSystem.h" />
+    <ClInclude Include="Systems\Transform\SpatialIndexSystem.h" />
+    <ClInclude Include="Systems\Transform\TransformSystem.h" />
+    <ClInclude Include="Systems\Transform\TransformUtils.h" />
     <ClInclude Include="ThirdParty\imgui\imconfig.h" />
     <ClInclude Include="ThirdParty\imgui\imgui.h" />
     <ClInclude Include="ThirdParty\imgui\imgui_internal.h" />
@@ -352,17 +366,20 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Types\Dictionary.h" />
     <ClInclude Include="Types\Frustum.h" />
     <ClInclude Include="Types\Hash.h" />
+    <ClInclude Include="Types\HashArray.h" />
     <ClInclude Include="Types\Math.h" />
     <ClInclude Include="Types\Matrix.h" />
     <ClInclude Include="Types\Matrix2.h" />
     <ClInclude Include="Types\Matrix3.h" />
     <ClInclude Include="Types\Matrix4.h" />
+    <ClInclude Include="Types\OctTree.h" />
     <ClInclude Include="Types\OrientedBounds.h" />
     <ClInclude Include="Types\Plane.h" />
     <ClInclude Include="Types\Quaternion.h" />
     <ClInclude Include="Types\Queue.h" />
     <ClInclude Include="Types\Rectangle.h" />
     <ClInclude Include="Types\Set.h" />
+    <ClInclude Include="Types\Sphere.h" />
     <ClInclude Include="Types\String.h" />
     <ClInclude Include="Types\Array.h" />
     <ClInclude Include="Types\Timeout.h" />
