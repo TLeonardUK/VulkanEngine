@@ -45,7 +45,7 @@ private:
 	VkCommandBuffer GetCommandBuffer();
 
 	void TransitionImage(VulkanImage* image, VkImageLayout dstLayout);
-	void TransitionImage(VkImage image, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout, bool isDepth, int layerCount);
+	void TransitionImage(VkImage image, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout, VkFormat format, int layerCount);
 
 public:
 	VulkanCommandBuffer(

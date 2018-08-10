@@ -411,13 +411,13 @@ void VulkanCommandBuffer::TransitionImage(VulkanImage* image, VkImageLayout dstL
 				image->m_mipLevels,
 				srcLayout,
 				dstLayout,
-				image->m_isDepth,
+				image->m_format,
 				image->m_layers);
 		}
 	}
 }
 
-void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout, bool isDepth, int layerCount)
+void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageLayout srcLayout, VkImageLayout dstLayout, VkFormat format, int layerCount)
 {
 	if (srcLayout == dstLayout)
 	{
@@ -432,7 +432,6 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = image;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = mipLevels;
 	barrier.subresourceRange.layerCount = layerCount;
@@ -441,15 +440,28 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 	VkPipelineStageFlags sourceStage;
 	VkPipelineStageFlags destinationStage;
 
+	VkImageAspectFlags aspectFlags = 0;
+
+	bool isDepth = (format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D16_UNORM);
+	bool isStencil = (format == VK_FORMAT_D24_UNORM_S8_UINT);
+
 	if (isDepth)
 	{
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-	}
-	else 
-	{
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
 	}
 
+	if (isStencil)
+	{
+		aspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+
+	if (!isDepth && !isStencil)
+	{
+		aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+
+	barrier.subresourceRange.aspectMask = aspectFlags;
+	
 	if (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED)
 	{
 		if (dstLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)

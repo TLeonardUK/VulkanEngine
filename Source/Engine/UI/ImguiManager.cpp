@@ -358,110 +358,118 @@ void ImguiManager::EndFrame()
 
 	m_vertexBuffer->Stage(vertexData.data(), 0, (int)vertexData.size());
 	m_indexBuffer->Stage(indexData.data(), 0, (int)indexData.size());
+	
+	//m_renderer->QueueRenderCommand(RenderCommandStage::PostRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+	
+	// Build command buffer to render ui.
+	std::shared_ptr<IGraphicsCommandBuffer> buffer = m_renderer->RequestPrimaryBuffer();
+	buffer->Reset();
+	buffer->Begin();
 
-	m_renderer->QueueRenderCommand(RenderCommandStage::PostRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+	int swapWidth = m_renderer->GetSwapChainWidth();
+	int swapHeight = m_renderer->GetSwapChainHeight();
 
-		int swapWidth = m_renderer->GetSwapChainWidth();
-		int swapHeight = m_renderer->GetSwapChainHeight();
+	int vertexOffset = 0;
+	int indexOffset = 0;
 
-		int vertexOffset = 0;
-		int indexOffset = 0;
+	ImVec2 displayPosition = drawData->DisplayPos;
+	ImVec2 displaySize = drawData->DisplaySize;
 
-		ImVec2 displayPosition = drawData->DisplayPos;
-		ImVec2 displaySize = drawData->DisplaySize;
+	Vector2 scale = Vector2(
+		2.0f / displaySize.x,
+		2.0f / displaySize.y
+	);
+	Vector2 translation = Vector2(
+		-1.0f - displayPosition.x * scale.x,
+		-1.0f - displayPosition.y * scale.y
+	);
 
-		Vector2 scale = Vector2(
-			2.0f / displaySize.x,
-			2.0f / displaySize.y
-		);
-		Vector2 translation = Vector2(
-			-1.0f - displayPosition.x * scale.x,
-			-1.0f - displayPosition.y * scale.y
-		);
+	std::shared_ptr<Material> material = m_material.Get();
 
-		std::shared_ptr<Material> material = m_material.Get();
+	material->GetProperties().Set(ImGuiScale, scale);
+	material->GetProperties().Set(ImGuiTranslation, translation);
+	material->GetProperties().Set(ImGuiTexture, m_fontTexture);
 
-		material->GetProperties().Set(ImGuiScale, scale);
-		material->GetProperties().Set(ImGuiTranslation, translation);
-		material->GetProperties().Set(ImGuiTexture, m_fontTexture);
+	material->UpdateResources();
+	m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
 
-		material->UpdateResources();
-		m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
+	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = m_materialRenderData->GetResourceSets();
 
-		const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = m_materialRenderData->GetResourceSets();
+	buffer->TransitionResourceSets(resourceSets.data(), resourceSets.size());
 
-		buffer->TransitionResourceSets(resourceSets.data(), resourceSets.size());
+	buffer->Upload(m_vertexBuffer);
+	buffer->Upload(m_indexBuffer);
 
-		buffer->Upload(m_vertexBuffer);
-		buffer->Upload(m_indexBuffer);
+	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
+	buffer->BeginSubPass();
 
-		buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
-		buffer->BeginSubPass();
+	buffer->SetPipeline(material->GetPipeline());
+	buffer->SetViewport(0, 0, swapWidth, swapHeight);
 
-		buffer->SetPipeline(material->GetPipeline());
-		buffer->SetViewport(0, 0, swapWidth, swapHeight);
+	buffer->SetIndexBuffer(m_indexBuffer);
+	buffer->SetVertexBuffer(m_vertexBuffer);
+	buffer->SetResourceSets(resourceSets.data(), resourceSets.size());
 
-		buffer->SetIndexBuffer(m_indexBuffer);
-		buffer->SetVertexBuffer(m_vertexBuffer);
-		buffer->SetResourceSets(resourceSets.data(), resourceSets.size());
+	ImTextureID lastTextureId = 0;
 
-		ImTextureID lastTextureId = 0;
-
-		for (int cmdListIndex = 0; cmdListIndex < drawData->CmdListsCount; cmdListIndex++)
+	for (int cmdListIndex = 0; cmdListIndex < drawData->CmdListsCount; cmdListIndex++)
+	{
+		const ImDrawList* cmdList = drawData->CmdLists[cmdListIndex];
+		for (int cmdIndex = 0; cmdIndex < cmdList->CmdBuffer.size(); cmdIndex++)
 		{
-			const ImDrawList* cmdList = drawData->CmdLists[cmdListIndex];
-			for (int cmdIndex = 0; cmdIndex < cmdList->CmdBuffer.size(); cmdIndex++)
-			{
-				const ImDrawCmd* cmd = &cmdList->CmdBuffer[cmdIndex];
+			const ImDrawCmd* cmd = &cmdList->CmdBuffer[cmdIndex];
 			
-				// Update descriptor set with new texture.
-				if (cmd->TextureId != lastTextureId)
+			// Update descriptor set with new texture.
+			if (cmd->TextureId != lastTextureId)
+			{
+				if (cmd->TextureId == 0)
 				{
-					if (cmd->TextureId == 0)
-					{
-						material->GetProperties().Set(ImGuiTexture, m_fontTexture);
-					}
-					else
-					{
-						auto iter = m_storedImages.find(cmd->TextureId);
-						if (iter != m_storedImages.end())
-						{
-							material->GetProperties().Set(ImGuiTexture, iter->second.view, m_fontTexture.Get()->GetSampler());
-						}
-					}
-
-					m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
-					const Array<std::shared_ptr<IGraphicsResourceSet>>& newResourceSets = m_materialRenderData->GetResourceSets();
-					buffer->SetResourceSets(newResourceSets.data(), newResourceSets.size());
-					
-					lastTextureId = cmd->TextureId;
-				}
-
-				// Perform actual draw.
-				if (cmd->UserCallback != nullptr)
-				{
-					cmd->UserCallback(cmdList, cmd);
+					material->GetProperties().Set(ImGuiTexture, m_fontTexture);
 				}
 				else
 				{
-					buffer->SetScissor(
-						(int32_t)(cmd->ClipRect.x - displayPosition.x) > 0 ? (int32_t)(cmd->ClipRect.x - displayPosition.x) : 0,
-						(int32_t)(cmd->ClipRect.y - displayPosition.y) > 0 ? (int32_t)(cmd->ClipRect.y - displayPosition.y) : 0,
-						(uint32_t)(cmd->ClipRect.z - cmd->ClipRect.x),
-						(uint32_t)(cmd->ClipRect.w - cmd->ClipRect.y)
-					);
-
-					buffer->DrawIndexedElements(cmd->ElemCount, 1, indexOffset, vertexOffset, 0);
+					auto iter = m_storedImages.find(cmd->TextureId);
+					if (iter != m_storedImages.end())
+					{
+						material->GetProperties().Set(ImGuiTexture, iter->second.view, m_fontTexture.Get()->GetSampler());
+					}
 				}
 
-				indexOffset += cmd->ElemCount;
+				m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
+				const Array<std::shared_ptr<IGraphicsResourceSet>>& newResourceSets = m_materialRenderData->GetResourceSets();
+				buffer->SetResourceSets(newResourceSets.data(), newResourceSets.size());
+					
+				lastTextureId = cmd->TextureId;
 			}
 
-			vertexOffset += cmdList->VtxBuffer.Size;
+			// Perform actual draw.
+			if (cmd->UserCallback != nullptr)
+			{
+				cmd->UserCallback(cmdList, cmd);
+			}
+			else
+			{
+				buffer->SetScissor(
+					(int32_t)(cmd->ClipRect.x - displayPosition.x) > 0 ? (int32_t)(cmd->ClipRect.x - displayPosition.x) : 0,
+					(int32_t)(cmd->ClipRect.y - displayPosition.y) > 0 ? (int32_t)(cmd->ClipRect.y - displayPosition.y) : 0,
+					(uint32_t)(cmd->ClipRect.z - cmd->ClipRect.x),
+					(uint32_t)(cmd->ClipRect.w - cmd->ClipRect.y)
+				);
+
+				buffer->DrawIndexedElements(cmd->ElemCount, 1, indexOffset, vertexOffset, 0);
+			}
+
+			indexOffset += cmd->ElemCount;
 		}
 
-		buffer->EndSubPass();
-		buffer->EndPass();
+		vertexOffset += cmdList->VtxBuffer.Size;
+	}
 
-	});
+	buffer->EndSubPass();
+	buffer->EndPass();
+
+	buffer->End();
+	m_renderer->QueuePrimaryBuffer(RenderCommandStage::PostResolve, buffer);
+
+	//});
 }

@@ -179,6 +179,7 @@ void RenderDirectionalShadowMapSystem::Tick(
 	const Array<DirectionalLightComponent*>& lights,
 	const Array<const TransformComponent*>& transforms)
 {
+	return;
 	// Draw shadow map for each light.
 	{
 		ProfileScope scope(Color::Blue, "Update Shadow Maps");

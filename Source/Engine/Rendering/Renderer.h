@@ -44,6 +44,7 @@ enum class RenderCommandStage
 	Render,		// During primary render buffers.
 	Debug,		// Debug rendering stage.
 	PostRender, // After gbuffer etc has completed.
+	PostResolve, // After gbuffer has been resolved to screen.
 };
 
 struct RenderCommand
