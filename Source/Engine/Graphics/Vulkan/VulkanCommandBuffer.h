@@ -75,12 +75,11 @@ public:
 
 	virtual void Clear(const std::shared_ptr<IGraphicsImage>& image, Color color, float depth, float stencil);
 
+	virtual void TransitionResource(const std::shared_ptr<IGraphicsImage>& image, GraphicsAccessMask mask);
+
 	virtual void SetPipeline(const std::shared_ptr<IGraphicsPipeline>& pipeline);
 	virtual void SetVertexBuffer(const std::shared_ptr<IGraphicsVertexBuffer>& buffer);
 	virtual void SetIndexBuffer(const std::shared_ptr<IGraphicsIndexBuffer>& buffer);
-
-	virtual void TransitionResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count);
-	virtual void TransitionResourceSets(const Array<std::shared_ptr<IGraphicsResourceSet>*>& values);
 	virtual void SetResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count);
 
 	virtual void DrawElements(int vertexCount, int instanceCount, int vertexOffset, int instanceOffset);

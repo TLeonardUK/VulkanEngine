@@ -286,7 +286,7 @@ void Renderer::CreateSwapChainDependentResources()
 	// Create render pass.
 	{
 		GraphicsRenderPassSettings renderPassSettings;
-		renderPassSettings.transitionToPresentFormat = true;
+		renderPassSettings.transitionToPresentFormat = false;
 		renderPassSettings.AddColorAttachment(m_graphics->GetSwapChainFormat(), true);
 		renderPassSettings.AddDepthAttachment(GraphicsFormat::UNORM_D24_UINT_S8);
 
@@ -391,12 +391,22 @@ std::shared_ptr<IGraphicsResourceSet>  Renderer::AllocateResourceSet(const Graph
 	return m_resourceSetPool->Allocate(set);
 }
 
-void Renderer::BuildPreRenderCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer)
+void Renderer::BuildCommandBuffer_PreRender(std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
-	ProfileScope scope(Color::Red, "Renderer::BuildPreRenderCommandBuffer");
+	ProfileScope scope(Color::Red, "Renderer::BuildCommandBuffer_PreRender");
 
 	buffer->Reset();
 	buffer->Begin();
+
+	// Transition swap chain image to writeable.
+	buffer->TransitionResource(m_swapChainViews[m_frameIndex]->GetImage(), GraphicsAccessMask::ReadWrite);
+	buffer->TransitionResource(m_depthBufferImage, GraphicsAccessMask::ReadWrite);
+
+	// Transition all g-buffer images so they can be written to.
+	for (int i = 0; i < GBufferImageCount; i++)
+	{
+		buffer->TransitionResource(m_gbufferImages[i], GraphicsAccessMask::Write);
+	}
 
 	RunQueuedCommands(RenderCommandStage::PreRender, buffer);
 
@@ -409,22 +419,36 @@ void Renderer::BuildPreRenderCommandBuffer(std::shared_ptr<IGraphicsCommandBuffe
 	buffer->End();
 }
 
-void Renderer::BuildPostRenderCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer)
+void Renderer::BuildCommandBuffer_PostRender(std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
-	ProfileScope scope(Color::Red, "Renderer::BuildPostRenderCommandBuffer");
+	ProfileScope scope(Color::Red, "Renderer::BuildCommandBuffer_PostRender");
 
 	buffer->Reset();
 	buffer->Begin();
 
-	// todo: Transition gbuffer to read-access.
+	// Transition all g-buffer images so they can be read from.
+	for (int i = 0; i < GBufferImageCount; i++)
+	{
+		buffer->TransitionResource(m_gbufferImages[i], GraphicsAccessMask::Read);
+	}
 
 	// Resolve to framebuffer.
 	DrawFullScreenQuad(buffer, m_resolveToSwapchainMaterial.Get(), &m_resolveToSwapchainMaterialRenderData);
 
-	// todo: Transition gbuffer to shader-access.
-
 	RunQueuedCommands(RenderCommandStage::PostRender, buffer);
 
+	buffer->End();
+}
+
+void Renderer::BuildCommandBuffer_PrePresent(std::shared_ptr<IGraphicsCommandBuffer> buffer)
+{
+	ProfileScope scope(Color::Red, "Renderer::BuildCommandBuffer_PrePresent");
+
+	buffer->Reset();
+	buffer->Begin();
+	
+	buffer->TransitionResource(m_swapChainViews[m_frameIndex]->GetImage(), GraphicsAccessMask::Present);
+	
 	buffer->End();
 }
 
@@ -442,8 +466,6 @@ void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer
 
 
 	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = (*materialRenderData)->GetResourceSets();
-
-	buffer->TransitionResourceSets(resourceSets.data(), resourceSets.size());
 
 	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 	buffer->BeginSubPass();
@@ -469,13 +491,18 @@ void Renderer::Present()
 
 	// Allocate and build a pre-render command buffer.
 	std::shared_ptr<IGraphicsCommandBuffer> preRenderCommandBuffer = RequestPrimaryBuffer();
-	BuildPreRenderCommandBuffer(preRenderCommandBuffer);
-	QueuePrimaryBuffer(RenderCommandStage::PreRender, preRenderCommandBuffer);
+	BuildCommandBuffer_PreRender(preRenderCommandBuffer);
+	QueuePrimaryBuffer("Main Pre-Render", RenderCommandStage::PreRender, preRenderCommandBuffer);
 
 	// Allocate and build a post-render command buffer.
 	std::shared_ptr<IGraphicsCommandBuffer> postRenderCommandBuffer = RequestPrimaryBuffer();
-	BuildPostRenderCommandBuffer(postRenderCommandBuffer);
-	QueuePrimaryBuffer(RenderCommandStage::PostRender, postRenderCommandBuffer);
+	BuildCommandBuffer_PostRender(postRenderCommandBuffer);
+	QueuePrimaryBuffer("Main Post-Render", RenderCommandStage::PostRender, postRenderCommandBuffer);
+
+	// Allocate and build a pre-render command buffer.
+	std::shared_ptr<IGraphicsCommandBuffer> prePresentCommandBuffer = RequestPrimaryBuffer();
+	BuildCommandBuffer_PrePresent(prePresentCommandBuffer);
+	QueuePrimaryBuffer("Main Pre-Present", RenderCommandStage::PrePresent, prePresentCommandBuffer);
 
 	// Sort queues.
 	std::sort(m_queuedBuffers.begin(), m_queuedBuffers.end(),
@@ -486,11 +513,14 @@ void Renderer::Present()
 
 	// Dispatch all buffers.
 	Array<std::shared_ptr<IGraphicsCommandBuffer>> buffers;
-	for (auto& buffer : m_queuedBuffers)
+
+	Array<QueuedBuffer> queuedBuffers = m_queuedBuffers;
+	m_queuedBuffers.clear();
+
+	for (auto& buffer : queuedBuffers)
 	{
 		m_graphics->Dispatch(buffer.buffer);
 	}
-	m_queuedBuffers.clear();
 
 	// Increment frame counter.
 	m_frameCounter++;
@@ -774,11 +804,12 @@ void Renderer::UpdateCommandBufferPools()
 	}
 }
 
-void Renderer::QueuePrimaryBuffer(RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer)
+void Renderer::QueuePrimaryBuffer(const String& name, RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer)
 {
 	std::lock_guard<std::mutex> lock(m_queuedBuffersMutex);
 
 	QueuedBuffer qbuffer;
+	qbuffer.name = name;
 	qbuffer.stage = stage;
 	qbuffer.buffer = buffer;
 	m_queuedBuffers.push_back(qbuffer);

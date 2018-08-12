@@ -394,9 +394,7 @@ void ImguiManager::EndFrame()
 	m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
 
 	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = m_materialRenderData->GetResourceSets();
-
-	buffer->TransitionResourceSets(resourceSets.data(), resourceSets.size());
-
+	
 	buffer->Upload(m_vertexBuffer);
 	buffer->Upload(m_indexBuffer);
 
@@ -409,7 +407,6 @@ void ImguiManager::EndFrame()
 	buffer->SetIndexBuffer(m_indexBuffer);
 	buffer->SetVertexBuffer(m_vertexBuffer);
 	buffer->SetResourceSets(resourceSets.data(), resourceSets.size());
-
 	ImTextureID lastTextureId = 0;
 
 	for (int cmdListIndex = 0; cmdListIndex < drawData->CmdListsCount; cmdListIndex++)
@@ -469,7 +466,7 @@ void ImguiManager::EndFrame()
 	buffer->EndPass();
 
 	buffer->End();
-	m_renderer->QueuePrimaryBuffer(RenderCommandStage::PostResolve, buffer);
+	m_renderer->QueuePrimaryBuffer("ImGui Primitives", RenderCommandStage::PostResolve, buffer);
 
 	//});
 }

@@ -39,12 +39,13 @@ extern const MaterialPropertyHash GBuffer2Hash;
 
 enum class RenderCommandStage
 {
-	PreRender,	// Before primary render buffers.
-	Shadow,		// Shadow map rendering.
-	Render,		// During primary render buffers.
-	Debug,		// Debug rendering stage.
-	PostRender, // After gbuffer etc has completed.
-	PostResolve, // After gbuffer has been resolved to screen.
+	PreRender,		// Before primary render buffers.
+	Shadow,			// Shadow map rendering.
+	Render,			// During primary render buffers.
+	Debug,			// Debug rendering stage.
+	PostRender,		// After gbuffer etc has completed.
+	PostResolve,	// After gbuffer has been resolved to swapchain.
+	PrePresent,		// Just before present, used to transition swap chain to appropriate layout.
 };
 
 struct RenderCommand
@@ -80,6 +81,7 @@ private:
 
 	struct QueuedBuffer
 	{
+		String name;
 		RenderCommandStage stage;
 		std::shared_ptr<IGraphicsCommandBuffer> buffer;
 	};
@@ -184,8 +186,9 @@ private:
 
 	void SwapChainModified();
 
-	void BuildPreRenderCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer);
-	void BuildPostRenderCommandBuffer(std::shared_ptr<IGraphicsCommandBuffer> buffer);
+	void BuildCommandBuffer_PreRender(std::shared_ptr<IGraphicsCommandBuffer> buffer);
+	void BuildCommandBuffer_PostRender(std::shared_ptr<IGraphicsCommandBuffer> buffer);
+	void BuildCommandBuffer_PrePresent(std::shared_ptr<IGraphicsCommandBuffer> buffer);
 
 	std::shared_ptr<IGraphicsResourceSet> AllocateResourceSet(const GraphicsResourceSetDescription& set);
 
@@ -238,7 +241,7 @@ public:
 	std::shared_ptr<IGraphicsCommandBuffer> RequestSecondaryBuffer();
 	std::shared_ptr<IGraphicsCommandBuffer> RequestPrimaryBuffer();
 
-	void QueuePrimaryBuffer(RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer);
+	void QueuePrimaryBuffer(const String& name, RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer);
 
 	void QueueRenderCommand(RenderCommandStage stage, RenderCommand::CommandSignature_t callback);
 

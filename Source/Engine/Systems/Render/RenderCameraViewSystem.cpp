@@ -167,7 +167,7 @@ void RenderCameraViewSystem::TickView(
 		}
 
 		buffer->End();
-		m_renderer->QueuePrimaryBuffer(RenderCommandStage::Render, buffer);
+		m_renderer->QueuePrimaryBuffer("Camera View Render", RenderCommandStage::Render, buffer);
 	}
 }
 

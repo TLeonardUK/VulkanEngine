@@ -130,7 +130,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanGraphics::DebugCallback(
 		m_logger->WriteInfo(LogCategory::Vulkan, message);
 	}
 
-
 	if ((flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) != 0)
 	{
 		DebugBreak();

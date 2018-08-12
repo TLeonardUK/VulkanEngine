@@ -220,14 +220,14 @@ void RenderDebugSystem::RenderView(
 	buffer->Upload(m_lineVertexBuffer);
 	buffer->Upload(m_lineIndexBuffer);
 
+	// todo: set projection/view matrices.
+
 	// todo: handle multiple views.
 	std::shared_ptr<Material> material = m_debugLineMaterial.Get();
 	material->UpdateResources();
 	m_renderer->UpdateMaterialRenderData(&m_debugLineMaterialRenderData, material, &m_renderer->GetGlobalMaterialProperties());
 
 	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = m_debugLineMaterialRenderData->GetResourceSets();
-
-	buffer->TransitionResourceSets(resourceSets.data(), resourceSets.size());
 
 	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 	buffer->BeginSubPass();
@@ -256,5 +256,5 @@ void RenderDebugSystem::RenderView(
 	buffer->EndPass();
 
 	buffer->End();
-	m_renderer->QueuePrimaryBuffer(RenderCommandStage::Debug, buffer);
+	m_renderer->QueuePrimaryBuffer("Debug Primitives", RenderCommandStage::Debug, buffer);
 }

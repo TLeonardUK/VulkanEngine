@@ -117,12 +117,12 @@ void VulkanCommandBuffer::BeginPass(const std::shared_ptr<IGraphicsRenderPass>& 
 	VulkanFramebuffer* vulkanFramebuffer = static_cast<VulkanFramebuffer*>(&*framebuffer);
 
 	// Transition framebuffer images to initial layouts.
-	const Array<std::shared_ptr<VulkanImageView>>& attachments = vulkanFramebuffer->GetAttachments();
-	for (auto& imageView : attachments)
-	{
-		VulkanImage* image = static_cast<VulkanImage*>(&*imageView->GetImage());
-		TransitionImage(image, image->IsDepth() ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	}
+	//const Array<std::shared_ptr<VulkanImageView>>& attachments = vulkanFramebuffer->GetAttachments();
+	//for (auto& imageView : attachments)
+	//{
+	//	VulkanImage* image = static_cast<VulkanImage*>(&*imageView->GetImage());
+	//	TransitionImage(image, image->IsDepth() ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	//}
 
 	VkRect2D renderArea = {};
 	renderArea.offset = { 0, 0 };
@@ -227,6 +227,7 @@ void VulkanCommandBuffer::Clear(const std::shared_ptr<IGraphicsImage>& image, Co
 	imageRange.levelCount = 1;
 	imageRange.layerCount = 1;
 
+	VkImageLayout originallLayout = vulkanImage->GetVkLayout();
 	TransitionImage(vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	
 	if (vulkanImage->IsDepth())
@@ -251,6 +252,8 @@ void VulkanCommandBuffer::Clear(const std::shared_ptr<IGraphicsImage>& image, Co
 			&imageRange
 		);
 	}
+
+	TransitionImage(vulkanImage, originallLayout);
 }
 
 void VulkanCommandBuffer::SetPipeline(const std::shared_ptr<IGraphicsPipeline>& pipeline)
@@ -282,42 +285,49 @@ void VulkanCommandBuffer::SetIndexBuffer(const std::shared_ptr<IGraphicsIndexBuf
 		vulkanBuffer->GetIndexSize() == 4 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
 }
 
-void VulkanCommandBuffer::TransitionResourceSets(const std::shared_ptr<IGraphicsResourceSet>* values, int count)
+void VulkanCommandBuffer::TransitionResource(const std::shared_ptr<IGraphicsImage>& image, GraphicsAccessMask mask)
 {
-	for (int i = 0; i < count; i++)
+	VulkanImage* vulkanImage = static_cast<VulkanImage*>(&*image);
+
+	VkImageLayout targetLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	switch (mask)
 	{
-		const VulkanResourceSet* vulkanBuffer = static_cast<const VulkanResourceSet*>(&*values[i]);
-		
-		const Array<VulkanResourceSetBinding>& bindings = vulkanBuffer->GetBindings();
-		for (const VulkanResourceSetBinding& binding : bindings)
+	case GraphicsAccessMask::Read:
 		{
-			if (binding.type == VulkanResourceSetBindingType::Sampler)
+			if (vulkanImage->IsDepth())
 			{
-				VulkanImage* vkImage = &*binding.samplerImageView->GetVkImage();
-				TransitionImage(vkImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				targetLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 			}
+			else
+			{
+				targetLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			}
+			break;
+		}
+	case GraphicsAccessMask::ReadWrite:
+	case GraphicsAccessMask::Write:
+		{
+			if (vulkanImage->IsDepth())
+			{
+				targetLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			}
+			else
+			{
+				targetLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			}
+			break;
+		}
+	case GraphicsAccessMask::Present:
+		{
+			targetLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			break;
 		}
 	}
-}
 
-void VulkanCommandBuffer::TransitionResourceSets(const Array<std::shared_ptr<IGraphicsResourceSet>*>& values)
-{
-	for (int i = 0; i < values.size(); i++)
+	if (vulkanImage->m_layout != targetLayout)
 	{
-		const VulkanResourceSet* vulkanBuffer = static_cast<const VulkanResourceSet*>(&**values[i]);
-
-		const Array<VulkanResourceSetBinding>& bindings = vulkanBuffer->GetBindings();
-		for (const VulkanResourceSetBinding& binding : bindings)
-		{
-			if (binding.type == VulkanResourceSetBindingType::Sampler)
-			{
-				VulkanImage* image = &*binding.samplerImageView->GetVkImage();
-				if (image->m_layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-				{
-					TransitionImage(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-				}
-			}
-		}
+		TransitionImage(vulkanImage, targetLayout);
 	}
 }
 
@@ -462,6 +472,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 	barrier.subresourceRange.aspectMask = aspectFlags;
 	
+	bool bFound = false;
+
 	if (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED)
 	{
 		if (dstLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
@@ -471,6 +483,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+			bFound = true;
 		}
 		else if (dstLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 		{
@@ -479,6 +493,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+			bFound = true;
 		}
 		else if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 		{
@@ -487,6 +503,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+			bFound = true;
 		}
 	}
 	else if (srcLayout == VK_IMAGE_LAYOUT_PREINITIALIZED)
@@ -498,6 +516,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+			bFound = true;
 		}
 		else if (dstLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 		{
@@ -506,6 +526,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+			bFound = true;
 		}
 		else if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 		{
@@ -514,6 +536,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+			bFound = true;
 		}
 	}
 	else if (srcLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
@@ -525,6 +549,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+			bFound = true;
 		}
 		else if (dstLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 		{
@@ -533,6 +559,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+			bFound = true;
 		}
 		else if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 		{
@@ -541,6 +569,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+			bFound = true;
 		}
 	}
 	else if (srcLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
@@ -552,6 +582,28 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+			bFound = true;
+		}
+		else if (dstLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		{
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+			bFound = true;
+		}
+		else if (dstLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+		{
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+			bFound = true;
 		}
 	}
 	else if (srcLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
@@ -563,6 +615,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+			bFound = true;
 		}
 		else if (dstLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 		{
@@ -571,6 +625,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+			bFound = true;
 		}
 	}
 	else if (srcLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
@@ -582,6 +638,8 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+			bFound = true;
 		}
 	}
 	else if (srcLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -593,13 +651,13 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+			bFound = true;
 		}
 	}
-	else 
-	{
-		assert(false);
-	}
 
+	assert(bFound);
+	
 	vkCmdPipelineBarrier(
 		m_commandBuffer,
 		sourceStage, destinationStage,

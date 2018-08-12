@@ -146,6 +146,8 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		std::shared_ptr<IGraphicsCommandBuffer> buffer = m_renderer->RequestPrimaryBuffer();
 		buffer->Reset();
 		buffer->Begin();
+
+		buffer->TransitionResource(light->shadowMapImage, GraphicsAccessMask::ReadWrite);
 		
 		buffer->Clear(light->shadowMapImage, Color::Black, 1.0f, 0.0f);
 
@@ -168,7 +170,7 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		}
 
 		buffer->End();
-		m_renderer->QueuePrimaryBuffer(RenderCommandStage::Shadow, buffer);
+		m_renderer->QueuePrimaryBuffer("Shadow Map Generation", RenderCommandStage::Shadow, buffer);
 	}
 }
 
@@ -179,7 +181,6 @@ void RenderDirectionalShadowMapSystem::Tick(
 	const Array<DirectionalLightComponent*>& lights,
 	const Array<const TransformComponent*>& transforms)
 {
-	return;
 	// Draw shadow map for each light.
 	{
 		ProfileScope scope(Color::Blue, "Update Shadow Maps");
