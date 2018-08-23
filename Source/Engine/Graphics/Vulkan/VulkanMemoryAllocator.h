@@ -3,6 +3,7 @@
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
+#include "Engine/Types/Mutex.h"
 #include "Engine/Engine/Logging.h"
 
 #include "Engine/Graphics/Vulkan/VulkanDeviceInfo.h"
@@ -66,7 +67,7 @@ private:
 
 	std::atomic<int> m_allocationsActive;
 
-	std::mutex m_allocationMutex;
+	Mutex m_allocationMutex;
 
 private:
 	friend class VulkanGraphics;

@@ -210,6 +210,11 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Checked|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Platform\Sdl\SdlPlatform.cpp" />
+    <ClCompile Include="Profiling\Profiling.cpp" />
+    <ClCompile Include="Rendering\MaterialResourceSet.cpp" />
+    <ClCompile Include="Rendering\RenderProperty.cpp" />
+    <ClCompile Include="Rendering\RenderPropertyCollection.cpp" />
+    <ClCompile Include="Rendering\MeshRenderState.cpp" />
     <ClCompile Include="Rendering\MeshBatcher.cpp" />
     <ClCompile Include="Rendering\Renderer.cpp" />
     <ClCompile Include="Rendering\RendererEnums.cpp" />
@@ -217,8 +222,6 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClCompile Include="Rendering\UniformBufferLayout.cpp" />
     <ClCompile Include="Resources\ResourceManager.cpp" />
     <ClCompile Include="Resources\Types\Material.cpp" />
-    <ClCompile Include="Resources\Types\MaterialPropertyCollection.cpp" />
-    <ClCompile Include="Resources\Types\MaterialRenderData.cpp" />
     <ClCompile Include="Resources\Types\MaterialResourceLoader.cpp" />
     <ClCompile Include="Resources\Types\Model.cpp" />
     <ClCompile Include="Resources\Types\ModelResourceLoader.cpp" />
@@ -324,17 +327,20 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Platform\Platform.h" />
     <ClInclude Include="Platform\Sdl\SdlPlatform.h" />
     <ClInclude Include="Profiling\Profiling.h" />
+    <ClInclude Include="Rendering\MaterialResourceSet.h" />
+    <ClInclude Include="Rendering\RenderProperty.h" />
+    <ClInclude Include="Rendering\RenderPropertyCollection.h" />
+    <ClInclude Include="Rendering\MeshRenderState.h" />
     <ClInclude Include="Rendering\MeshBatcher.h" />
     <ClInclude Include="Rendering\Renderer.h" />
     <ClInclude Include="Rendering\RendererEnums.h" />
+    <ClInclude Include="Rendering\RenderPropertyHeirarchy.h" />
     <ClInclude Include="Rendering\RenderView.h" />
     <ClInclude Include="Rendering\UniformBufferLayout.h" />
     <ClInclude Include="Resources\Resource.h" />
     <ClInclude Include="Resources\ResourceLoader.h" />
     <ClInclude Include="Resources\ResourceManager.h" />
     <ClInclude Include="Resources\Types\Material.h" />
-    <ClInclude Include="Resources\Types\MaterialPropertyCollection.h" />
-    <ClInclude Include="Resources\Types\MaterialRenderData.h" />
     <ClInclude Include="Resources\Types\MaterialResourceLoader.h" />
     <ClInclude Include="Resources\Types\Model.h" />
     <ClInclude Include="Resources\Types\ModelResourceLoader.h" />
@@ -372,6 +378,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Types\Matrix2.h" />
     <ClInclude Include="Types\Matrix3.h" />
     <ClInclude Include="Types\Matrix4.h" />
+    <ClInclude Include="Types\Mutex.h" />
     <ClInclude Include="Types\OctTree.h" />
     <ClInclude Include="Types\OrientedBounds.h" />
     <ClInclude Include="Types\Plane.h" />

@@ -5,6 +5,7 @@
 #include "Engine/Threading/TaskManager.h"
 #include "Engine/Threading/ParallelFor.h"
 #include "Engine/Profiling/Profiling.h"
+#include "Engine/Types/Mutex.h"
 
 class SystemTickTask : public Task
 {
@@ -25,7 +26,7 @@ public:
 
 	virtual void Run()
 	{
-		ProfileScope scope(Color::Red, GetName());
+		ProfileScope scope(ProfileColors::PrimaryTask, GetName());
 		m_system->Tick(*m_world, m_frameTime);
 	}
 
@@ -69,13 +70,13 @@ void World::Dispose()
 
 void World::Tick(const FrameTime& frameTime)
 {
-	ProfileScope scope(Color::Blue, "World::Tick");
+	ProfileScope scope(ProfileColors::Cpu, "World::Tick");
 
 	Task::Id worldTickGroupTask;
 	Array<Task::Id> tasks;
 
 	{
-		ProfileScope scope(Color::Blue, "Pump entity destruction");
+		ProfileScope scope(ProfileColors::Cpu, "Pump entity destruction");
 
 		// Perform component destruction.
 		for (PendingComponentRemove& removal : m_componentsPendingDestroy)
@@ -93,7 +94,7 @@ void World::Tick(const FrameTime& frameTime)
 	}
 
 	{
-		ProfileScope scope(Color::Blue, "Create system tasks");
+		ProfileScope scope(ProfileColors::Cpu, "Create system tasks");
 
 		// Group task that will complete when all systems are ticked. Gives us something to wait for.
 		worldTickGroupTask = m_taskManager->CreateTask();
@@ -171,7 +172,7 @@ void World::Tick(const FrameTime& frameTime)
 	}
 
 	{
-		ProfileScope scope(Color::Blue, "Pump entity registration updates");
+		ProfileScope scope(ProfileColors::Cpu, "Pump entity registration updates");
 
 		// Perform object registrations.
 		for (Entity& entity : m_entitiesPendingSystemRegistration)
@@ -193,7 +194,7 @@ void World::Tick(const FrameTime& frameTime)
 
 Entity World::CreateEntity()
 {
-	std::lock_guard<std::mutex> lock(m_entityMutex);
+	ScopeLock lock(m_entityMutex);
 
 	EntityState state;
 	state.entity = m_nextEntityId++;
@@ -211,7 +212,7 @@ Entity World::CreateEntity()
 
 	// Chuck out an entity-creation message.
 	{
-		std::lock_guard<std::mutex> lock(m_pendingEntityMessagesMutex);
+		ScopeLock lock(m_pendingEntityMessagesMutex);
 
 		CreatedEntityMessage message;
 		message.entity = state.entity;
@@ -223,7 +224,7 @@ Entity World::CreateEntity()
 
 void World::DestroyEntity(Entity entity)
 {
-	std::lock_guard<std::mutex> lock(m_entityMutex);
+	ScopeLock lock(m_entityMutex);
 
 	auto iter = m_entities.find(entity);
 	if (iter == m_entities.end())
@@ -244,7 +245,7 @@ void World::DestroyEntity(Entity entity)
 		{
 			// Chunk out an component-deletion message.
 			{
-				std::lock_guard<std::mutex> lock(m_pendingEntityMessagesMutex);
+				ScopeLock lock(m_pendingEntityMessagesMutex);
 
 				DeletedComponentMessage message;
 				message.componentType = component.first;
@@ -270,7 +271,7 @@ void World::DestroyEntity(Entity entity)
 
 		// Chunk out an entity-deletion message.
 		{
-			std::lock_guard<std::mutex> lock(m_pendingEntityMessagesMutex);
+			ScopeLock lock(m_pendingEntityMessagesMutex);
 
 			DeletedEntityMessage message;
 			message.entity = state.entity;
@@ -284,7 +285,7 @@ void World::DestroyEntity(Entity entity)
 
 bool World::IsEntityAlive(Entity entity)
 {
-	std::lock_guard<std::mutex> lock(m_entityMutex);
+	ScopeLock lock(m_entityMutex);
 
 	return (m_entities.find(entity) != m_entities.end());
 }
@@ -299,7 +300,7 @@ void World::UpdateEntitySystemRegistrations(EntityState& state)
 
 ComponentPoolBase* World::GetComponentPool(std::type_index type)
 {
-	std::lock_guard<std::mutex> lock(m_componentPoolMutex);
+	ScopeLock lock(m_componentPoolMutex);
 
 	auto iter = m_componentPools.find(type);
 	if (iter != m_componentPools.end())
@@ -312,7 +313,7 @@ ComponentPoolBase* World::GetComponentPool(std::type_index type)
 
 void* World::GetComponent(Entity entity, std::type_index type)
 {
-	std::lock_guard<std::mutex> lock(m_entityMutex);
+	ScopeLock lock(m_entityMutex);
 
 	ComponentPoolBase* pool = GetComponentPool(type);
 
@@ -333,7 +334,7 @@ void* World::GetComponent(Entity entity, std::type_index type)
 
 bool World::GetEntityComponentMap(Entity entity, Dictionary<std::type_index, uint64_t>& map)
 {
-	std::lock_guard<std::mutex> lock(m_entityMutex);
+	ScopeLock lock(m_entityMutex);
 
 	EntityState* state = GetEntityState(entity);
 	if (state == nullptr)
@@ -348,7 +349,7 @@ bool World::GetEntityComponentMap(Entity entity, Dictionary<std::type_index, uin
 
 AspectId World::GetAspectId(std::shared_ptr<Aspect> aspect)
 {
-	std::lock_guard<std::mutex> lock(m_aspectCollectionMutex);
+	ScopeLock lock(m_aspectCollectionMutex);
 
 	for (int i = 0; i < m_aspectCollections.size(); i++)
 	{
@@ -369,7 +370,7 @@ AspectId World::GetAspectId(Array<std::type_index> requiredComponents)
 
 std::shared_ptr<AspectCollection> World::GetAspectCollection(AspectId id)
 {
-	std::lock_guard<std::mutex> lock(m_aspectCollectionMutex);
+	ScopeLock lock(m_aspectCollectionMutex);
 
 	return m_aspectCollections[static_cast<int>(id)];
 }
@@ -387,7 +388,7 @@ World::EntityState* World::GetEntityState(Entity entity)
 
 void World::RemoveComponent(Entity entity, std::type_index type)
 {
-	std::lock_guard<std::mutex> lock(m_entityMutex);
+	ScopeLock lock(m_entityMutex);
 
 	ComponentPoolBase* pool = GetComponentPool(type);
 
@@ -421,7 +422,7 @@ void World::RemoveComponent(Entity entity, std::type_index type)
 	
 		// Chunk out an component-deletion message.
 		{
-			std::lock_guard<std::mutex> lock(m_pendingEntityMessagesMutex);
+			ScopeLock lock(m_pendingEntityMessagesMutex);
 
 			DeletedComponentMessage message;
 			message.componentType = type;
@@ -435,7 +436,7 @@ void World::RemoveComponent(Entity entity, std::type_index type)
 
 void* World::AddComponent(Entity entity, std::type_index type, ComponentPoolBase* pool)
 {
-	std::lock_guard<std::mutex> lock(m_entityMutex);
+	ScopeLock lock(m_entityMutex);
 
 	uint64_t index = pool->AllocateIndex();
 
@@ -468,7 +469,7 @@ void* World::AddComponent(Entity entity, std::type_index type, ComponentPoolBase
 
 		// Chunk out an component-creation message.
 		{
-			std::lock_guard<std::mutex> lock(m_pendingEntityMessagesMutex);
+			ScopeLock lock(m_pendingEntityMessagesMutex);
 
 			CreatedComponentMessage message;
 			message.componentType = type;

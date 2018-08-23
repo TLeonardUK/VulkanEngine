@@ -48,7 +48,7 @@
             "Type": "UniformBufferObject",
             "Binding": 0,
 			"Set": 1,
-			"Frequency": "Global",
+			"Frequency": "View",
             "Fields":
             {                     
                 "view":

@@ -140,7 +140,7 @@ private:
 	VkExtent2D m_swapChainExtent;
 	bool m_swapChainRegeneratedThisFrame;
 
-	std::mutex m_queuedDisposalMutex;
+	Mutex m_queuedDisposalMutex;
 	Array<QueuedDisposal> m_queuedDisposalTable;
 	Array<int> m_queuedDisposalAllocatedIndices;
 	Array<int> m_queuedDisposalFreeIndices;
@@ -155,7 +155,7 @@ private:
 	// todo: change to weak pointers, or better yet check if they are unique, if they are wait
 	// x number of frames (how many frames behind we are), before disposing to ensure gpu is finished
 	// with them.
-	std::mutex m_resourcesMutex;
+	Mutex m_resourcesMutex;
 
 	Array<std::shared_ptr<IVulkanResource>> m_resources;
 

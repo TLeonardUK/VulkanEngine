@@ -55,20 +55,13 @@
                     "BindTo": "ModelMatrix"
                 }
             }
-        },
-        "albedoTextureSampler":
-        {
-            "Type": "SamplerCube",
-            "Binding": 1,
-			"Set": 0,
-            "BindTo": "AlbedoTexture"
-        },		
+        },	
         "globalProperties":
         {
             "Type": "UniformBufferObject",
             "Binding": 0,
 			"Set": 1,
-			"Frequency": "Global",
+			"Frequency": "View",
             "Fields":
             {                      
                 "view":
@@ -90,6 +83,14 @@
                     "BindTo": "CameraPosition"
                 }
             }
+        },
+        "albedoTextureSampler":
+        {
+            "Type": "SamplerCube",
+			"Frequency": "Material",
+            "Binding": 0,
+			"Set": 2,
+            "BindTo": "AlbedoTexture"
         }
     }
 }

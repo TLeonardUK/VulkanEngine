@@ -130,7 +130,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanGraphics::DebugCallback(
 		m_logger->WriteInfo(LogCategory::Vulkan, message);
 	}
 
-	if ((flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) != 0)
+	if ((flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) != 0 ||
+		(flags & VK_DEBUG_REPORT_WARNING_BIT_EXT) != 0)
 	{
 		DebugBreak();
 	}
@@ -719,7 +720,7 @@ void VulkanGraphics::DisposeSwapChain()
 
 void VulkanGraphics::Dispose()
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	m_logger->WriteInfo(LogCategory::Vulkan, "Destroying vulkan instance.");
 
@@ -796,7 +797,7 @@ void VulkanGraphics::CancelPresent()
 
 bool VulkanGraphics::Present()
 {
-	ProfileScope scope(Color::Red, "VulkanGraphics::Present");
+	ProfileScope scope(ProfileColors::Draw, "VulkanGraphics::Present");
 
 	// If swap chain has been regenerated this frame, inform caller.
 	if (m_swapChainRegeneratedThisFrame)
@@ -893,7 +894,7 @@ bool VulkanGraphics::Present()
 
 std::shared_ptr<IGraphicsShader> VulkanGraphics::CreateShader(const String& name, const String& entryPoint, GraphicsPipelineStage stage, const Array<char>& data)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanShader> shader = std::make_shared<VulkanShader>(shared_from_this(), m_logicalDevice, m_logger, name, entryPoint, stage);
 	if (!shader->LoadFromArray(data))
@@ -909,7 +910,7 @@ std::shared_ptr<IGraphicsShader> VulkanGraphics::CreateShader(const String& name
 
 std::shared_ptr<IGraphicsRenderPass> VulkanGraphics::CreateRenderPass(const String& name, const GraphicsRenderPassSettings& settings)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanRenderPass> pass = std::make_shared<VulkanRenderPass>(shared_from_this(), m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
@@ -924,7 +925,7 @@ std::shared_ptr<IGraphicsRenderPass> VulkanGraphics::CreateRenderPass(const Stri
 
 std::shared_ptr<IGraphicsPipeline> VulkanGraphics::CreatePipeline(const String& name, const GraphicsPipelineSettings& settings)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanPipeline> pass = std::make_shared<VulkanPipeline>(shared_from_this(), m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
@@ -939,7 +940,7 @@ std::shared_ptr<IGraphicsPipeline> VulkanGraphics::CreatePipeline(const String& 
 
 std::shared_ptr<IGraphicsFramebuffer> VulkanGraphics::CreateFramebuffer(const String& name, const GraphicsFramebufferSettings& settings)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanFramebuffer> pass = std::make_shared<VulkanFramebuffer>(shared_from_this(), m_logicalDevice, m_logger, name);
 	if (!pass->Build(settings))
@@ -954,7 +955,7 @@ std::shared_ptr<IGraphicsFramebuffer> VulkanGraphics::CreateFramebuffer(const St
 
 std::shared_ptr<IGraphicsImageView> VulkanGraphics::CreateImageView(const String& name, std::shared_ptr<IGraphicsImage> image)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanImageView> pass = std::make_shared<VulkanImageView>(shared_from_this(), m_logicalDevice, m_logger, name);
 	if (!pass->Build(image))
@@ -969,7 +970,7 @@ std::shared_ptr<IGraphicsImageView> VulkanGraphics::CreateImageView(const String
 
 std::shared_ptr<IGraphicsCommandBufferPool> VulkanGraphics::CreateCommandBufferPool(const String& name)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanCommandBufferPool> pass = std::make_shared<VulkanCommandBufferPool>(m_logicalDevice, m_physicalDeviceInfo, m_logger, name, shared_from_this());
 	if (!pass->Build())
@@ -984,7 +985,7 @@ std::shared_ptr<IGraphicsCommandBufferPool> VulkanGraphics::CreateCommandBufferP
 
 std::shared_ptr<IGraphicsVertexBuffer> VulkanGraphics::CreateVertexBuffer(const String& name, const VertexBufferBindingDescription& binding, int vertexCount)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanVertexBuffer> pass = std::make_shared<VulkanVertexBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator, shared_from_this());
 	if (!pass->Build(binding, vertexCount))
@@ -999,7 +1000,7 @@ std::shared_ptr<IGraphicsVertexBuffer> VulkanGraphics::CreateVertexBuffer(const 
 
 std::shared_ptr<IGraphicsIndexBuffer> VulkanGraphics::CreateIndexBuffer(const String& name, int indexSize, int indexCount)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanIndexBuffer> pass = std::make_shared<VulkanIndexBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator, shared_from_this());
 	if (!pass->Build(indexSize, indexCount))
@@ -1014,7 +1015,7 @@ std::shared_ptr<IGraphicsIndexBuffer> VulkanGraphics::CreateIndexBuffer(const St
 
 std::shared_ptr<IGraphicsUniformBuffer> VulkanGraphics::CreateUniformBuffer(const String& name, int bufferSize)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanUniformBuffer> pass = std::make_shared<VulkanUniformBuffer>(m_logicalDevice, m_logger, name, m_memoryAllocator);
 	if (!pass->Build(bufferSize))
@@ -1029,7 +1030,7 @@ std::shared_ptr<IGraphicsUniformBuffer> VulkanGraphics::CreateUniformBuffer(cons
 
 std::shared_ptr<IGraphicsResourceSetPool> VulkanGraphics::CreateResourceSetPool(const String& name)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanResourceSetPool> pass = std::make_shared<VulkanResourceSetPool>(m_logicalDevice, m_logger, name, shared_from_this());
 	if (!pass->Build())
@@ -1044,7 +1045,7 @@ std::shared_ptr<IGraphicsResourceSetPool> VulkanGraphics::CreateResourceSetPool(
 
 std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanImage> pass = std::make_shared<VulkanImage>(m_logicalDevice, m_logger, name, m_memoryAllocator, shared_from_this());
 	if (!pass->Build(width, height, layers, format, generateMips, usage))
@@ -1059,7 +1060,7 @@ std::shared_ptr<IGraphicsImage> VulkanGraphics::CreateImage(const String& name, 
 
 std::shared_ptr<IGraphicsSampler> VulkanGraphics::CreateSampler(const String& name, const SamplerDescription& settings)
 {
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	// todo: do some caching?
 
@@ -1246,7 +1247,7 @@ void VulkanGraphics::ValidateDisposal()
 
 void VulkanGraphics::QueueDisposal(QueuedDisposal::DisposalFunction_t function)
 {
-	std::lock_guard<std::mutex> lock(m_queuedDisposalMutex);
+	ScopeLock lock(m_queuedDisposalMutex);
 
 	if (m_queuedDisposalFreeIndices.size() == 0)
 	{
@@ -1271,7 +1272,7 @@ void VulkanGraphics::QueueDisposal(QueuedDisposal::DisposalFunction_t function)
 
 void VulkanGraphics::PurgeQueuedDisposals()
 {
-	std::lock_guard<std::mutex> lock(m_queuedDisposalMutex);
+	ScopeLock lock(m_queuedDisposalMutex);
 
 	//ValidateDisposal();
 
@@ -1299,7 +1300,7 @@ void VulkanGraphics::PurgeQueuedDisposals()
 
 void VulkanGraphics::UpdateQueuedDisposals()
 {
-	std::lock_guard<std::mutex> lock(m_queuedDisposalMutex);
+	ScopeLock lock(m_queuedDisposalMutex);
 
 	size_t count = m_queuedDisposalAllocatedIndices.size();
 
@@ -1333,9 +1334,9 @@ void VulkanGraphics::UpdateQueuedDisposals()
 
 void VulkanGraphics::CollectGarbage()
 {
-	ProfileScope scope(Color::Red, "VulkanGraphics::CollectGarbage");
+	ProfileScope scope(ProfileColors::Draw, "VulkanGraphics::CollectGarbage");
 
-	std::lock_guard<std::mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	if (m_resources.size() > 0)
 	{

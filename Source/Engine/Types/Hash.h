@@ -1,3 +1,4 @@
+#pragma once
 #include "Pch.h"
 
 template <class T>

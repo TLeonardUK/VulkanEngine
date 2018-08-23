@@ -161,7 +161,7 @@ std::shared_ptr<VulkanUniformBufferPool> VulkanMemoryAllocator::GetUniformBuffer
 
 VulkanUniformBufferAllocation VulkanMemoryAllocator::AllocateUniformBuffer(int size)
 {
-	std::lock_guard<std::mutex> mutex(m_allocationMutex);
+	ScopeLock mutex(m_allocationMutex);
 
 	std::shared_ptr<VulkanUniformBufferPool> pool = GetUniformBufferPoolForSize(size);
 
@@ -178,7 +178,7 @@ VulkanUniformBufferAllocation VulkanMemoryAllocator::AllocateUniformBuffer(int s
 
 void VulkanMemoryAllocator::ReleaseUniformBufferInternal(VulkanUniformBufferAllocation allocation)
 {
-	std::lock_guard<std::mutex> mutex(m_allocationMutex);
+	ScopeLock mutex(m_allocationMutex);
 	allocation.Pool->FreeChunkOffsets.push_back(allocation.Offset);
 }
 

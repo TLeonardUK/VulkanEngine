@@ -161,7 +161,7 @@ bool TaskManager::IsComplete(Task::Id task)
 
 bool TaskManager::WaitForCompletionEvent(Event& evnt, Timeout timeout)
 {
-	//ProfileScope scope(Color::Green, "Waiting for completion event");
+	//ProfileScope scope(ProfileColors::Cpu, "Waiting for completion event");
 
 	TimeoutCounter counter = timeout.Start();
 
@@ -186,7 +186,7 @@ bool TaskManager::WaitForCompletionEvent(Event& evnt, Timeout timeout)
 
 bool TaskManager::WaitForCompletion(Task::Id task, Timeout timeout)
 {
-	//ProfileScope scope(Color::Green, "Waiting for task completion");
+	//ProfileScope scope(ProfileColors::Cpu, "Waiting for task completion");
 
 	TimeoutCounter counter = timeout.Start();
 
@@ -218,7 +218,7 @@ bool TaskManager::WaitForCompletion(Task::Id task, Timeout timeout)
 
 bool TaskManager::WaitForIdle(Timeout timeout)
 {
-	//ProfileScope scope(Color::Green, "Waiting for idle");
+	//ProfileScope scope(ProfileColors::Cpu, "Waiting for idle");
 
 	TimeoutCounter counter = timeout.Start();
 
@@ -335,7 +335,7 @@ TaskManager::QueuedTask* TaskManager::FindWork(TaskQueueFlags queues, bool bCanB
 		}
 
 		{
-			//ProfileScope scope(Color::Black, "Waiting for task");
+			//ProfileScope scope(ProfileColors::Cpu, "Waiting for task");
 
 			m_taskAvailableCondVariable.wait(lock);
 		}

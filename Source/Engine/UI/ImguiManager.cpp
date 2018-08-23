@@ -4,6 +4,8 @@
 
 #include "Engine/Engine/Logging.h"
 #include "Engine/Rendering/Renderer.h"
+#include "Engine/Rendering/RenderPropertyHeirarchy.h"
+#include "Engine/Resources/Types/Material.h"
 
 #include "Engine/Input/Input.h"
 
@@ -18,9 +20,9 @@
 
 // todo: replace bindings with ones that interface with engine.
 
-static MaterialPropertyHash ImGuiScale = CalculateMaterialPropertyHash("ImGuiScale");
-static MaterialPropertyHash ImGuiTranslation = CalculateMaterialPropertyHash("ImGuiTranslation");
-static MaterialPropertyHash ImGuiTexture = CalculateMaterialPropertyHash("ImGuiTexture");
+static RenderPropertyHash ImGuiScale = CalculateRenderPropertyHash("ImGuiScale");
+static RenderPropertyHash ImGuiTranslation = CalculateRenderPropertyHash("ImGuiTranslation");
+static RenderPropertyHash ImGuiTexture = CalculateRenderPropertyHash("ImGuiTexture");
 
 const char* ImguiManager::GetClipboardTestCallback(void* userdata)
 {
@@ -101,6 +103,8 @@ bool ImguiManager::Init(std::shared_ptr<IInput> input, std::shared_ptr<IGraphics
 	material->GetProperties().Set(ImGuiTranslation, Vector2());
 	material->GetProperties().Set(ImGuiTexture, m_fontTexture);
 	material->UpdateResources();
+
+	m_renderer->CreateMeshRenderState(&m_MeshRenderState);
 
 	return true;
 }
@@ -225,7 +229,7 @@ void ImguiManager::UpdateInput()
 
 void ImguiManager::StartFrame(const FrameTime& time)
 {
-	ProfileScope scope(Color::Red, "ImguiManager::StartFrame");
+	ProfileScope scope(ProfileColors::Draw, "ImguiManager::StartFrame");
 
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2((float)m_window->GetWidth(), (float)m_window->GetHeight());
@@ -280,6 +284,7 @@ ImTextureID ImguiManager::StoreImage(std::shared_ptr<IGraphicsImageView> view)
 {
 	StoredImage storedImage;
 	storedImage.view = view;
+	m_renderer->CreateMeshRenderState(&storedImage.renderData);
 
 	ImTextureID id = (ImTextureID)(m_storedImages.size() + 1);
 
@@ -290,7 +295,7 @@ ImTextureID ImguiManager::StoreImage(std::shared_ptr<IGraphicsImageView> view)
 
 void ImguiManager::EndFrame()
 {
-	ProfileScope scope(Color::Red, "ImguiManager::EndFrame");
+	ProfileScope scope(ProfileColors::Draw, "ImguiManager::EndFrame");
 
 	ImGui::Render();
 
@@ -391,9 +396,15 @@ void ImguiManager::EndFrame()
 	material->GetProperties().Set(ImGuiTexture, m_fontTexture);
 
 	material->UpdateResources();
-	m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
 
-	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = m_materialRenderData->GetResourceSets();
+	// Create render property heirarchy.
+	RenderPropertyHeirarchy renderHeirarchy;
+	renderHeirarchy.Set(GraphicsBindingFrequency::Global, &m_renderer->GetGlobalRenderProperties());
+	renderHeirarchy.Set(GraphicsBindingFrequency::View, nullptr);
+	renderHeirarchy.Set(GraphicsBindingFrequency::Material, &material->GetProperties());
+	renderHeirarchy.Set(GraphicsBindingFrequency::Mesh, nullptr);
+
+	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = m_MeshRenderState->UpdateAndGetResourceSets(material, &renderHeirarchy);
 	
 	buffer->Upload(m_vertexBuffer);
 	buffer->Upload(m_indexBuffer);
@@ -432,8 +443,8 @@ void ImguiManager::EndFrame()
 					}
 				}
 
-				m_renderer->UpdateMaterialRenderData(&m_materialRenderData, material, nullptr);
-				const Array<std::shared_ptr<IGraphicsResourceSet>>& newResourceSets = m_materialRenderData->GetResourceSets();
+				const Array<std::shared_ptr<IGraphicsResourceSet>>& newResourceSets = m_MeshRenderState->UpdateAndGetResourceSets(material, &renderHeirarchy);
+				
 				buffer->SetResourceSets(newResourceSets.data(), newResourceSets.size());
 					
 				lastTextureId = cmd->TextureId;

@@ -84,7 +84,9 @@ private:
 	Array<VkDescriptorPool> m_pools;
 	Array<CachedLayout> m_layouts;
 
-	std::mutex m_descriptorSetMutex;
+	int m_setNameIndex;
+
+	Mutex m_descriptorSetMutex;
 
 	// todo: Maybe change this to something thats not hard-coded? D:
 	const int MaxAllocations = 10000;

@@ -11,7 +11,7 @@ layout(set = 0, binding = 0) uniform MeshPropertiesBlock {
     mat4 model;
 } mesProperties;
 
-layout(binding = 1) uniform samplerCube albedoTextureSampler;
+layout(set = 2, binding = 0) uniform samplerCube albedoTextureSampler;
 
 layout(location = 0) in vec3 inWorldPosition;
 layout(location = 1) in vec3 inWorldNormal;

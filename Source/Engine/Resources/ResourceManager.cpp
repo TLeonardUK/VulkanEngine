@@ -80,7 +80,7 @@ void ResourceManager::AddLoader(std::shared_ptr<IResourceLoader> loader)
 
 void ResourceManager::AddResourceLoadedCallback(std::shared_ptr<ResourceStatus> resource, ResourceLoadedCallback::Signature_t callback)
 {
-	std::lock_guard<std::mutex> lock(m_resourceLoadedCallbackMutex);
+	ScopeLock lock(m_resourceLoadedCallbackMutex);
 
 	ResourceLoadedCallback call;
 	call.Callback = callback;
@@ -119,9 +119,9 @@ void ResourceManager::WaitUntilIdle()
 
 void ResourceManager::ProcessPendingLoads()
 {
-	ProfileScope scope(Color::Red, "ResourceManager::ProcessPendingLoads");
+	ProfileScope scope(ProfileColors::Cpu, "ResourceManager::ProcessPendingLoads");
 
-	std::lock_guard<std::recursive_mutex> guard(m_pendingLoadedFlagMutex);
+	ScopeLock guard(m_pendingLoadedFlagMutex);
 
 	int resourcesLoaded = 0;
 	do
@@ -151,7 +151,7 @@ void ResourceManager::ProcessPendingLoads()
 				resourcesLoaded++;
 
 				{
-					std::lock_guard<std::mutex> lock(m_resourceLoadedCallbackMutex);
+					ScopeLock lock(m_resourceLoadedCallbackMutex);
 
 					for (auto iter = m_pendingResourceLoadedCallbacks.begin(); iter != m_pendingResourceLoadedCallbacks.end(); iter++)
 					{
@@ -178,9 +178,9 @@ void ResourceManager::ProcessPendingLoads()
 
 void ResourceManager::CollectGarbage()
 {
-	ProfileScope scope(Color::Red, "ResourceManager::CollectGarbage");
+	ProfileScope scope(ProfileColors::Cpu, "ResourceManager::CollectGarbage");
 
-	std::lock_guard<std::recursive_mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	Array<String> garbage;
 
@@ -203,7 +203,7 @@ void ResourceManager::CollectGarbage()
 
 ResourcePtr<IResource> ResourceManager::GetResource(const String& path)
 {
-	std::lock_guard<std::recursive_mutex> guard(m_resourcesMutex);
+	ScopeLock guard(m_resourcesMutex);
 
 	if (m_resources.count(path) > 0)
 	{
@@ -215,7 +215,7 @@ ResourcePtr<IResource> ResourceManager::GetResource(const String& path)
 
 ResourcePtr<IResource> ResourceManager::LoadTypeLess(const String& path, const String& tag)
 {
-	std::lock_guard<std::recursive_mutex> guard1(m_resourcesMutex);
+	ScopeLock guard1(m_resourcesMutex);
 
 	std::shared_ptr<IResourceLoader> loader = GetLoaderForTag(tag);
 
@@ -259,7 +259,7 @@ ResourcePtr<IResource> ResourceManager::LoadTypeLess(const String& path, const S
 
 ResourcePtr<IResource> ResourceManager::CreateFromTypelessPointer(const String& name, std::shared_ptr<IResource> resource, const String& tag)
 {
-	std::lock_guard<std::recursive_mutex> guard1(m_resourcesMutex);
+	ScopeLock guard1(m_resourcesMutex);
 
 	ResourcePtr<IResource> existingResource = GetResource(name);
 	if (existingResource.m_loadState != nullptr)
@@ -348,7 +348,7 @@ void ResourceManager::LoadResource(std::shared_ptr<ResourceStatus> resource)
 
 	// Defer load till end of frame to ensure we don't swap a resource out right in the middle of it being used.
 	{
-		std::lock_guard<std::recursive_mutex> guard(m_pendingLoadedFlagMutex);
+		ScopeLock guard(m_pendingLoadedFlagMutex);
 		m_pendingLoadedResources.push_back(resource);
 	}
 }

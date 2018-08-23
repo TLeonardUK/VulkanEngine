@@ -50,6 +50,9 @@ String VulkanResourceSet::GetName()
 
 void VulkanResourceSet::UpdateDescriptorSet()
 {
+	ScopeLock lock(m_updateMutex);
+
+	//printf("Updating resource set (%s): 0x%08x (thread %i)\n", m_name.c_str(), this, std::this_thread::get_id());
 	if (m_descriptorSet != nullptr)
 	{
 		m_pool->FreeDescriptorSet(m_descriptorSet);
@@ -60,6 +63,8 @@ void VulkanResourceSet::UpdateDescriptorSet()
 
 void VulkanResourceSet::UpdateResources()
 {
+	ScopeLock lock(m_updateMutex);
+
 	bool bUpdateRequired = false;
 
 	// If any uniform buffers have been changed, we need to update.

@@ -5,6 +5,7 @@
 #include "Engine/Types/Array.h"
 #include "Engine/Types/Dictionary.h"
 #include "Engine/Types/Queue.h"
+#include "Engine/Types/Mutex.h"
 #include "Engine/Threading/Semaphore.h"
 #include "Engine/Threading/TaskManager.h"
 
@@ -147,10 +148,10 @@ private:
 	Array<String> m_mountedDirectories;
 	Array<std::shared_ptr<IResourceLoader>> m_loaders;
 
-	std::recursive_mutex m_resourcesMutex;
+	Mutex m_resourcesMutex;
 	Dictionary<String, std::shared_ptr<ResourceStatus>> m_resources;
 
-	std::recursive_mutex m_pendingLoadedFlagMutex;
+	Mutex m_pendingLoadedFlagMutex;
 	Array<std::shared_ptr<ResourceStatus>> m_pendingLoadedResources;
 
 	std::atomic<int> m_pendingLoads;
@@ -169,7 +170,7 @@ private:
 		Signature_t Callback;
 	};
 
-	std::mutex m_resourceLoadedCallbackMutex;
+	Mutex m_resourceLoadedCallbackMutex;
 	Array<ResourceLoadedCallback> m_pendingResourceLoadedCallbacks;
 
 private:

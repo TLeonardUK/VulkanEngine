@@ -25,6 +25,7 @@ class RenderDirectionalShadowMapSystem
 private:
 	std::shared_ptr<Renderer> m_renderer;
 	std::shared_ptr<IGraphics> m_graphics;
+	std::shared_ptr<Logger> m_logger;
 
 	AspectId m_meshComponentAspectId;
 
@@ -43,6 +44,7 @@ private:
 public:
 	RenderDirectionalShadowMapSystem(
 		std::shared_ptr<World> world,
+		std::shared_ptr<Logger> logger,
 		std::shared_ptr<Renderer> renderer,
 		std::shared_ptr<ResourceManager> resourceManager,
 		std::shared_ptr<IGraphics> graphics);

@@ -19,8 +19,14 @@
 
 #include "Engine/Types/OctTree.h"
 
-RenderCameraViewSystem::RenderCameraViewSystem(std::shared_ptr<World> world, std::shared_ptr<Renderer> renderer)
+RenderCameraViewSystem::RenderCameraViewSystem(
+	std::shared_ptr<World> world,
+	std::shared_ptr<IGraphics> graphics,
+	std::shared_ptr<Logger> logger,
+	std::shared_ptr<Renderer> renderer)
 	: m_renderer(renderer)
+	, m_logger(logger)
+	, m_graphics(graphics)
 {
 	AddPredecessor<MeshBoundsUpdateSystem>();
 	AddPredecessor<TransformSystem>();
@@ -67,27 +73,24 @@ void RenderCameraViewSystem::TickView(
 	}
 
 	// Update global properties.
-	m_renderer->GetGlobalMaterialProperties().Set(ViewMatrixHash, view->viewMatrix);
-	m_renderer->GetGlobalMaterialProperties().Set(ProjectionMatrixHash, view->projectionMatrix);
-	m_renderer->GetGlobalMaterialProperties().Set(CameraPositionHash, cameraPosition);
-
-	// Update global buffers.
-	m_renderer->UpdateGlobalResources();
+	view->viewProperties.Set(ViewMatrixHash, view->viewMatrix);
+	view->viewProperties.Set(ProjectionMatrixHash, view->projectionMatrix);
+	view->viewProperties.Set(CameraPositionHash, cameraPosition);
 
 	// Grab all visible entities from the oct-tree.
 	{
-		ProfileScope scope(Color::Blue, "Search OctTree");
+		ProfileScope scope(ProfileColors::Draw, "Search OctTree");
 		spatialSystem->GetTree().Get(view->frustum, m_visibleEntitiesResult, false);
 	}
 
 	// Batch up all meshes.
 	{
-		ProfileScope scope(Color::Blue, "Batch Meshes");
-		m_meshBatcher.Batch(world, m_renderer, m_visibleEntitiesResult.entries, MaterialVariant::Normal);
+		ProfileScope scope(ProfileColors::Draw, "Batch Meshes");
+		m_meshBatcher.Batch(world, m_renderer, m_logger, m_graphics, m_visibleEntitiesResult.entries, MaterialVariant::Normal, &view->viewProperties);
 	}
 
 	// Generate command buffers for each batch.
-	Array<MaterialRenderBatch>& renderBatches = m_meshBatcher.GetBatches();
+	Array<MaterialRenderBatch*>& renderBatches = m_meshBatcher.GetBatches();
 
 	m_batchBuffers.resize(renderBatches.size());
 
@@ -96,20 +99,20 @@ void RenderCameraViewSystem::TickView(
 		std::shared_ptr<IGraphicsCommandBuffer> drawBuffer = m_renderer->RequestSecondaryBuffer();
 		m_batchBuffers[index] = drawBuffer;
 
-		MaterialRenderBatch& batch = renderBatches[index];
+		MaterialRenderBatch*& batch = renderBatches[index];
 
-		ProfileScope scope(Color::Red, "Render material batch: " + batch.material->GetName());
+		ProfileScope scope(ProfileColors::Draw, "Render material batch: " + batch->material->GetName());
 
 		// Generate drawing buffer.
-		drawBuffer->Begin(batch.material->GetRenderPass(), batch.material->GetFrameBuffer());
+		drawBuffer->Begin(batch->material->GetRenderPass(), batch->material->GetFrameBuffer());
 
 		if (m_renderer->IsWireframeEnabled())
 		{
-			drawBuffer->SetPipeline(batch.material->GetWireframePipeline());
+			drawBuffer->SetPipeline(batch->material->GetWireframePipeline());
 		}
 		else
 		{
-			drawBuffer->SetPipeline(batch.material->GetPipeline());
+			drawBuffer->SetPipeline(batch->material->GetPipeline());
 		}
 
 		drawBuffer->SetScissor(
@@ -126,10 +129,10 @@ void RenderCameraViewSystem::TickView(
 		);
 
 		{
-			ProfileScope scope(Color::Black, "Draw Meshes");
-			for (int i = 0; i < batch.meshInstances.size(); i++)
+			ProfileScope scope(ProfileColors::Draw, "Draw Meshes");
+			for (int i = 0; i < batch->meshInstances.size(); i++)
 			{
-				MeshInstance& instance = *batch.meshInstances[i];
+				MeshInstance& instance = *batch->meshInstances[i];
 				drawBuffer->SetIndexBuffer(*instance.indexBuffer);
 				drawBuffer->SetVertexBuffer(*instance.vertexBuffer);
 				drawBuffer->SetResourceSets(instance.resourceSets->data(), instance.resourceSets->size());
@@ -149,14 +152,14 @@ void RenderCameraViewSystem::TickView(
 		buffer->Begin();
 
 		{
-			ProfileScope scope(Color::Red, "Dispatch Buffers");
+			ProfileScope scope(ProfileColors::Draw, "Dispatch Buffers");
 			for (int i = 0; i < m_batchBuffers.size(); i++)
 			{
-				MaterialRenderBatch& batch = renderBatches[i];
+				MaterialRenderBatch*& batch = renderBatches[i];
 
-				ProfileScope scope(Color::Black, StringFormat("Batch: %s", batch.material->GetName().c_str()));
+				ProfileScope scope(ProfileColors::Draw, StringFormat("Batch: %s", batch->material->GetName().c_str()));
 
-				buffer->BeginPass(batch.material->GetRenderPass(), batch.material->GetFrameBuffer(), false);
+				buffer->BeginPass(batch->material->GetRenderPass(), batch->material->GetFrameBuffer(), false);
 				buffer->BeginSubPass();
 
 				buffer->Dispatch(m_batchBuffers[i]);
@@ -180,7 +183,7 @@ void RenderCameraViewSystem::Tick(
 {
 	// Consume all relevant messages.
 	{
-		ProfileScope scope(Color::Blue, "Tick Messages");
+		ProfileScope scope(ProfileColors::Draw, "Tick Messages");
 
 		for (auto& message : world.ConsumeMessages<SetCameraViewProjectionMessage>())
 		{
@@ -197,7 +200,7 @@ void RenderCameraViewSystem::Tick(
 
 	// Draw visible meshes for each view.
 	{
-		ProfileScope scope(Color::Blue, "Tick Views");
+		ProfileScope scope(ProfileColors::Draw, "Tick Views");
 
 		for (size_t i = 0; i < entities.size(); i++)
 		{

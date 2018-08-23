@@ -5,6 +5,7 @@
 #include "Engine/Types/String.h"
 #include "Engine/Types/Timeout.h"
 #include "Engine/Types/Dictionary.h"
+#include "Engine/Types/Mutex.h"
 #include "Engine/Threading/Event.h"
 
 class Logger;
@@ -75,7 +76,7 @@ private:
 
 	TaskQueue m_taskQueues[(int)TaskQueueFlags::Count];
 
-	std::mutex m_availableTaskIdsLock; // todo: lockless queue.
+	Mutex m_availableTaskIdsLock; // todo: lockless queue.
 	std::queue<Task::Id> m_availableTaskIds;
 
 private:

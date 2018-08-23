@@ -2,6 +2,7 @@
 
 #include "Engine/Engine/Logging.h"
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Rendering/RenderPropertyHeirarchy.h"
 #include "Engine/Resources/Types/Material.h"
 #include "Engine/Resources/Types/Shader.h"
 #include "Engine/Rendering/Renderer.h"
@@ -18,7 +19,7 @@ Material::Material(
 	std::shared_ptr<Logger> logger, 
 	const String& name, 
 	ResourcePtr<Shader> shader, 
-	MaterialPropertyCollection& properties, 
+	RenderPropertyCollection& properties, 
 	std::weak_ptr<Material> variantParent,
 	MaterialVariant variant)
 	: m_graphics(graphics)
@@ -214,7 +215,7 @@ void Material::UpdateResources()
 
 	if (m_dirty)
 	{
-		std::lock_guard<std::mutex> lock(m_updateResourcesMutex);
+		ScopeLock lock(m_updateResourcesMutex);
 		if (!m_dirty)
 		{
 			return;
@@ -270,7 +271,7 @@ void Material::GetResourceSetsForShader(std::shared_ptr<Shader>& shader, Array<M
 	{
 		MaterialResourceSet set;
 		set.description = {};
-		set.isGlobal = true;
+		set.frequency = GraphicsBindingFrequency::COUNT;
 		set.set = nullptr;
 		set.hashCode = 1;
 		set.name = m_name;
@@ -281,32 +282,23 @@ void Material::GetResourceSetsForShader(std::shared_ptr<Shader>& shader, Array<M
 	// Generate descriptors set descriptions..
 	for (const ShaderBinding& binding : bindings)
 	{
+		resourceSets[binding.Set].description.name = StringFormat("%s %s", m_name.c_str(), binding.Name.c_str());
 		resourceSets[binding.Set].description.AddBinding(binding.Name, binding.Binding, binding.Type);
 		resourceSets[binding.Set].bindings.push_back(binding);
 
 		// If ubo is a global, make sure to register it with the renderer to be filled.
-		if (binding.Type == GraphicsBindingType::UniformBufferObject &&
-			binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Global)
-		{
-			m_renderer->RegisterGlobalUniformBuffer(binding.UniformBufferLayout);
-		}
-		else
-		{
-			resourceSets[binding.Set].isGlobal = false;
-		}
+		assert(
+			resourceSets[binding.Set].frequency == GraphicsBindingFrequency::COUNT ||
+			resourceSets[binding.Set].frequency == binding.Frequency);
+
+		resourceSets[binding.Set].frequency = binding.Frequency;
 	}
 
 	// Allocate/Register each resource-set.
 	for (auto& set : m_resourceSets)
 	{
 		set.CalculateHashCode();
-
 		set.set = m_renderer->AllocateResourceSet(set.description);
-
-		if (set.isGlobal)
-		{
-			set.set = m_renderer->RegisterGlobalResourceSet(set);
-		}
 	}
 }
 
@@ -347,7 +339,7 @@ void Material::RecreateResources()
 	}
 }
 
-MaterialPropertyCollection& Material::GetProperties()
+RenderPropertyCollection& Material::GetProperties()
 {
 	return m_properties;
 }
@@ -360,145 +352,4 @@ std::shared_ptr<IGraphicsRenderPass> Material::GetRenderPass()
 std::shared_ptr<IGraphicsFramebuffer> Material::GetFrameBuffer()
 {
 	return  m_renderer->GetFramebufferForTarget(m_shader.Get()->GetTarget());
-}
-
-MaterialProperty* GetMaterialPropertyFromCollections(MaterialPropertyHash hash, MaterialPropertyCollection** collections, int collectionCount)
-{
-	MaterialProperty* prop = nullptr;
-
-	for (int i = 0; i < collectionCount; i++)
-	{
-		if (collections[i] != nullptr &&
-			collections[i]->Get(hash, &prop))
-		{
-			return prop;
-		}
-	}
-
-	return nullptr;
-}
-
-void MaterialResourceSet::CalculateHashCode()
-{
-	hashCode = 1;
-
-	CombineHash(hashCode, bindings.size());
-
-	for (ShaderBinding& binding : bindings)
-	{
-		CombineHash(hashCode, binding.Binding);
-		CombineHash(hashCode, binding.Set);
-		CombineHash(hashCode, binding.BindTo);
-		CombineHash(hashCode, binding.Name);
-		CombineHash(hashCode, binding.Type);
-		CombineHash(hashCode, binding.UniformBufferLayout.HashCode);
-	}
-}
-
-void MaterialResourceSet::UpdateBindings(
-	const std::shared_ptr<Renderer>& renderer,
-	const std::shared_ptr<Logger>& logger,
-	const Array<std::shared_ptr<IGraphicsUniformBuffer>>& meshUbos,
-	MaterialPropertyCollection* meshPropertiesCollection,
-	MaterialPropertyCollection* materialPropertiesCollection,
-	const std::shared_ptr<IGraphicsResourceSet>& updateSet
-)
-{
-	MaterialPropertyCollection* meshFrequencyPropertyCollections[2] = {
-		meshPropertiesCollection,
-		materialPropertiesCollection,
-	};
-
-	int meshUboIndex = 0;
-
-	for (ShaderBinding& binding : bindings)
-	{
-		switch (binding.Type)
-		{
-		case GraphicsBindingType::UniformBufferObject:
-			{
-				std::shared_ptr<IGraphicsUniformBuffer> buffer = nullptr;
-
-				if (binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Global)
-				{
-					buffer = renderer->GetGlobalUniformBuffer(binding.UniformBufferLayout.HashCode);
-				}
-				else if (binding.UniformBufferLayout.Frequency == GraphicsBindingFrequency::Mesh)
-				{
-					buffer = meshUbos[meshUboIndex++];
-					binding.UniformBufferLayout.FillBuffer(logger, buffer, meshFrequencyPropertyCollections, 2);
-				}
-				else
-				{
-					assert(false);
-				}
-
-				updateSet->UpdateBinding(binding.Binding, 0, buffer);
-
-				break;
-			}
-		case GraphicsBindingType::Sampler:
-			{
-				MaterialProperty* matBinding = GetMaterialPropertyFromCollections(binding.BindToHash, meshFrequencyPropertyCollections, 2);
-				if (matBinding == nullptr)
-				{
-					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property '%s' does not exist.", name.c_str(), binding.Name.c_str(), binding.BindTo.c_str());
-					continue;
-				}
-
-				if (matBinding->Format != GraphicsBindingFormat::Texture)
-				{
-					String expectedFormat = EnumToString<GraphicsBindingFormat>(GraphicsBindingFormat::Texture);
-					String actualFormat = EnumToString<GraphicsBindingFormat>(matBinding->Format);
-
-					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property format is '%s' expected '%s'.", name.c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
-					continue;
-				}
-
-				std::shared_ptr<Texture> texture = matBinding->Value_Texture.Get();
-				if (matBinding->Value_ImageSampler == nullptr &&
-					matBinding->Value_ImageView == nullptr)
-				{
-					updateSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
-				}
-				else
-				{
-					updateSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
-				}
-
-				break;
-			}
-		case GraphicsBindingType::SamplerCube:
-			{
-				MaterialProperty* matBinding = GetMaterialPropertyFromCollections(binding.BindToHash, meshFrequencyPropertyCollections, 2);
-				if (matBinding == nullptr)
-				{
-					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property '%s' does not exist.", name.c_str(), binding.Name.c_str(), binding.BindTo.c_str());
-					continue;
-				}
-
-				if (matBinding->Format != GraphicsBindingFormat::TextureCube)
-				{
-					String expectedFormat = EnumToString<GraphicsBindingFormat>(GraphicsBindingFormat::TextureCube);
-					String actualFormat = EnumToString<GraphicsBindingFormat>(matBinding->Format);
-
-					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, property format is '%s' expected '%s'.", name.c_str(), binding.Name.c_str(), actualFormat, expectedFormat);
-					continue;
-				}
-
-				std::shared_ptr<TextureCube> texture = matBinding->Value_TextureCube.Get();
-				if (matBinding->Value_ImageSampler == nullptr &&
-					matBinding->Value_ImageView == nullptr)
-				{
-					updateSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
-				}
-				else
-				{
-					updateSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
-				}
-
-				break;
-			}
-		}
-	}
 }

@@ -93,7 +93,7 @@ bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format
 	m_mipLevels = 1;
 	if (generateMips)
 	{
-		m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+		m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::min(width, height)))) + 1;
 	}
 
 	m_extents.width = width;

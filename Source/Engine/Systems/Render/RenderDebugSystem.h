@@ -82,7 +82,7 @@ private:
 	std::shared_ptr<IGraphicsIndexBuffer> m_lineIndexBuffer;
 
 	ResourcePtr<Material> m_debugLineMaterial;
-	std::shared_ptr<MaterialRenderData> m_debugLineMaterialRenderData;
+	std::shared_ptr<MeshRenderState> m_debugLineMeshRenderState;
 
 private:
 	void RenderView(

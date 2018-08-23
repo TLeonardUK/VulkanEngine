@@ -20,6 +20,7 @@ public:
 struct GraphicsResourceSetDescription
 {
 public:
+	String name = "Unnamed";
 	Array<GraphicsResourceSetBinding> bindings;
 
 public:

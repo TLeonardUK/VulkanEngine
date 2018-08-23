@@ -7,11 +7,12 @@
 
 #include "Engine/Resources/Types/Texture.h"
 #include "Engine/Resources/Types/Shader.h"
-#include "Engine/Resources/Types/MaterialPropertyCollection.h"
+#include "Engine/Rendering/RenderPropertyCollection.h"
 
 #include "Engine/Graphics/GraphicsEnums.h"
 #include "Engine/Graphics/GraphicsResourceSetPool.h"
 
+#include "Engine/Rendering/MaterialResourceSet.h"
 #include "Engine/Rendering/RendererEnums.h"
 
 #include "Engine/Types/Math.h"
@@ -29,28 +30,6 @@ class Logger;
 class Renderer;
 struct ShaderBindingField;
 
-struct MaterialResourceSet
-{
-public:
-	String name;
-	GraphicsResourceSetDescription description;
-	std::shared_ptr<IGraphicsResourceSet> set;
-	Array<ShaderBinding> bindings;
-	bool isGlobal;
-	size_t hashCode;
-
-public:
-	void CalculateHashCode();
-	void UpdateBindings(
-		const std::shared_ptr<Renderer>& renderer,
-		const std::shared_ptr<Logger>& logger,
-		const Array<std::shared_ptr<IGraphicsUniformBuffer>>& meshUbos,
-		MaterialPropertyCollection* meshPropertiesCollection, 
-		MaterialPropertyCollection* materialPropertiesCollection,
-		const std::shared_ptr<IGraphicsResourceSet>& updateSet
-	);
-};
-
 enum class MaterialVariant
 {
 	Normal,
@@ -66,7 +45,7 @@ private:
 	std::shared_ptr<Logger> m_logger;
 
 	ResourcePtr<Shader> m_shader;
-	MaterialPropertyCollection m_properties;
+	RenderPropertyCollection m_properties;
 
 	std::shared_ptr<IGraphics> m_graphics;
 	std::shared_ptr<Renderer> m_renderer;
@@ -80,7 +59,7 @@ private:
 	
 	std::shared_ptr<Shader> m_lastUpdatedShader;
 
-	std::mutex m_updateResourcesMutex;
+	Mutex m_updateResourcesMutex;
 
 	bool m_variantsCreated;
 	std::weak_ptr<Material> m_variantParent;
@@ -108,7 +87,7 @@ public:
 		std::shared_ptr<Logger> logger,
 		const String& name, 
 		ResourcePtr<Shader> shader, 
-		MaterialPropertyCollection& properties, 
+		RenderPropertyCollection& properties, 
 		std::weak_ptr<Material> variantParent,
 		MaterialVariant variant);
 
@@ -129,7 +108,7 @@ public:
 	String GetName();
 	bool GetVertexBufferFormat(VertexBufferBindingDescription& format, Array<ShaderVertexStream> remapToStreams = {});
 
-	MaterialPropertyCollection& GetProperties();
+	RenderPropertyCollection& GetProperties();
 
 	ResourcePtr<Shader> GetShader();
 

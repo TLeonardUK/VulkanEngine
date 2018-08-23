@@ -6,6 +6,7 @@
 #include "Engine/Types/Color.h"
 
 struct MeshComponent;
+class Mesh;
 
 struct RenderMesh
 {

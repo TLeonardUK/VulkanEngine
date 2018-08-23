@@ -31,7 +31,7 @@ private:
 	std::shared_ptr<IGraphics> m_graphics;
 	std::shared_ptr<Renderer> m_renderer;
 
-	std::mutex m_updateResourcesMutex;
+	Mutex m_updateResourcesMutex;
 
 	ResourcePtr<Material> m_material;
 	Array<Vector3> m_vertices;
@@ -57,7 +57,7 @@ private:
 private:
 	friend class Model;
 	friend class Renderer;
-	friend class MeshBatcher;
+	friend struct MeshBatcher;
 
 	const std::shared_ptr<IGraphicsIndexBuffer>& GetIndexBuffer();
 	const std::shared_ptr<IGraphicsVertexBuffer>& GetVertexBuffer();

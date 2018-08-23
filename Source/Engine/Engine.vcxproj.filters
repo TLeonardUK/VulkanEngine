@@ -190,6 +190,9 @@
     <Filter Include="Source Files\Systems\Render">
       <UniqueIdentifier>{3a31e629-9b8b-4ead-9458-e47f9e8c4d03}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Profiling">
+      <UniqueIdentifier>{2c5872ae-4eb0-4115-8399-fab951cf7bbf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine\Engine.cpp">
@@ -330,9 +333,6 @@
     <ClCompile Include="Resources\Types\ModelResourceLoader.cpp">
       <Filter>Source Files\Resources\Types</Filter>
     </ClCompile>
-    <ClCompile Include="Resources\Types\MaterialPropertyCollection.cpp">
-      <Filter>Source Files\Resources\Types</Filter>
-    </ClCompile>
     <ClCompile Include="Rendering\RenderView.cpp">
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
@@ -390,9 +390,6 @@
     <ClCompile Include="Utilities\Statistic.cpp">
       <Filter>Source Files\Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Resources\Types\MaterialRenderData.cpp">
-      <Filter>Source Files\Resources\Types</Filter>
-    </ClCompile>
     <ClCompile Include="Types\Rectangle.cpp">
       <Filter>Source Files\Types</Filter>
     </ClCompile>
@@ -449,6 +446,21 @@
     </ClCompile>
     <ClCompile Include="Rendering\MeshBatcher.cpp">
       <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\RenderPropertyCollection.cpp">
+      <Filter>Header Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\MeshRenderState.cpp">
+      <Filter>Header Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\MaterialResourceSet.cpp">
+      <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\RenderProperty.cpp">
+      <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Profiling\Profiling.cpp">
+      <Filter>Source Files\Profiling</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -662,9 +674,6 @@
     <ClInclude Include="Resources\Types\ModelResourceLoader.h">
       <Filter>Header Files\Resources\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Resources\Types\MaterialPropertyCollection.h">
-      <Filter>Header Files\Resources\Types</Filter>
-    </ClInclude>
     <ClInclude Include="Rendering\RenderView.h">
       <Filter>Header Files\Rendering</Filter>
     </ClInclude>
@@ -770,9 +779,6 @@
     <ClInclude Include="Utilities\Statistic.h">
       <Filter>Header Files\Utilities</Filter>
     </ClInclude>
-    <ClInclude Include="Resources\Types\MaterialRenderData.h">
-      <Filter>Header Files\Resources\Types</Filter>
-    </ClInclude>
     <ClInclude Include="Types\OctTree.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
@@ -853,6 +859,24 @@
     </ClInclude>
     <ClInclude Include="Rendering\MeshBatcher.h">
       <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\RenderPropertyCollection.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\MeshRenderState.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\RenderPropertyHeirarchy.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\MaterialResourceSet.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\RenderProperty.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\Mutex.h">
+      <Filter>Header Files\Types</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

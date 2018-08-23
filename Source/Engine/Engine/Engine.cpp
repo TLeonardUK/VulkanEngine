@@ -423,8 +423,8 @@ bool Engine::InitWorld()
 
 	// Render
 	m_world->AddSystem<RenderDebugSystem>(m_world, m_renderer, m_resourceManager, m_graphics);
-	m_world->AddSystem<RenderCameraViewSystem>(m_world, m_renderer);
-	m_world->AddSystem<RenderDirectionalShadowMapSystem>(m_world, m_renderer, m_resourceManager, m_graphics);
+	m_world->AddSystem<RenderCameraViewSystem>(m_world, m_graphics, m_logger, m_renderer);
+	m_world->AddSystem<RenderDirectionalShadowMapSystem>(m_world, m_logger, m_renderer, m_resourceManager, m_graphics);
 
 	// Transform
 	m_world->AddSystem<TransformSystem>();
@@ -479,7 +479,7 @@ void Engine::MainLoop()
 
 	while (!m_platform->WasCloseRequested())
 	{
-		ProfileScope scope(Color::Blue, "Main Loop");
+		ProfileScope scope(ProfileColors::Cpu, "Main Loop");
 
 		// Initial event handling and setup.
 		m_imguiManager->StartFrame(m_frameTime);

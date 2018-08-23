@@ -15,6 +15,7 @@
 
 class Renderer;
 class RenderView;
+class IGraphics;
 class IGraphicsCommandBuffer;
 
 // Generates command buffers to render each camera view.
@@ -23,6 +24,8 @@ class RenderCameraViewSystem
 {
 private:
 	std::shared_ptr<Renderer> m_renderer;
+	std::shared_ptr<Logger> m_logger;
+	std::shared_ptr<IGraphics> m_graphics;
 
 	AspectId m_meshComponentAspectId;
 
@@ -39,7 +42,11 @@ private:
 		const TransformComponent* transforms);
 
 public:
-	RenderCameraViewSystem(std::shared_ptr<World> world, std::shared_ptr<Renderer> renderer);
+	RenderCameraViewSystem(
+		std::shared_ptr<World> world,
+		std::shared_ptr<IGraphics> graphics,
+		std::shared_ptr<Logger> logger,
+		std::shared_ptr<Renderer> renderer);
 
 	virtual void Tick(
 		World& world, 

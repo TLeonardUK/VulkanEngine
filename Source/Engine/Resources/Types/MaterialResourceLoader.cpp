@@ -3,6 +3,7 @@
 #include "Engine/Resources/Types/MaterialResourceLoader.h"
 #include "Engine/Resources/Types/Material.h"
 #include "Engine/Resources/Types/Texture.h"
+#include "Engine/Resources/Types/TextureCube.h"
 #include "Engine/Resources/Types/Shader.h"
 #include "Engine/Resources/Resource.h"
 #include "Engine/Resources/ResourceManager.h"
@@ -43,7 +44,7 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 	ResourcePtr<Shader> shader = manager->Load<Shader>(jsonValue["ShaderPath"]);
 	manager->AddResourceDependency(resource, shader);
 
-	MaterialPropertyCollection properties;
+	RenderPropertyCollection properties;
 
 	if (jsonValue.count("Bindings") != 0)
 	{
@@ -56,9 +57,9 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 
 		for (auto iter = bindingJson.begin(); iter != bindingJson.end(); iter++)
 		{
-			MaterialProperty binding;
+			RenderProperty binding;
 			binding.Name = iter.key();
-			binding.Hash = CalculateMaterialPropertyHash(binding.Name);
+			binding.Hash = CalculateRenderPropertyHash(binding.Name);
 
 			json bindingJson = iter.value();
 

@@ -246,7 +246,7 @@ bool SdlInput::IsWindowInFocus()
 
 void SdlInput::PollInput()
 {
-	ProfileScope scope(Color::Blue, "SdlInput::PollInput");
+	ProfileScope scope(ProfileColors::Cpu, "SdlInput::PollInput");
 
 	if (!IsWindowInFocus())
 	{

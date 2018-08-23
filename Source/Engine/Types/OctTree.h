@@ -116,7 +116,7 @@ private:
 
 	void GetNodes(Result& result, const Node& node, GetIntersectionFunction_t intersectFunction) const
 	{
-		ProfileScope scope(Color::Blue, "Cell");
+		ProfileScope scope(ProfileColors::Cpu, "Cell");
 		
 		if (node.entries.size() > 0)
 		{
@@ -163,7 +163,7 @@ private:
 		}, 1, "OctTree Gather");
 
 		{
-			ProfileScope scope(Color::Green, "Resize");
+			ProfileScope scope(ProfileColors::Cpu, "Resize");
 
 			result.entries.resize(totalResults);
 		}

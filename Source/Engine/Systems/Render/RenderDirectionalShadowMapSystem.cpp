@@ -23,18 +23,20 @@
 
 RenderDirectionalShadowMapSystem::RenderDirectionalShadowMapSystem(
 	std::shared_ptr<World> world,
+	std::shared_ptr<Logger> logger,
 	std::shared_ptr<Renderer> renderer,
 	std::shared_ptr<ResourceManager> resourceManager,
 	std::shared_ptr<IGraphics> graphics
 )
 	: m_renderer(renderer)
 	, m_graphics(graphics)
+	, m_logger(logger)
 {
 	AddPredecessor<MeshBoundsUpdateSystem>();
 	AddPredecessor<TransformSystem>();
 
 	// todo: remove when we make this safe to run in parallel (remove global properties / resource updates / etc)
-	AddPredecessor<RenderCameraViewSystem>();
+	//AddPredecessor<RenderCameraViewSystem>();
 
 	m_meshComponentAspectId = world->GetAspectId({ typeid(TransformComponent), typeid(MeshComponent) });
 }
@@ -84,27 +86,24 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 	}
 
 	// Update global properties.
-	m_renderer->GetGlobalMaterialProperties().Set(ViewMatrixHash, viewMatrix);
-	m_renderer->GetGlobalMaterialProperties().Set(ProjectionMatrixHash, projectionMatrix);
-	m_renderer->GetGlobalMaterialProperties().Set(CameraPositionHash, cameraPosition);
-
-	// Update global buffers.
-	m_renderer->UpdateGlobalResources();
+	light->viewProperties.Set(ViewMatrixHash, viewMatrix);
+	light->viewProperties.Set(ProjectionMatrixHash, projectionMatrix);
+	light->viewProperties.Set(CameraPositionHash, cameraPosition);
 
 	// Grab all visible entities from the oct-tree.
 	{
-		ProfileScope scope(Color::Blue, "Search OctTree");
+		ProfileScope scope(ProfileColors::Draw, "Search OctTree");
 		spatialSystem->GetTree().Get(light->frustum, m_visibleEntitiesResult, false);
 	}
 
 	// Batch up all meshes.
 	{
-		ProfileScope scope(Color::Blue, "Batch Meshes");
-		m_meshBatcher.Batch(world, m_renderer, m_visibleEntitiesResult.entries, MaterialVariant::DepthOnly);
+		ProfileScope scope(ProfileColors::Draw, "Batch Meshes");
+		m_meshBatcher.Batch(world, m_renderer, m_logger, m_graphics, m_visibleEntitiesResult.entries, MaterialVariant::DepthOnly, &light->viewProperties);
 	}	
 	
 	// Generate command buffers for each batch.
-	Array<MaterialRenderBatch>& renderBatches = m_meshBatcher.GetBatches();
+	Array<MaterialRenderBatch*>& renderBatches = m_meshBatcher.GetBatches();
 
 	m_batchBuffers.resize(renderBatches.size());
 
@@ -113,22 +112,22 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		std::shared_ptr<IGraphicsCommandBuffer> drawBuffer = m_renderer->RequestSecondaryBuffer();
 		m_batchBuffers[index] = drawBuffer;
 
-		MaterialRenderBatch& batch = renderBatches[index];
+		MaterialRenderBatch*& batch = renderBatches[index];
 
-		ProfileScope scope(Color::Red, "Render material batch: " + batch.material->GetName());
+		ProfileScope scope(ProfileColors::Draw, "Render material batch: " + batch->material->GetName());
 
 		// Generate drawing buffer.
-		drawBuffer->Begin(batch.material->GetRenderPass(), light->shadowMapFramebuffer);
-		drawBuffer->SetPipeline(batch.material->GetPipeline());
+		drawBuffer->Begin(batch->material->GetRenderPass(), light->shadowMapFramebuffer);
+		drawBuffer->SetPipeline(batch->material->GetPipeline());
 
 		drawBuffer->SetScissor(0, 0, light->shadowMapSize, light->shadowMapSize);
 		drawBuffer->SetViewport(0, 0, light->shadowMapSize, light->shadowMapSize);
 
 		{
-			ProfileScope scope(Color::Black, "Draw Meshes");
-			for (int i = 0; i < batch.meshInstances.size(); i++)
+			ProfileScope scope(ProfileColors::Draw, "Draw Meshes");
+			for (int i = 0; i < batch->meshInstances.size(); i++)
 			{
-				MeshInstance& instance = *batch.meshInstances[i];
+				MeshInstance& instance = *batch->meshInstances[i];
 				drawBuffer->SetIndexBuffer(*instance.indexBuffer);
 				drawBuffer->SetVertexBuffer(*instance.vertexBuffer);
 				drawBuffer->SetResourceSets(instance.resourceSets->data(), instance.resourceSets->size());
@@ -152,14 +151,14 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		buffer->Clear(light->shadowMapImage, Color::Black, 1.0f, 0.0f);
 
 		{
-			ProfileScope scope(Color::Red, "Dispatch Buffers");
+			ProfileScope scope(ProfileColors::Draw, "Dispatch Buffers");
 			for (int i = 0; i < m_batchBuffers.size(); i++)
 			{
-				MaterialRenderBatch& batch = renderBatches[i];
+				MaterialRenderBatch*& batch = renderBatches[i];
 
-				ProfileScope scope(Color::Black, StringFormat("Batch: %s", batch.material->GetName().c_str()));
+				ProfileScope scope(ProfileColors::Draw, StringFormat("Batch: %s", batch->material->GetName().c_str()));
 
-				buffer->BeginPass(batch.material->GetRenderPass(), light->shadowMapFramebuffer, false);
+				buffer->BeginPass(batch->material->GetRenderPass(), light->shadowMapFramebuffer, false);
 				buffer->BeginSubPass();
 
 				buffer->Dispatch(m_batchBuffers[i]);
@@ -181,6 +180,8 @@ void RenderDirectionalShadowMapSystem::Tick(
 	const Array<DirectionalLightComponent*>& lights,
 	const Array<const TransformComponent*>& transforms)
 {
+	return;
+
 	// Draw shadow map for each light.
 	{
 		ProfileScope scope(Color::Blue, "Update Shadow Maps");

@@ -45,6 +45,7 @@
             "Type": "UniformBufferObject",
             "Binding": 0,
 			"Set": 0,
+			"Frequency": "Mesh",
             "Fields":
             {
                 "model":
@@ -52,27 +53,15 @@
                     "Format": "Matrix4",
                     "Location": 0,
                     "BindTo": "ModelMatrix"
-                },                           
-                "camPosition":
-                {
-                    "Format": "Float3",
-                    "Location": 1,
-                    "BindTo": "CameraPosition"
                 }
             }
         },
-        "albedoTextureSampler":
-        {
-            "Type": "SamplerCube",
-            "Binding": 1,
-			"Set": 0,
-            "BindTo": "AlbedoTexture"
-        },		
         "globalProperties":
         {
             "Type": "UniformBufferObject",
             "Binding": 0,
 			"Set": 1,
+			"Frequency": "View",
             "Fields":
             {                      
                 "view":
@@ -95,5 +84,13 @@
                 }
             }
         }
+        "albedoTextureSampler":
+        {
+            "Type": "SamplerCube",
+			"Frequency": "Material",
+            "Binding": 0,
+			"Set": 2,
+            "BindTo": "AlbedoTexture"
+        },		
     }
 }

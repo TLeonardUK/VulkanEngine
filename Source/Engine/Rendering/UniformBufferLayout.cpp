@@ -1,6 +1,7 @@
 #include "Pch.h"
 
 #include "Engine/Rendering/UniformBufferLayout.h"
+#include "Engine/Rendering/RenderPropertyCollection.h"
 
 #include "Engine/Graphics/GraphicsUniformBuffer.h"
 
@@ -54,7 +55,6 @@ void UniformBufferLayout::CalculateHashCode()
 {
 	HashCode = 1;
 	CombineHash(HashCode, Name);
-	CombineHash(HashCode, Frequency);
 	CombineHash(HashCode, Fields.size());
 	
 	for (int i = 0; i < Fields.size(); i++)
@@ -66,7 +66,7 @@ void UniformBufferLayout::CalculateHashCode()
 	}
 }
 
-void UniformBufferLayout::FillBuffer(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphicsUniformBuffer> buffer, MaterialPropertyCollection** collections, int collectionCount)
+void UniformBufferLayout::FillBuffer(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphicsUniformBuffer> buffer, RenderPropertyCollection** collections, int collectionCount)
 {	
 	m_dataBuffer.resize(GetSize());
 
@@ -75,7 +75,7 @@ void UniformBufferLayout::FillBuffer(std::shared_ptr<Logger> logger, std::shared
 		const UniformBufferLayoutField& field = Fields[i];
 		int fieldOffset = GetFieldOffset(i);
 
-		MaterialProperty* matBinding = nullptr;
+		RenderProperty* matBinding = nullptr;
 		for (int i = 0; i < collectionCount; i++)
 		{
 			if (collections[i] != nullptr &&

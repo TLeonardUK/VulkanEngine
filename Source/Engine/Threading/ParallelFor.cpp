@@ -36,7 +36,7 @@ public:
 
 	virtual void Run()
 	{
-		ProfileScope scope(Color::Red, GetName());
+		ProfileScope scope(ProfileColors::SecondaryTask, GetName());
 
 		while (true)
 		{
@@ -92,7 +92,7 @@ void ParallelFor(int count, ParallelForSignature_t function, int granularity, co
 		return;
 	}
 
-	ProfileScope scope(Color::Blue, "Parallel For");
+	ProfileScope scope(ProfileColors::SecondaryTask, "Parallel For");
 
 	TaskManager* manager = TaskManager::AsyncInstance;
 	int concurrency = manager->GetConcurrency();

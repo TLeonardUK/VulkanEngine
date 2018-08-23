@@ -5,6 +5,7 @@
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Rendering/RenderView.h"
 #include "Engine/Rendering/RendererEnums.h"
+#include "Engine/Rendering/RenderPropertyHeirarchy.h"
 #include "Engine/Profiling/Profiling.h"
 
 #include "Engine/Engine/Logging.h"
@@ -19,13 +20,13 @@
 #include "Engine/Utilities/Statistic.h"
 #include "Engine/Threading/ParallelFor.h"
 
-const MaterialPropertyHash ModelMatrixHash = CalculateMaterialPropertyHash("ModelMatrix");
-const MaterialPropertyHash ViewMatrixHash = CalculateMaterialPropertyHash("ViewMatrix");
-const MaterialPropertyHash ProjectionMatrixHash = CalculateMaterialPropertyHash("ProjectionMatrix");
-const MaterialPropertyHash CameraPositionHash = CalculateMaterialPropertyHash("CameraPosition");
-const MaterialPropertyHash GBuffer0Hash = CalculateMaterialPropertyHash("GBuffer0");
-const MaterialPropertyHash GBuffer1Hash = CalculateMaterialPropertyHash("GBuffer1");
-const MaterialPropertyHash GBuffer2Hash = CalculateMaterialPropertyHash("GBuffer2");
+const RenderPropertyHash ModelMatrixHash = CalculateRenderPropertyHash("ModelMatrix");
+const RenderPropertyHash ViewMatrixHash = CalculateRenderPropertyHash("ViewMatrix");
+const RenderPropertyHash ProjectionMatrixHash = CalculateRenderPropertyHash("ProjectionMatrix");
+const RenderPropertyHash CameraPositionHash = CalculateRenderPropertyHash("CameraPosition");
+const RenderPropertyHash GBuffer0Hash = CalculateRenderPropertyHash("GBuffer0");
+const RenderPropertyHash GBuffer1Hash = CalculateRenderPropertyHash("GBuffer1");
+const RenderPropertyHash GBuffer2Hash = CalculateRenderPropertyHash("GBuffer2");
 
 Statistic Stat_Rendering_Budgets_MeshesRendered		("Rendering/Budgets/Meshs Rendered",		StatisticFrequency::PerFrame,	StatisticFormat::Integer);
 Statistic Stat_Rendering_Budgets_BatchesRendered	("Rendering/Budgets/Batchs Rendered",		StatisticFrequency::PerFrame,	StatisticFormat::Integer);
@@ -48,15 +49,11 @@ Renderer::Renderer(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> gr
 	, m_renderingIsFrozen(false)
 	, m_frameCounter(0)
 {
-	// Fill various global properties with dummies, saves showing errors on initial resource binding. 
-	Matrix4 identityMatrix = Matrix4::Identity;
-	m_globalMaterialProperties.Set(ViewMatrixHash, identityMatrix);
-	m_globalMaterialProperties.Set(ProjectionMatrixHash, identityMatrix);
 }
 
 void Renderer::QueueRenderCommand(RenderCommandStage stage, RenderCommand::CommandSignature_t callback)
 {
-	std::lock_guard<std::recursive_mutex> lock(m_queuedRenderCommandsMutex);
+	ScopeLock lock(m_queuedRenderCommandsMutex);
 
 	RenderCommand command;
 	command.stage = stage;
@@ -67,7 +64,7 @@ void Renderer::QueueRenderCommand(RenderCommandStage stage, RenderCommand::Comma
 
 void Renderer::RunQueuedCommands(RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
-	std::lock_guard<std::recursive_mutex> lock(m_queuedRenderCommandsMutex);
+	ScopeLock lock(m_queuedRenderCommandsMutex);
 
 	for (auto iter = m_queuedRenderCommands.begin(); iter != m_queuedRenderCommands.end(); )
 	{
@@ -220,6 +217,9 @@ void Renderer::CreateResources()
 
 	m_resourceManager->WaitUntilIdle();
 
+	CreateMeshRenderState(&m_resolveToSwapchainMeshRenderState);
+	CreateMeshRenderState(&m_clearGBufferMeshRenderState);
+
 	VertexBufferBindingDescription description;
 	m_resolveToSwapchainMaterial.Get()->GetVertexBufferFormat(description);
 	m_fullscreenQuadVertexBuffer = m_graphics->CreateVertexBuffer("Full Screen Quad Vertex Buffer", description, 4);
@@ -244,6 +244,12 @@ void Renderer::CreateResources()
 	m_fullscreenQuadIndexBuffer->Stage(fullscreenQuadIndices.data(), 0, sizeof(uint16_t) * (int)fullscreenQuadIndices.size());
 
 	CreateSwapChainDependentResources();
+}
+
+void Renderer::CreateMeshRenderState(std::shared_ptr<MeshRenderState>* state)
+{
+	ScopeLock lock(m_renderStateCreationMutex); // todo: not required, create up-front.
+	*state = std::make_shared<MeshRenderState>(m_logger, shared_from_this(), m_graphics);
 }
 
 void Renderer::FreeResources()
@@ -375,9 +381,9 @@ void Renderer::CreateGBufferResources()
 	m_gbufferFrameBuffer = m_graphics->CreateFramebuffer("GBuffer FrameBuffer", gbufferFrameBufferSettings);
 
 	// Global properties.
-	m_globalMaterialProperties.Set(GBuffer0Hash, m_gbufferViews[0], m_gbufferSamplers[0]);
-	m_globalMaterialProperties.Set(GBuffer1Hash, m_gbufferViews[1], m_gbufferSamplers[1]);
-	m_globalMaterialProperties.Set(GBuffer2Hash, m_gbufferViews[2], m_gbufferSamplers[2]);
+	m_globalRenderProperties.Set(GBuffer0Hash, m_gbufferViews[0], m_gbufferSamplers[0]);
+	m_globalRenderProperties.Set(GBuffer1Hash, m_gbufferViews[1], m_gbufferSamplers[1]);
+	m_globalRenderProperties.Set(GBuffer2Hash, m_gbufferViews[2], m_gbufferSamplers[2]);
 }
 
 void Renderer::SwapChainModified()
@@ -393,7 +399,7 @@ std::shared_ptr<IGraphicsResourceSet>  Renderer::AllocateResourceSet(const Graph
 
 void Renderer::BuildCommandBuffer_PreRender(std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
-	ProfileScope scope(Color::Red, "Renderer::BuildCommandBuffer_PreRender");
+	ProfileScope scope(ProfileColors::Draw, "Renderer::BuildCommandBuffer_PreRender");
 
 	buffer->Reset();
 	buffer->Begin();
@@ -414,14 +420,14 @@ void Renderer::BuildCommandBuffer_PreRender(std::shared_ptr<IGraphicsCommandBuff
 	buffer->Clear(m_depthBufferImage, Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
 
 	// Clear G-Buffer
-	DrawFullScreenQuad(buffer, m_clearGBufferMaterial.Get(), &m_clearGBufferMaterialRenderData);
+	DrawFullScreenQuad(buffer, m_clearGBufferMaterial.Get(), &m_clearGBufferMeshRenderState);
 
 	buffer->End();
 }
 
 void Renderer::BuildCommandBuffer_PostRender(std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
-	ProfileScope scope(Color::Red, "Renderer::BuildCommandBuffer_PostRender");
+	ProfileScope scope(ProfileColors::Draw, "Renderer::BuildCommandBuffer_PostRender");
 
 	buffer->Reset();
 	buffer->Begin();
@@ -433,7 +439,7 @@ void Renderer::BuildCommandBuffer_PostRender(std::shared_ptr<IGraphicsCommandBuf
 	}
 
 	// Resolve to framebuffer.
-	DrawFullScreenQuad(buffer, m_resolveToSwapchainMaterial.Get(), &m_resolveToSwapchainMaterialRenderData);
+	DrawFullScreenQuad(buffer, m_resolveToSwapchainMaterial.Get(), &m_resolveToSwapchainMeshRenderState);
 
 	RunQueuedCommands(RenderCommandStage::PostRender, buffer);
 
@@ -442,7 +448,7 @@ void Renderer::BuildCommandBuffer_PostRender(std::shared_ptr<IGraphicsCommandBuf
 
 void Renderer::BuildCommandBuffer_PrePresent(std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
-	ProfileScope scope(Color::Red, "Renderer::BuildCommandBuffer_PrePresent");
+	ProfileScope scope(ProfileColors::Draw, "Renderer::BuildCommandBuffer_PrePresent");
 
 	buffer->Reset();
 	buffer->Begin();
@@ -452,10 +458,16 @@ void Renderer::BuildCommandBuffer_PrePresent(std::shared_ptr<IGraphicsCommandBuf
 	buffer->End();
 }
 
-void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material, std::shared_ptr<MaterialRenderData>* materialRenderData)
+void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material, std::shared_ptr<MeshRenderState>* MeshRenderState)
 {
 	material->UpdateResources();
-	UpdateMaterialRenderData(materialRenderData, material, &m_globalMaterialProperties);
+
+	// Create render property heirarchy.
+	RenderPropertyHeirarchy renderHeirarchy;
+	renderHeirarchy.Set(GraphicsBindingFrequency::Global, &m_globalRenderProperties);
+	renderHeirarchy.Set(GraphicsBindingFrequency::View, nullptr);
+	renderHeirarchy.Set(GraphicsBindingFrequency::Material, &material->GetProperties());
+	renderHeirarchy.Set(GraphicsBindingFrequency::Mesh, nullptr);
 
 	if (!m_fullscreenQuadsUploaded)
 	{
@@ -464,8 +476,7 @@ void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer
 		m_fullscreenQuadsUploaded = true;
 	}
 
-
-	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = (*materialRenderData)->GetResourceSets();
+	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = (*MeshRenderState)->UpdateAndGetResourceSets(material, &renderHeirarchy);
 
 	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 	buffer->BeginSubPass();
@@ -487,7 +498,7 @@ void Renderer::DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer
 
 void Renderer::Present()
 {
-	ProfileScope scope(Color::Red, "Renderer::Present");
+	ProfileScope scope(ProfileColors::Draw, "Renderer::Present");
 
 	// Allocate and build a pre-render command buffer.
 	std::shared_ptr<IGraphicsCommandBuffer> preRenderCommandBuffer = RequestPrimaryBuffer();
@@ -536,105 +547,9 @@ void Renderer::Present()
 	UpdateCommandBufferPools();
 }
 
-std::shared_ptr<IGraphicsUniformBuffer> Renderer::RegisterGlobalUniformBuffer(const UniformBufferLayout& layout)
+RenderPropertyCollection& Renderer::GetGlobalRenderProperties()
 {
-	// Already exists?
-	std::shared_ptr<IGraphicsUniformBuffer> originalBuffer = GetGlobalUniformBuffer(layout.HashCode);
-	if (originalBuffer != nullptr)
-	{
-		return originalBuffer;
-	}
-
-	int dataSize = layout.GetSize();
-
-	GraphicsResourceSetDescription description;
-	description.AddBinding(layout.Name, 0, GraphicsBindingType::UniformBufferObject);
-
-	GlobalUniformBuffer buffer;
-	buffer.layout = layout;
-	buffer.buffer = m_graphics->CreateUniformBuffer(StringFormat("Global UBO (%s)", layout.Name.c_str()), dataSize);
-
-	m_globalUniformBuffers.emplace(layout.HashCode, buffer);
-
-	return buffer.buffer;
-}
-
-std::shared_ptr<IGraphicsUniformBuffer> Renderer::GetGlobalUniformBuffer(uint64_t hashCode)
-{
-	auto iter = m_globalUniformBuffers.find(hashCode);
-	if (iter == m_globalUniformBuffers.end())
-	{
-		return nullptr;
-	}
-
-	return iter->second.buffer;
-}
-
-std::shared_ptr<IGraphicsResourceSet> Renderer::RegisterGlobalResourceSet(const MaterialResourceSet& set)
-{
-	// Already exists?
-	std::shared_ptr<IGraphicsResourceSet> originalBuffer = GetGlobalResourceSet(set.hashCode);
-	if (originalBuffer != nullptr)
-	{
-		return originalBuffer;
-	}
-
-	GlobalResourceSet buffer;
-	buffer.description = set;
-
-	m_globalResourceSets.emplace(set.hashCode, buffer);
-
-	return buffer.description.set;
-}
-
-std::shared_ptr<IGraphicsResourceSet> Renderer::GetGlobalResourceSet(uint64_t hashCode)
-{
-	auto iter = m_globalResourceSets.find(hashCode);
-	if (iter == m_globalResourceSets.end())
-	{
-		return nullptr;
-	}
-
-	return iter->second.description.set;
-}
-
-void Renderer::UpdateGlobalResources()
-{
-	UpdateGlobalUniformBuffers();
-	UpdateGlobalResourceSets();
-}
-
-void Renderer::UpdateGlobalResourceSets()
-{
-	Array<std::shared_ptr<IGraphicsUniformBuffer>> emptyUboList;
-
-	for (auto& set : m_globalResourceSets)
-	{
-		set.second.description.UpdateBindings(
-			shared_from_this(),
-			m_logger,
-			emptyUboList,
-			&m_globalMaterialProperties,
-			nullptr,
-			set.second.description.set);
-	}
-}
-
-void Renderer::UpdateGlobalUniformBuffers()
-{
-	MaterialPropertyCollection* propCollections[1] = {
-		&m_globalMaterialProperties
-	};
-
-	for (auto& ubo : m_globalUniformBuffers)
-	{
-		ubo.second.layout.FillBuffer(m_logger, ubo.second.buffer, propCollections, 1);
-	}
-}
-
-MaterialPropertyCollection& Renderer::GetGlobalMaterialProperties()
-{
-	return m_globalMaterialProperties;
+	return m_globalRenderProperties;
 }
 
 int Renderer::GetSwapChainWidth()
@@ -714,19 +629,9 @@ std::shared_ptr<IGraphicsFramebuffer> Renderer::GetFramebufferForTarget(FrameBuf
 	return nullptr;
 }
 
-void Renderer::UpdateMaterialRenderData(std::shared_ptr<MaterialRenderData>* data, const std::shared_ptr<Material>& material, MaterialPropertyCollection* collection)
-{
-	if (*data == nullptr)
-	{
-		*data = std::make_shared<MaterialRenderData>(m_logger, shared_from_this(), m_graphics);
-	}
-
-	(*data)->Update(material, collection);
-}
-
 std::shared_ptr<Renderer::ThreadLocalCommandBufferPool>& Renderer::GetCommandBufferPoolForThread()
 {
-	std::lock_guard<std::mutex> lock(m_commandBufferPoolsMutex);
+	ScopeLock lock(m_commandBufferPoolsMutex);
 
 	if (m_commandBufferPoolIndexTls == -1)
 	{
@@ -756,7 +661,7 @@ std::shared_ptr<Renderer::ThreadLocalCommandBufferPool>& Renderer::GetCommandBuf
 std::shared_ptr<IGraphicsCommandBuffer> Renderer::RequestSecondaryBuffer()
 {
 	std::shared_ptr<Renderer::ThreadLocalCommandBufferPool>& pool = GetCommandBufferPoolForThread();
-	std::lock_guard<std::mutex> lock(pool->mutex);
+	ScopeLock lock(pool->mutex);
 
 	int frameIndex = m_frameCounter % pool->frameData.size();
 	ThreadLocalCommandBufferPoolFrameData& frameData = pool->frameData[frameIndex];
@@ -773,7 +678,7 @@ std::shared_ptr<IGraphicsCommandBuffer> Renderer::RequestSecondaryBuffer()
 std::shared_ptr<IGraphicsCommandBuffer> Renderer::RequestPrimaryBuffer()
 {
 	std::shared_ptr<Renderer::ThreadLocalCommandBufferPool>& pool = GetCommandBufferPoolForThread();
-	std::lock_guard<std::mutex> lock(pool->mutex);
+	ScopeLock lock(pool->mutex);
 
 	int frameIndex = m_frameCounter % pool->frameData.size();
 	ThreadLocalCommandBufferPoolFrameData& frameData = pool->frameData[frameIndex];
@@ -789,13 +694,13 @@ std::shared_ptr<IGraphicsCommandBuffer> Renderer::RequestPrimaryBuffer()
 
 void Renderer::UpdateCommandBufferPools()
 {
-	std::lock_guard<std::mutex> lock(m_commandBufferPoolsMutex);
+	ScopeLock lock(m_commandBufferPoolsMutex);
 
 	for (auto& pool : m_commandBufferPools)
 	{
 		if (pool != nullptr)
 		{
-			std::lock_guard<std::mutex> lock(pool->mutex);
+			ScopeLock lock(pool->mutex);
 
 			int frameIndex = m_frameCounter % pool->frameData.size();
 			pool->frameData[frameIndex].primaryBuffersAllocated = 0;
@@ -806,7 +711,7 @@ void Renderer::UpdateCommandBufferPools()
 
 void Renderer::QueuePrimaryBuffer(const String& name, RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer)
 {
-	std::lock_guard<std::mutex> lock(m_queuedBuffersMutex);
+	ScopeLock lock(m_queuedBuffersMutex);
 
 	QueuedBuffer qbuffer;
 	qbuffer.name = name;

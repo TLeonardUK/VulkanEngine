@@ -1,8 +1,6 @@
 #pragma once
 #include "Pch.h"
 
-#include "Engine/Resources/Types/MaterialPropertyCollection.h"
-#include "Engine/Resources/ResourceLoader.h"
 #include "Engine/Resources/Resource.h"
 #include "Engine/Rendering/RendererEnums.h"
 #include "Engine/Rendering/UniformBufferLayout.h"
@@ -32,11 +30,12 @@ struct ShaderBinding
 {
 public:
 	String Name;
+	GraphicsBindingFrequency Frequency;
 	GraphicsBindingType Type;
 	int Binding;
 	int Set;
 	String BindTo;
-	MaterialPropertyHash BindToHash;
+	RenderPropertyHash BindToHash;
 	UniformBufferLayout UniformBufferLayout;
 };
 

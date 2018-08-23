@@ -6,6 +6,18 @@
 #include "Engine/Types/String.h"
 #include "Engine/Types/Color.h"
 
+struct ProfileColors
+{
+	static Color Cpu;
+	static Color Draw;
+	static Color Render;
+	static Color Synchronization;
+
+	static Color PrimaryTask;
+	static Color SecondaryTask;
+	static Color TertiaryTask;
+};
+
 struct ProfileScope
 {
 	ProfileScope(const Color& color, const String& str)

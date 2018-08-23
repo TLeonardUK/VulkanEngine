@@ -17,6 +17,8 @@ struct CameraViewComponent
 	Frustum frustum = Frustum::Empty;
 	Matrix4 viewMatrix = Matrix4::Identity;
 	Matrix4 projectionMatrix = Matrix4::Identity;
+
+	RenderPropertyCollection viewProperties;
 };
 
 // Changes the projection settings of a camera view.

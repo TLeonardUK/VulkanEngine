@@ -183,7 +183,7 @@ void VulkanGameInstance::Initialize()
 		}
 	}*/
 
-	/*{
+	{
 		m_environment1 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
@@ -200,15 +200,14 @@ void VulkanGameInstance::Initialize()
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment2);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/exterior.json");
 	}
-	{
+	/*{
 		m_environment1 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
 
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/SanMiguel/san-miguel.json");
-	}*/
-	
+	}	
 	{
 		m_environment1 = world->CreateEntity();
 
@@ -216,7 +215,7 @@ void VulkanGameInstance::Initialize()
 
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
-	}
+	}*/
 
 	// Create skybox.
 	{
@@ -267,6 +266,6 @@ void VulkanGameInstance::Terminate()
 
 void VulkanGameInstance::Tick(const FrameTime& time)
 {
-	ProfileScope scope(Color::Blue, "VulkanGameInstance::Tick");
+	ProfileScope scope(ProfileColors::Draw, "VulkanGameInstance::Tick");
 
 }

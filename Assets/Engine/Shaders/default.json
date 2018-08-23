@@ -55,19 +55,12 @@
                 }
             }
         },
-        "albedoTextureSampler":
-        {
-            "Type": "Sampler",
-            "Binding": 1,
-			"Set": 0,
-            "BindTo": "AlbedoTexture"
-        },		
         "globalProperties":
         {
             "Type": "UniformBufferObject",
             "Binding": 0,
 			"Set": 1,
-			"Frequency": "Global",
+			"Frequency": "View",
             "Fields":
             {                     
                 "view":
@@ -83,6 +76,14 @@
                     "BindTo": "ProjectionMatrix"
                 }
             }
-        }
+        },
+        "albedoTextureSampler":
+        {
+            "Type": "Sampler",
+			"Frequency": "Material",
+            "Binding": 0,
+			"Set": 2,
+            "BindTo": "AlbedoTexture"
+        }	
     }
 }

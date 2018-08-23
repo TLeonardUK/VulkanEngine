@@ -64,6 +64,19 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 			return false;
 		}
 
+		if (bindingJson.count("Frequency") == 0)
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding '%s' does not include required paramater 'Frequency'.", resource->Path.c_str(), bindingName.c_str());
+			return false;
+		}
+
+		String freqencyName = bindingJson["Frequency"];
+		if (!StringToEnum<GraphicsBindingFrequency>(freqencyName, binding.Frequency))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised frequency type.", resource->Path.c_str(), freqencyName.c_str());
+			return false;
+		}
+
 		if (binding.Type != GraphicsBindingType::UniformBufferObject)
 		{
 			if (bindingJson.count("BindTo") == 0)
@@ -74,7 +87,7 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 
 			String bindToName = bindingJson["BindTo"];
 			binding.BindTo = bindToName;
-			binding.BindToHash = CalculateMaterialPropertyHash(binding.BindTo);
+			binding.BindToHash = CalculateRenderPropertyHash(binding.BindTo);
 		}
 		else
 		{
@@ -88,19 +101,6 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 			if (!fieldsJson.is_object())
 			{
 				m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader definition parameter 'Fields' expected to be an object.", resource->Path.c_str());
-				return false;
-			}
-
-			if (bindingJson.count("Frequency") == 0)
-			{
-				m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding '%s' does not include required paramater 'Frequency'.", resource->Path.c_str(), bindingName.c_str());
-				return false;
-			}
-
-			String freqencyName = bindingJson["Frequency"];
-			if (!StringToEnum<GraphicsBindingFrequency>(freqencyName, binding.UniformBufferLayout.Frequency))
-			{
-				m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised frequency type.", resource->Path.c_str(), freqencyName.c_str());
 				return false;
 			}
 
@@ -128,7 +128,7 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 				UniformBufferLayoutField fieldBinding;
 				fieldBinding.Name = fieldName;
 				fieldBinding.BindTo = fieldJson["BindTo"];
-				fieldBinding.BindToHash = CalculateMaterialPropertyHash(fieldBinding.BindTo);
+				fieldBinding.BindToHash = CalculateRenderPropertyHash(fieldBinding.BindTo);
 				fieldBinding.Location = fieldJson["Location"];
 
 				String fieldFormat = fieldJson["Format"];

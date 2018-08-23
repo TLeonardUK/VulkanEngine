@@ -2,7 +2,7 @@
 #include "Pch.h"
 
 #include "Engine/Resources/Types/Model.h"
-#include "Engine/Resources/Types/MaterialRenderData.h"
+#include "Engine/Rendering/MeshRenderState.h"
 #include "Engine/Types/OrientedBounds.h"
 
 #include "Engine/ECS/Component.h"
@@ -18,4 +18,6 @@ struct DirectionalLightComponent
 	std::shared_ptr<IGraphicsImageView> shadowMapImageView;
 	std::shared_ptr<IGraphicsFramebuffer> shadowMapFramebuffer;
 	Frustum frustum;
+
+	RenderPropertyCollection viewProperties;
 };

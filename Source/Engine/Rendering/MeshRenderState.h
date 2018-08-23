@@ -3,7 +3,8 @@
 
 #include "Engine/Resources/Types/Texture.h"
 #include "Engine/Resources/Types/Shader.h"
-#include "Engine/Resources/Types/MaterialPropertyCollection.h"
+#include "Engine/Rendering/RenderPropertyCollection.h"
+#include "Engine/Rendering/RenderPropertyHeirarchy.h"
 
 #include "Engine/Graphics/GraphicsEnums.h"
 #include "Engine/Graphics/GraphicsResourceSetPool.h"
@@ -24,36 +25,41 @@ class Logger;
 class Renderer;
 struct ShaderBindingField;
 class Material;
+struct RenderPropertyHeirarchy;
 
 // Gets object-specific data required for rendering this material.
-class MaterialRenderData
+class MeshRenderState
 {
-private:
-	Array<std::shared_ptr<IGraphicsUniformBuffer>> m_uniformBuffers;
-	Array<std::shared_ptr<IGraphicsResourceSet>> m_resourceSets;
+private:	
+	struct HeirarchyResourceSetData
+	{
+		std::shared_ptr<Material> lastKnownMaterial = nullptr;
+		Array<std::shared_ptr<IGraphicsResourceSet>> sets;
+		RenderPropertyHeirarchyVersion lastHeirarchyVersion;
+	};
 
-	std::shared_ptr<Material> m_lastKnownMaterial = nullptr;
-	int m_lastMeshPropertiesVersion = -1;
-	int m_lastMaterialPropertiesVersion = -1;
+	Dictionary<size_t, HeirarchyResourceSetData*> m_sets;
+	Mutex m_setsMutex;
 
 	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<Renderer> m_renderer;
 	std::shared_ptr<IGraphics> m_graphics;
 
 private:
-	void Recreate();
-	void UpdateBindings(MaterialPropertyCollection* meshPropertiesCollection);
+	void RecreateHeirarchyResourceSet(
+		RenderPropertyHeirarchy* heirarchy,
+		HeirarchyResourceSetData* resourceSet);
 
 public:
-	MaterialRenderData(
+	MeshRenderState(
 		const std::shared_ptr<Logger>& logger,
 		const std::shared_ptr<Renderer>& renderer,
 		const std::shared_ptr<IGraphics>& graphics);
 
-	void Update(
-		const std::shared_ptr<Material>& material,
-		MaterialPropertyCollection* meshPropertiesCollection);
+	~MeshRenderState();
 
-	const Array<std::shared_ptr<IGraphicsResourceSet>>& GetResourceSets();
+	const Array<std::shared_ptr<IGraphicsResourceSet>>& UpdateAndGetResourceSets(
+		const std::shared_ptr<Material>& material,
+		RenderPropertyHeirarchy* heirarchy);
 
 };

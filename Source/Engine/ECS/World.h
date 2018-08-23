@@ -5,6 +5,7 @@
 #include "Engine/Engine/Logging.h"
 #include "Engine/Types/Dictionary.h"
 #include "Engine/Types/Array.h"
+#include "Engine/Types/Mutex.h"
 
 #include "Engine/ECS/Component.h"
 #include "Engine/ECS/ComponentPool.h"
@@ -100,16 +101,16 @@ private:
 	Array<Entity> m_entitiesPendingDestroy;
 	Array<PendingComponentRemove> m_componentsPendingDestroy;
  
-	std::mutex m_pendingEntityMessagesMutex;
+	Mutex m_pendingEntityMessagesMutex;
 	Array<DeletedEntityMessage> m_pendingDeletedEntityMessages;
 	Array<CreatedEntityMessage> m_pendingCreatedEntityMessages;
 	Array<DeletedComponentMessage> m_pendingDeletedComponentMessages;
 	Array<CreatedComponentMessage> m_pendingCreatedComponentMessages;
 
-	std::mutex m_entityMutex;
-	std::mutex m_componentPoolMutex;
-	std::mutex m_aspectCollectionMutex;
-	std::mutex m_messagesMutex;
+	Mutex m_entityMutex;
+	Mutex m_componentPoolMutex;
+	Mutex m_aspectCollectionMutex;
+	Mutex m_messagesMutex;
 
 private:
 	friend class AspectCollection;
@@ -278,7 +279,7 @@ public:
 	template <typename MessageType>
 	void QueueMessage(const MessageType& type)//, Entity entity = NoEntity)
 	{
-		std::lock_guard<std::mutex> lock(m_messagesMutex);
+		ScopeLock lock(m_messagesMutex);
 
 		MessageQueue<MessageType>& queue = GetMessageQueue<MessageType>();
 		queue.Push(type, NoEntity);// queue.Push(type, entity);
@@ -291,7 +292,7 @@ public:
 	template <typename MessageType>
 	Array<MessageType> ConsumeMessages()//Entity entityFilter = NoEntity)
 	{
-		std::lock_guard<std::mutex> lock(m_messagesMutex);
+		ScopeLock lock(m_messagesMutex);
 
 		MessageQueue<MessageType>& queue = GetMessageQueue<MessageType>();
 		return queue.Pop(NoEntity);// queue.Pop(entityFilter);
@@ -302,7 +303,7 @@ public:
 	template <typename MessageType>
 	Array<MessageType> PeekMessages()//Entity entityFilter = NoEntity)
 	{
-		std::lock_guard<std::mutex> lock(m_messagesMutex);
+		ScopeLock lock(m_messagesMutex);
 
 		MessageQueue<MessageType>& queue = GetMessageQueue<MessageType>();
 		return queue.Peek(NoEntity);// queue.Pop(entityFilter);

@@ -167,7 +167,7 @@ void Mesh::UpdateResources()
 	}
 
 	{
-		std::lock_guard<std::mutex> lock(m_updateResourcesMutex);
+		ScopeLock lock(m_updateResourcesMutex);
 		if (m_dirty == false)
 		{
 			return;

@@ -47,7 +47,7 @@ void TransformSystem::Tick(
 
 	// Consume all relevant messages.
 	{
-		ProfileScope scope(Color::Black, "Consume Messages");
+		ProfileScope scope(ProfileColors::Cpu, "Consume Messages");
 
 		for (auto& message : world.ConsumeMessages<SetTransformMessage>())
 		{
@@ -82,7 +82,7 @@ void TransformSystem::Tick(
 	m_asyncDirtyRootsList.resize(splitFactor);
 	
 	{
-		ProfileScope scope(Color::Black, "Find Dirty Roots");
+		ProfileScope scope(ProfileColors::Cpu, "Find Dirty Roots");
 
 		ParallelFor(splitFactor, [&](int split)
 		{
@@ -121,7 +121,7 @@ void TransformSystem::Tick(
 
 	// Combine async lists.	
 	{
-		ProfileScope scope(Color::Black, "Combine Dirty Roots List");
+		ProfileScope scope(ProfileColors::Cpu, "Combine Dirty Roots List");
 
 		for (int i = 1; i < splitFactor; i++)
 		{
@@ -139,7 +139,7 @@ void TransformSystem::Tick(
 
 	// Update all dirty transforms.
 	{
-		ProfileScope scope(Color::Black, "Update Dirty Roots");
+		ProfileScope scope(ProfileColors::Cpu, "Update Dirty Roots");
 
 		ParallelFor(static_cast<int>(m_asyncDirtyRootsList[0].size()), [&](int i)
 		{

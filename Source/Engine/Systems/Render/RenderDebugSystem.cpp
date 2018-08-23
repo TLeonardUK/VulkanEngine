@@ -11,6 +11,7 @@
 
 #include "Engine/Rendering/Renderer.h"
 #include "Engine/Rendering/RenderView.h"
+#include "Engine/Rendering/RenderPropertyHeirarchy.h"
 
 #include "Engine/Graphics/Graphics.h"
 
@@ -36,6 +37,8 @@ RenderDebugSystem::RenderDebugSystem(
 
 	m_debugLineMaterial = resourceManager->Load<Material>("Engine/Materials/debug_line.json");
 	m_debugLineMaterial.WaitUntilLoaded();
+
+	renderer->CreateMeshRenderState(&m_debugLineMeshRenderState);
 }
 
 void RenderDebugSystem::Tick(
@@ -201,7 +204,7 @@ void RenderDebugSystem::RenderView(
 	const Array<DebugLineVertex>& lineVerts,
 	const Array<uint32_t>& lineIndices)
 {
-	ProfileScope scope(Color::Red, "RenderDebugSystem::RenderView");
+	ProfileScope scope(ProfileColors::Draw, "RenderDebugSystem::RenderView");
 
 	int swapWidth = m_renderer->GetSwapChainWidth();
 	int swapHeight = m_renderer->GetSwapChainHeight();
@@ -213,6 +216,10 @@ void RenderDebugSystem::RenderView(
 		view->viewport.height * swapHeight
 	);
 
+	// Update global properties.
+	view->viewProperties.Set(ViewMatrixHash, view->viewMatrix);
+	view->viewProperties.Set(ProjectionMatrixHash, view->projectionMatrix);
+
 	std::shared_ptr<IGraphicsCommandBuffer> buffer = m_renderer->RequestPrimaryBuffer();
 	buffer->Reset();
 	buffer->Begin();
@@ -222,12 +229,18 @@ void RenderDebugSystem::RenderView(
 
 	// todo: set projection/view matrices.
 
-	// todo: handle multiple views.
+	// Get material.
 	std::shared_ptr<Material> material = m_debugLineMaterial.Get();
 	material->UpdateResources();
-	m_renderer->UpdateMaterialRenderData(&m_debugLineMaterialRenderData, material, &m_renderer->GetGlobalMaterialProperties());
 
-	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = m_debugLineMaterialRenderData->GetResourceSets();
+	// Create render property heirarchy.
+	RenderPropertyHeirarchy renderHeirarchy;
+	renderHeirarchy.Set(GraphicsBindingFrequency::Global, &m_renderer->GetGlobalRenderProperties());
+	renderHeirarchy.Set(GraphicsBindingFrequency::View, &view->viewProperties);
+	renderHeirarchy.Set(GraphicsBindingFrequency::Material, &material->GetProperties());
+	renderHeirarchy.Set(GraphicsBindingFrequency::Mesh, nullptr);
+
+	const Array<std::shared_ptr<IGraphicsResourceSet>>& resourceSets = m_debugLineMeshRenderState->UpdateAndGetResourceSets(material, &renderHeirarchy);
 
 	buffer->BeginPass(material->GetRenderPass(), material->GetFrameBuffer());
 	buffer->BeginSubPass();

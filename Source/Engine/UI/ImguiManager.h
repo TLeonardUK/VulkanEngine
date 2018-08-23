@@ -2,22 +2,24 @@
 #include "Pch.h"
 
 #include "Engine/Resources/ResourceManager.h"
-#include "Engine/Resources/Types/Material.h"
+//#include "Engine/Resources/Types/Material.h"
 #include "Engine/Engine/FrameTime.h"
 #include "Engine/Types/Array.h"
 
 #include "Engine/ThirdParty/imgui/imgui.h"
 
+class Material;
 class Logger;
 class IGraphics;
 class IWindow;
 class IGraphicsIndexBuffer;
 class IGraphicsVertexBuffer;
-class Renderer;
+class IGraphicsImageView;
 struct VertexBufferBindingDescription;
+class MeshRenderState;
+class Renderer;
 class IInput;
-class MaterialRenderData;
-
+class Texture;
 
 struct SDL_Window;
 
@@ -43,7 +45,7 @@ private:
 	struct StoredImage
 	{
 		std::shared_ptr<IGraphicsImageView> view;
-		std::shared_ptr<MaterialRenderData> renderData;
+		std::shared_ptr<MeshRenderState> renderData;
 	};
 
 	std::shared_ptr<Logger> m_logger;
@@ -54,7 +56,7 @@ private:
 	std::shared_ptr<ResourceManager> m_resourceManager;
 		
 	ResourcePtr<Material> m_material;
-	std::shared_ptr<MaterialRenderData> m_materialRenderData;
+	std::shared_ptr<MeshRenderState> m_MeshRenderState;
 
 	std::shared_ptr<IGraphicsIndexBuffer> m_indexBuffer;
 	std::shared_ptr<IGraphicsVertexBuffer> m_vertexBuffer;

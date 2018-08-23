@@ -29,6 +29,8 @@ private:
 
 	Array<VulkanResourceSetBinding> m_currentBindings;
 
+	Mutex m_updateMutex;
+
 private:
 	friend class VulkanGraphics;
 	friend class VulkanResourceSetPool;

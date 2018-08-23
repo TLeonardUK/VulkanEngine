@@ -33,6 +33,7 @@ struct MaterialRenderBatch
 {
 	Material* material;
 	Array<MeshInstance*> meshInstances;
+	bool inUse = false;
 };
 
 struct MeshBatcher
@@ -43,13 +44,23 @@ private:
 
 	Array<Dictionary<Material*, MaterialBatch>> m_asyncMaterialBatches;
 	Dictionary<Material*, MaterialBatch> m_materialBatches;
-	Array<MaterialRenderBatch> m_materialRenderBatches;
+	Array<MaterialRenderBatch*> m_materialRenderBatches;
+	Array<MaterialRenderBatch*> m_finalRenderBatches;
 
 	static const int MaxMeshesPerBatch = 500;
 
 public:
-	void Batch(World& world, std::shared_ptr<Renderer>& renderer, const Array<Entity>& entities, MaterialVariant variant = MaterialVariant::Normal);
+	~MeshBatcher();
 
-	Array<MaterialRenderBatch>& GetBatches();
+	void Batch(
+		World& world, 
+		const std::shared_ptr<Renderer>& renderer,
+		const std::shared_ptr<Logger>& logger,
+		const std::shared_ptr<IGraphics>& graphics,
+		const Array<Entity>& entities, 
+		MaterialVariant variant,
+		RenderPropertyCollection* viewProperties);
+
+	Array<MaterialRenderBatch*>& GetBatches();
 
 };

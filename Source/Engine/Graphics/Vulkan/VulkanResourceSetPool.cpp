@@ -168,6 +168,7 @@ VulkanResourceSetPool::VulkanResourceSetPool(
 	, m_logger(logger)
 	, m_name(name)
 	, m_graphics(graphics)
+	, m_setNameIndex(0)
 {
 	Stat_Rendering_Vulkan_ResourceSetPoolCount.Add(1);
 }
@@ -293,6 +294,7 @@ bool VulkanResourceSetPool::WriteDescriptorSet(VkDescriptorSet set, const Array<
 		write.dstSet = set;
 		write.dstBinding = binding.location;
 		write.dstArrayElement = binding.arrayIndex;
+		printf("Writing descriptor: 0x%08x\n", set);
 
 		switch (binding.type)
 		{
@@ -349,6 +351,8 @@ VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourc
 	// Nope, create a new one, generate binding data.
 	Array<VkDescriptorSetLayoutBinding> bindings(description.bindings.size());
 
+	printf("Creating layout: %i bindings\n", description.bindings.size());
+
 	for (int i = 0; i < description.bindings.size(); i++)
 	{
 		const GraphicsResourceSetBinding& bindingDescription = description.bindings[i];
@@ -364,16 +368,19 @@ VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourc
 		case GraphicsBindingType::UniformBufferObject:
 			{
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+				printf("Binding %i = UBO\n", bindingDescription.location);
 				break;
 			}
 		case GraphicsBindingType::Sampler:
 			{
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				printf("Binding %i = Sampler\n", bindingDescription.location);
 				break;
 			}
 		case GraphicsBindingType::SamplerCube:
 			{
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				printf("Binding %i = SamplerCube\n", bindingDescription.location);
 				break;
 			}
 		default:
@@ -397,6 +404,8 @@ VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourc
 	layout.layout = descriptorSetLayout;
 	m_layouts.push_back(layout);
 
+	printf("Result: 0x%08x\n", descriptorSetLayout);
+
 	m_logger->WriteInfo(LogCategory::Vulkan, "Allocated new layout.");
 
 	return descriptorSetLayout;
@@ -413,7 +422,7 @@ std::shared_ptr<IGraphicsResourceSet> VulkanResourceSetPool::Allocate(const Grap
 	return std::make_shared<VulkanResourceSet>(
 		m_device,
 		m_logger,
-		StringFormat("%s Set", m_name.c_str()),
+		StringFormat("%s (%s - %i)", m_name.c_str(), description.name.c_str(), m_setNameIndex++),
 		shared_from_this(),
 		layout);
 }
@@ -440,7 +449,7 @@ void VulkanResourceSetPool::FlushPendingFree()
 
 std::shared_ptr<VulkanResourceSetPool::CachedDescriptor> VulkanResourceSetPool::AllocDescriptorSet(VkDescriptorSetLayout layout, const Array<VulkanResourceSetBinding>& bindings)
 {
-	std::lock_guard<std::mutex> lock(m_descriptorSetMutex);
+	ScopeLock lock(m_descriptorSetMutex);
 
 	std::size_t hashCode = VulkanResourceSetBinding::GetBindingsHashCode(layout, bindings);
 
@@ -508,7 +517,7 @@ std::shared_ptr<VulkanResourceSetPool::CachedDescriptor> VulkanResourceSetPool::
 
 void VulkanResourceSetPool::FreeDescriptorSet(const std::shared_ptr<CachedDescriptor>& set)
 {
-	std::lock_guard<std::mutex> lock(m_descriptorSetMutex);
+	ScopeLock lock(m_descriptorSetMutex);
 
 	//m_logger->WriteInfo(LogCategory::Vulkan, "Added descriptor to pending free.");
 

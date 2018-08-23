@@ -1,17 +1,17 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+layout(set = 0, binding = 0) uniform MeshPropertiesBlock {
+    mat4 model;
+} meshProperties;
+
 layout(set = 1, binding = 0) uniform GlobalPropertiesBlock {
     mat4 view;
     mat4 proj;
     vec3 camPosition;
 } globalProperties;
 
-layout(set = 0, binding = 1) uniform MeshPropertiesBlock {
-    mat4 model;
-} meshProperties;
-
-layout(set = 0, binding = 1) uniform samplerCube albedoTextureSampler;
+layout(set = 2, binding = 0) uniform samplerCube albedoTextureSampler;
 
 layout(location = 0) in vec3 inWorldPosition;
 layout(location = 1) in vec3 inWorldNormal;

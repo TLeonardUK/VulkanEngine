@@ -2,7 +2,7 @@
 #include "Pch.h"
 
 #include "Engine/Resources/Types/Model.h"
-#include "Engine/Resources/Types/MaterialRenderData.h"
+#include "Engine/Rendering/MeshRenderState.h"
 #include "Engine/Types/OrientedBounds.h"
 
 #include "Engine/ECS/Component.h"

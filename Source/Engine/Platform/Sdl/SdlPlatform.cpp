@@ -40,7 +40,7 @@ bool SdlPlatform::SetupPlatform()
 
 void SdlPlatform::PumpMessageQueue()
 {
-	ProfileScope scope(Color::Blue, "SdlPlatform::PumpMessageQueue");
+	ProfileScope scope(ProfileColors::Cpu, "SdlPlatform::PumpMessageQueue");
 
 	SDL_Event sdlEvent;
 	while (SDL_PollEvent(&sdlEvent))

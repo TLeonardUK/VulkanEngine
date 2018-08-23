@@ -346,7 +346,7 @@ void VulkanCommandBuffer::SetResourceSets(const std::shared_ptr<IGraphicsResourc
 	for (int i = 0; i < count; i++)
 	{
 		std::shared_ptr<VulkanResourceSet> vulkanBuffer = std::static_pointer_cast<VulkanResourceSet>(values[i]);
-		vulkanBuffer->UpdateResources();
+		vulkanBuffer->UpdateResources(); // todo: change assumption to be that UBO's are updated ONCE per frame, and move this to where the UBO is updated.
 		vulkanBuffer->GetUniformBufferOffsets(m_uniformBufferOffsetBuffer, &uboOffsetCount);
 		vulkanBuffer->GetDescriptorSets(m_descriptorSetBuffer, &descriptorSetCount);
 	}
@@ -768,6 +768,9 @@ void VulkanCommandBuffer::Upload(const std::shared_ptr<IGraphicsImage>& buffer)
 			blit.srcSubresource.mipLevel = i - 1;
 			blit.srcSubresource.baseArrayLayer = layer;
 			blit.srcSubresource.layerCount = 1;
+
+			assert((mipWidth / 2) > 0);
+			assert((mipHeight / 2) > 0);
 
 			blit.dstOffsets[0] = { 0, 0, 0 };
 			blit.dstOffsets[1] = { mipWidth / 2, mipHeight / 2, 1 };
