@@ -3,6 +3,7 @@
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
+#include "Engine/Types/Rectangle.h"
 
 #include "Engine/Rendering/RenderPropertyCollection.h"
 //#include "Engine/Resources/Types/Model.h"
@@ -30,23 +31,28 @@ class IGraphicsImage;
 struct Statistic;
 struct GraphicsResourceSetDescription;
 
-extern const RenderPropertyHash ModelMatrixHash;
-extern const RenderPropertyHash ViewMatrixHash;
-extern const RenderPropertyHash ProjectionMatrixHash;
-extern const RenderPropertyHash CameraPositionHash;
-extern const RenderPropertyHash GBuffer0Hash;
-extern const RenderPropertyHash GBuffer1Hash;
-extern const RenderPropertyHash GBuffer2Hash;
+#define HASH(x) extern const RenderPropertyHash x##Hash;
+#include "Engine/Rendering/RendererHashes.inc"
+#undef HASH
 
 enum class RenderCommandStage
 {
-	PreRender,		// Before primary render buffers.
-	Shadow,			// Shadow map rendering.
-	Render,			// During primary render buffers.
-	Debug,			// Debug rendering stage.
-	PostRender,		// After gbuffer etc has completed.
-	PostResolve,	// After gbuffer has been resolved to swapchain.
-	PrePresent,		// Just before present, used to transition swap chain to appropriate layout.
+	Global_PreRender,				// Before primary render buffers.
+
+	// Per view stages.
+	View_START,
+	View_PreRender,					// Before rendering view (namely for resource transitions etc).
+	View_ShadowMap,					// Shadow map rendering.
+	View_GBuffer,					// GBuffer generation.
+	View_ShadowMask,				// Generating shadow mask.
+	View_Debug,						// Rendering debug primitives.
+	View_Lighting,					// Render lighting information.	
+	View_PostRender,				// After gbuffer etc has completed.
+	View_PostResolve,				// After gbuffer has been resolved to swapchain.
+	View_END,
+
+	Global_PostViews,				// After all views have been rendered.
+	Global_PrePresent,				// Just before present, used to transition swap chain to appropriate layout.
 };
 
 struct RenderCommand
@@ -74,6 +80,7 @@ private:
 	struct QueuedBuffer
 	{
 		String name;
+		uint64_t viewId;
 		RenderCommandStage stage;
 		std::shared_ptr<IGraphicsCommandBuffer> buffer;
 	};
@@ -100,6 +107,10 @@ private:
 		Array<ThreadLocalCommandBufferPoolFrameData> frameData;
 	};
 
+public:
+	static const int GBufferImageCount = 3;
+	static const int MaxShadowCascades = 8;
+
 private:
 	std::shared_ptr<Logger> m_logger;
 	std::shared_ptr<IGraphics> m_graphics;
@@ -116,7 +127,6 @@ private:
 	std::shared_ptr<IGraphicsResourceSetPool> m_resourceSetPool;
 
 	std::shared_ptr<IGraphicsRenderPass> m_resolveToSwapChainRenderPass;
-	std::shared_ptr<IGraphicsRenderPass> m_gbufferRenderPass;
 
 	Array<std::shared_ptr<IGraphicsFramebuffer>> m_swapChainFramebuffers;
 	Array<std::shared_ptr<IGraphicsImageView>> m_swapChainViews;
@@ -131,12 +141,24 @@ private:
 	Mutex m_queuedRenderCommandsMutex;
 	Array<RenderCommand> m_queuedRenderCommands;
 
-	static const int GBufferImageCount = 3;
+	std::shared_ptr<IGraphicsRenderPass> m_gbufferRenderPass;
 	std::shared_ptr<IGraphicsImage> m_gbufferImages[GBufferImageCount];
 	std::shared_ptr<IGraphicsImageView> m_gbufferViews[GBufferImageCount];
 	std::shared_ptr<IGraphicsSampler> m_gbufferSamplers[GBufferImageCount];
 	std::shared_ptr<IGraphicsFramebuffer> m_gbufferFrameBuffer;
-	
+
+	std::shared_ptr<IGraphicsRenderPass> m_shadowMaskRenderPass;
+	std::shared_ptr<IGraphicsImage> m_shadowMaskImage;
+	std::shared_ptr<IGraphicsImageView> m_shadowMaskImageView;
+	std::shared_ptr<IGraphicsSampler> m_shadowMaskSampler;
+	std::shared_ptr<IGraphicsFramebuffer> m_shadowMaskFrameBuffer;
+
+	std::shared_ptr<IGraphicsRenderPass> m_lightAccumulationRenderPass;
+	std::shared_ptr<IGraphicsImage> m_lightAccumulationImage;
+	std::shared_ptr<IGraphicsImageView> m_lightAccumulationImageView;
+	std::shared_ptr<IGraphicsSampler> m_lightAccumulationSampler;
+	std::shared_ptr<IGraphicsFramebuffer> m_lightAccumulationFrameBuffer;
+
 	ResourcePtr<Material> m_resolveToSwapchainMaterial;
 	std::shared_ptr<MeshRenderState> m_resolveToSwapchainMeshRenderState;
 
@@ -157,8 +179,11 @@ private:
 
 	Mutex m_renderStateCreationMutex;
 
+	Array<std::shared_ptr<IGraphicsImageView>> m_debugDisplayFrameBuffers;
+	Mutex m_debugDisplayFrameBuffersMutex;
+
 	// Debug functionality.
-	bool m_drawGBufferEnabled;
+	bool m_drawFrameBuffersEnabled;
 	bool m_drawWireframeEnabled;
 	bool m_drawStatisticsEnabled;
 	bool m_drawBoundsEnabled;
@@ -175,18 +200,18 @@ private:
 	void FreeSwapChainDependentResources();
 	void CreateSwapChainDependentResources();
 	void CreateGBufferResources();
+	void CreateShadowMaskResources();
+	void CreateLightingResources();
 
 	void SwapChainModified();
 
-	void BuildCommandBuffer_PreRender(std::shared_ptr<IGraphicsCommandBuffer> buffer);
-	void BuildCommandBuffer_PostRender(std::shared_ptr<IGraphicsCommandBuffer> buffer);
-	void BuildCommandBuffer_PrePresent(std::shared_ptr<IGraphicsCommandBuffer> buffer);
+	void GeneratePreRender();
+	void GeneratePostRender();
+	void GeneratePrePresent();
 
 	std::shared_ptr<IGraphicsResourceSet> AllocateResourceSet(const GraphicsResourceSetDescription& set);
 
 	void RunQueuedCommands(RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer> buffer);
-
-	void DrawFullScreenQuad(std::shared_ptr<IGraphicsCommandBuffer> buffer, std::shared_ptr<Material> material, std::shared_ptr<MeshRenderState>* MeshRenderState);
 
 	std::shared_ptr<ThreadLocalCommandBufferPool>& GetCommandBufferPoolForThread();
 	
@@ -213,6 +238,17 @@ public:
 
 	ResourcePtr<Shader> GetDepthOnlyShader();
 
+	void DisplayDebugFrameBuffer(std::shared_ptr<IGraphicsImageView> view);
+
+	void DrawFullScreenQuad(
+		std::shared_ptr<IGraphicsCommandBuffer> buffer, 
+		std::shared_ptr<Material> material, 
+		std::shared_ptr<MeshRenderState>* MeshRenderState,
+		RenderPropertyCollection* viewProperties,
+		RenderPropertyCollection* meshProperties,
+		Rect viewport = Rect::Empty,
+		Rect scissor = Rect::Empty);
+
 	std::shared_ptr<IGraphicsRenderPass> GetRenderPassForTarget(FrameBufferTarget target);
 	std::shared_ptr<IGraphicsFramebuffer> GetFramebufferForTarget(FrameBufferTarget target);
 	std::shared_ptr<IGraphicsFramebuffer> GetCurrentFramebuffer();
@@ -222,7 +258,19 @@ public:
 
 	void CreateMeshRenderState(std::shared_ptr<MeshRenderState>* state);
 
-	void QueuePrimaryBuffer(const String& name, RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer);
+	void QueuePrimaryBuffer(const String& name, RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer, uint64_t viewId = -1);
 	void QueueRenderCommand(RenderCommandStage stage, RenderCommand::CommandSignature_t callback);
+
+	ResourcePtr<Material> GetResolveToSwapChainMaterial();
+	std::shared_ptr<MeshRenderState>& GetResolveToSwapChainRenderState();
+
+	ResourcePtr<Material> GetClearGBufferMaterial();
+	std::shared_ptr<MeshRenderState>& GetClearGBufferRenderState();
+
+	std::shared_ptr<IGraphicsImage> GetGBufferImage(int index);
+	std::shared_ptr<IGraphicsImage> GetShadowMaskImage();
+	std::shared_ptr<IGraphicsImage> GetLightAccumulationImage();
+	std::shared_ptr<IGraphicsImage> GetDepthImage();
+
 
 };

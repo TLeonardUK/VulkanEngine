@@ -378,6 +378,36 @@ public:
 
 		return result;
 	}
+	static BaseMatrix4 Orthographic(T left, T right, T bottom, T top, T nearZ, T farZ)
+	{
+		float r = right;
+		right = left;
+		left = r;
+
+		BaseMatrix4<T> result = BaseMatrix4<T>(
+			2.0f / (right - left),
+			0.0f,
+			0.0f,
+			0.0f,
+
+			0.0f,
+			2.0f / (bottom - top),
+			0.0f,
+			0.0f,
+
+			0.0f,
+			0.0f,
+			2.0f / (nearZ - farZ),
+			0.0f,
+
+			-(right + left) / (right - left),
+			-(bottom + top) / (bottom - top),
+			(nearZ + farZ) / (nearZ - farZ),
+			1.0f
+		);
+
+		return result;
+	}
 	static BaseMatrix4 Perspective(T fovRadians, T aspect, T zNear, T zFar)
 	{
 		// Right handed
@@ -391,6 +421,8 @@ public:
 		result[2][3] = -static_cast<T>(1);
 		result[3][2] = -(static_cast<T>(2) * zFar * zNear) / (zFar - zNear);
 		*/
+
+		zNear *= 2.0f; /// huuuum, this doesn't feel right. But extracting the frustum planes results in znear being half what it should be.
 
 		T f = 1.0f / tan(0.5f * fovRadians);
 

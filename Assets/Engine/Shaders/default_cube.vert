@@ -15,15 +15,15 @@ layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoord1;
 
-layout(location = 0) out vec3 outWorldPosition;
-layout(location = 1) out vec3 outWorldNormal;
+layout(location = 0) out vec4 outWorldPosition;
+layout(location = 1) out vec4 outWorldNormal;
 layout(location = 2) out vec2 outTexCoord1;
 
 void main() 
 {
     outTexCoord1 = inTexCoord1;
-    outWorldNormal = normalize(mesProperties.model * vec4(inNormal, 1.0)).xyz;
-    outWorldPosition = (mesProperties.model * vec4(inPosition, 1.0)).xyz;
+    outWorldNormal = mesProperties.model * vec4(inNormal, 1.0);
+    outWorldPosition = mesProperties.model * vec4(inPosition, 1.0);
 
     gl_Position = globalProperties.proj * globalProperties.view * mesProperties.model * vec4(inPosition, 1.0);
 }

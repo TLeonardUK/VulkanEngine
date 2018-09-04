@@ -1,3 +1,4 @@
+enum_entry(Undefined)
 enum_entry(Bool)
 enum_entry(Bool2)
 enum_entry(Bool3)

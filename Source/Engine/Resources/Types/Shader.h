@@ -32,6 +32,7 @@ public:
 	String Name;
 	GraphicsBindingFrequency Frequency;
 	GraphicsBindingType Type;
+	int ArrayLength;
 	int Binding;
 	int Set;
 	String BindTo;
@@ -48,6 +49,12 @@ public:
 
 };
 
+struct ShaderProperties
+{
+	bool ShadowCaster;
+	bool ShadowReciever;
+};
+
 class Shader
 	: public IResource
 {
@@ -56,12 +63,14 @@ private:
 	Array<ShaderBinding> m_bindings;
 	GraphicsPipelineSettings m_pipelineDescription;
 
+	ShaderProperties m_properties;
+
 	FrameBufferTarget m_target;
 
 public:
 	static const char* Tag;
 
-	Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription, FrameBufferTarget target);
+	Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription, FrameBufferTarget target, const ShaderProperties& properties);
 	virtual ~Shader();
 
 	bool GetStage(GraphicsPipelineStage stage, const ShaderStage** result);
@@ -69,6 +78,8 @@ public:
 	const Array<ShaderBinding>& GetBindings();
 
 	FrameBufferTarget GetTarget();
+
+	const ShaderProperties& GetProperties();
 
 	const GraphicsPipelineSettings& GetPipelineDescription();
 

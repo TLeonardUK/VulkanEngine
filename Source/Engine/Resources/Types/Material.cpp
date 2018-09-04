@@ -283,7 +283,7 @@ void Material::GetResourceSetsForShader(std::shared_ptr<Shader>& shader, Array<M
 	for (const ShaderBinding& binding : bindings)
 	{
 		resourceSets[binding.Set].description.name = StringFormat("%s %s", m_name.c_str(), binding.Name.c_str());
-		resourceSets[binding.Set].description.AddBinding(binding.Name, binding.Binding, binding.Type);
+		resourceSets[binding.Set].description.AddBinding(binding.Name, binding.Binding, binding.Type, binding.ArrayLength);
 		resourceSets[binding.Set].bindings.push_back(binding);
 
 		// If ubo is a global, make sure to register it with the renderer to be filled.

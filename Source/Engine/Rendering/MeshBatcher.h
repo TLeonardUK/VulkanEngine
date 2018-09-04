@@ -50,6 +50,8 @@ private:
 	static const int MaxMeshesPerBatch = 500;
 
 public:
+	typedef std::function<bool(Entity entity, const MeshComponent* mesh, const TransformComponent* transform)> FilterFunction_t;
+
 	~MeshBatcher();
 
 	void Batch(
@@ -59,7 +61,8 @@ public:
 		const std::shared_ptr<IGraphics>& graphics,
 		const Array<Entity>& entities, 
 		MaterialVariant variant,
-		RenderPropertyCollection* viewProperties);
+		RenderPropertyCollection* viewProperties,
+		FilterFunction_t filter = nullptr);
 
 	Array<MaterialRenderBatch*>& GetBatches();
 

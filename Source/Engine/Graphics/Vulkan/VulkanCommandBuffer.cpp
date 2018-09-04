@@ -641,6 +641,16 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 			bFound = true;
 		}
+		else if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+		{
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+			bFound = true;
+		}
 	}
 	else if (srcLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 	{
@@ -655,9 +665,26 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 			bFound = true;
 		}
 	}
+	else if (srcLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+	{
+		if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+		{
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	assert(bFound);
-	
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+			bFound = true;
+		}
+	}
+
+	if (!bFound)
+	{
+		m_logger->WriteError(LogCategory::Vulkan, "No transition supported for %i to %i.", srcLayout, dstLayout);
+		assert(false);
+	}
+
 	vkCmdPipelineBarrier(
 		m_commandBuffer,
 		sourceStage, destinationStage,

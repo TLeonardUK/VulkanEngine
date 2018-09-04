@@ -15,4 +15,5 @@ struct MeshComponent
 	std::shared_ptr<Mesh> mesh;
 	std::shared_ptr<MeshRenderState> renderData[(int)MaterialVariant::Count];
 	RenderPropertyCollection properties;
+	uint64_t lastTransformVersion = 0;
 };

@@ -1,8 +1,6 @@
 #include "Pch.h"
 
 #include "Engine/Threading/TaskManager.h"
-#include "Engine/Profiling/Profiling.h"
-#include "Engine/Engine/Logging.h"
 
 TaskManager* TaskManager::AsyncInstance = nullptr;
 

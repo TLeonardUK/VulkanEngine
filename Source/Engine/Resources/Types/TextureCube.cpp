@@ -42,7 +42,7 @@ void TextureCube::UpdateResources()
 	}
 	m_dirty = false;
 
-	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+	m_renderer->QueueRenderCommand(RenderCommandStage::Global_PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 		buffer->Upload(m_image);
 	});
 }

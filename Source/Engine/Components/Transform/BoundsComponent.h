@@ -8,5 +8,5 @@ struct BoundsComponent
 {
 	OrientedBounds bounds;
 
-	int lastTransformVersion = -1;
+	uint64_t lastTransformVersion = 0;
 };

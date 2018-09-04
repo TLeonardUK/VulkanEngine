@@ -120,13 +120,13 @@ public:
 		BaseVector4<T> tmp(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
 		return (tmp.x + tmp.y) + (tmp.z + tmp.w);
 	}
-	static QuaternionBase<T> AngleAxis(T angle, const BaseVector3<T>& axis)
+	static QuaternionBase<T> AngleAxis(T angleRadians, const BaseVector3<T>& axis)
 	{
 		QuaternionBase<T> result;
 
-		T s = static_cast<T>(sin(angle * static_cast<T>(0.5)));
+		T s = static_cast<T>(sin(angleRadians * static_cast<T>(0.5)));
 
-		result.w = static_cast<T>(cos(angle * static_cast<T>(0.5)));
+		result.w = static_cast<T>(cos(angleRadians * static_cast<T>(0.5)));
 		result.x = axis.x * s;
 		result.y = axis.y * s;
 		result.z = axis.z * s;

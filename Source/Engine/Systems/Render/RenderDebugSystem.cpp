@@ -50,6 +50,7 @@ void RenderDebugSystem::Tick(
 {
 	Array<DrawDebugLineMessage> debugLineMessages = world.ConsumeMessages<DrawDebugLineMessage>();
 	Array<DrawDebugFrustumMessage> debugFrustumMessages = world.ConsumeMessages<DrawDebugFrustumMessage>();
+	Array<DrawDebugSphereMessage> debugSphereMessages = world.ConsumeMessages<DrawDebugSphereMessage>();
 	Array<DrawDebugBoundsMessage> debugBoundsMessages = world.ConsumeMessages<DrawDebugBoundsMessage>();
 	Array<DrawDebugOrientedBoundsMessage> debugOrientedBoundsMessages = world.ConsumeMessages<DrawDebugOrientedBoundsMessage>();
 
@@ -151,6 +152,36 @@ void RenderDebugSystem::Tick(
 		}
 	}
 
+	// Draw debug sphere.
+	for (auto& message : debugSphereMessages)
+	{
+		const float PI = 3.141592f;
+		const int gradation = 20;
+
+		float radius = message.sphere.radius;
+		Vector3 origin = message.sphere.origin;
+
+		for (float alpha = 0.0; alpha < Math::Pi; alpha += PI / gradation)
+		{
+			for (float beta = 0.0; beta < 2.01 * Math::Pi; beta += PI / gradation)
+			{
+				Vector3 start(
+					radius * cos(beta) * sin(alpha),
+					radius * sin(beta) * sin(alpha),
+					radius * cos(alpha)
+				);
+
+				Vector3 end(
+					radius * cos(beta) * sin(alpha + PI / gradation),
+					radius * sin(beta) * sin(alpha + PI / gradation),
+					radius * cos(alpha + PI / gradation)
+				);
+
+				m_lines.push_back(RenderLine(origin + start, origin + end, message.color));
+			}
+		}
+	}
+
 	// Generate indices.
 	Array<uint32_t> lineIndices;
 	Array<DebugLineVertex> lineVerts;
@@ -210,10 +241,10 @@ void RenderDebugSystem::RenderView(
 	int swapHeight = m_renderer->GetSwapChainHeight();
 
 	Rect viewport(
-		view->viewport.x * swapWidth,
-		view->viewport.y * swapHeight,
-		view->viewport.width * swapWidth,
-		view->viewport.height * swapHeight
+		0.0f,
+		0.0f,
+		swapWidth,
+		swapHeight
 	);
 
 	// Update global properties.
@@ -261,7 +292,7 @@ void RenderDebugSystem::RenderView(
 
 	buffer->SetIndexBuffer(m_lineIndexBuffer);
 	buffer->SetVertexBuffer(m_lineVertexBuffer);
-	buffer->SetResourceSets(resourceSets.data(), resourceSets.size());
+	buffer->SetResourceSets(resourceSets.data(), (int)resourceSets.size());
 
 	buffer->DrawIndexedElements(static_cast<int>(lineVerts.size()), 1, 0, 0, 0);
 
@@ -269,5 +300,5 @@ void RenderDebugSystem::RenderView(
 	buffer->EndPass();
 
 	buffer->End();
-	m_renderer->QueuePrimaryBuffer("Debug Primitives", RenderCommandStage::Debug, buffer);
+	m_renderer->QueuePrimaryBuffer("Debug Primitives", RenderCommandStage::View_Debug, buffer, reinterpret_cast<uint64_t>(view));
 }

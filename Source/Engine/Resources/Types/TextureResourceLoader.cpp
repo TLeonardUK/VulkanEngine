@@ -213,7 +213,7 @@ std::shared_ptr<IResource> TextureResourceLoader::Load(std::shared_ptr<ResourceM
 	}
 	
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(m_renderer, image, imageView, sampler);
-	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+	m_renderer->QueueRenderCommand(RenderCommandStage::Global_PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 		texture->UpdateResources();
 	});
 
@@ -255,7 +255,7 @@ std::shared_ptr<Texture> TextureResourceLoader::CreateTextureFromBytes(const Str
 
 	std::shared_ptr<Texture> texture = std::make_shared<Texture>(m_renderer, image, imageView, sampler);
 
-	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+	m_renderer->QueueRenderCommand(RenderCommandStage::Global_PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 		texture->UpdateResources();
 	});
 

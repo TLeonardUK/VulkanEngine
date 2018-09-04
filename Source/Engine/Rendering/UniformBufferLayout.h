@@ -20,7 +20,8 @@ public:
 	GraphicsBindingFormat Format;
 	String BindTo;
 	RenderPropertyHash BindToHash;
-	int Location;
+
+	int ArrayLength;
 
 };
 
@@ -39,7 +40,7 @@ public:
 	void CalculateHashCode();
 
 	int GetSize() const;
-	int GetFieldOffset(int fieldIndex) const;
+	int GetFieldOffset(int fieldIndex, int elementIndex) const;
 
 	void FillBuffer(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphicsUniformBuffer> buffer, RenderPropertyCollection** collections, int collectionCount);
 

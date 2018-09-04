@@ -60,6 +60,22 @@
             "Binding": 2,
 			"Set": 0,
             "BindTo": "GBuffer2"
+        },
+        "shadowMask":
+        {
+            "Type": "Sampler",
+			"Frequency": "Global",
+            "Binding": 3,
+			"Set": 0,
+            "BindTo": "ShadowMask"
+        },
+        "lightAccumulation":
+        {
+            "Type": "Sampler",
+			"Frequency": "Global",
+            "Binding": 4,
+			"Set": 0,
+            "BindTo": "LightAccumulation"
         }
     }
 }

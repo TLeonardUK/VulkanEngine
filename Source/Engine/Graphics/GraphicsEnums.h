@@ -85,4 +85,4 @@ enum_end_declaration(GraphicsUsage)
 
 int GetValueCountForGraphicsBindingFormat(GraphicsBindingFormat format);
 int GetByteSizeForGraphicsBindingFormat(GraphicsBindingFormat format);
-int GetAlignmentForGraphicsBindingFormat(GraphicsBindingFormat format);
+int GetAlignmentForGraphicsBindingFormat(GraphicsBindingFormat format, bool isArray);

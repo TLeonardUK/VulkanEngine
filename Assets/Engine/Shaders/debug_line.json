@@ -48,13 +48,11 @@
                 "view":
                 {
                     "Format": "Matrix4",
-                    "Location": 0,
                     "BindTo": "ViewMatrix"
                 },                        
                 "proj":
                 {
                     "Format": "Matrix4",
-                    "Location": 1,
                     "BindTo": "ProjectionMatrix"
                 }
             }

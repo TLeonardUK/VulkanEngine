@@ -39,13 +39,17 @@ void MaterialResourceSet::UpdateBindings(
 		{
 		case GraphicsBindingType::UniformBufferObject:
 			{
-				std::shared_ptr<IGraphicsUniformBuffer> buffer = nullptr;
+				// todo: not sure why on earth you would every want a UBO array, but *shrugs* this keeps
+				// everything consistent.
+				for (int i = 0; i < binding.ArrayLength; i++)
+				{
+					std::shared_ptr<IGraphicsUniformBuffer> buffer = nullptr;
 
-				buffer = collection->GetUniformBuffer(graphics, binding.UniformBufferLayout);
-				assert(buffer != nullptr);
+					buffer = collection->GetUniformBuffer(graphics, logger, binding.UniformBufferLayout);
+					assert(buffer != nullptr);
 
-				updateSet->UpdateBinding(binding.Binding, 0, buffer);
-
+					updateSet->UpdateBinding(binding.Binding, i, buffer);
+				}
 				break;
 			}
 		case GraphicsBindingType::Sampler:
@@ -66,15 +70,24 @@ void MaterialResourceSet::UpdateBindings(
 					continue;
 				}
 
-				std::shared_ptr<Texture> texture = matBinding->Value_Texture.Get();
-				if (matBinding->Value_ImageSampler == nullptr &&
-					matBinding->Value_ImageView == nullptr)
+				if (matBinding->Values.size() != binding.ArrayLength)
 				{
-					updateSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
+					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, array length is '%i' expected '%i'.", name.c_str(), binding.Name.c_str(), matBinding->Values.size(), binding.ArrayLength);
+					continue;
 				}
-				else
+
+				for (int i = 0; i < binding.ArrayLength; i++)
 				{
-					updateSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
+					std::shared_ptr<Texture> texture = matBinding->Values[i].Texture.Get();
+					if (matBinding->Values[i].ImageSampler.ImageSampler == nullptr &&
+						matBinding->Values[i].ImageSampler.ImageView == nullptr)
+					{
+						updateSet->UpdateBinding(binding.Binding, i, texture->GetSampler(), texture->GetImageView());
+					}
+					else
+					{
+						updateSet->UpdateBinding(binding.Binding, i, matBinding->Values[i].ImageSampler.ImageSampler, matBinding->Values[i].ImageSampler.ImageView);
+					}
 				}
 
 				break;
@@ -97,15 +110,24 @@ void MaterialResourceSet::UpdateBindings(
 					continue;
 				}
 
-				std::shared_ptr<TextureCube> texture = matBinding->Value_TextureCube.Get();
-				if (matBinding->Value_ImageSampler == nullptr &&
-					matBinding->Value_ImageView == nullptr)
+				if (matBinding->Values.size() != binding.ArrayLength)
 				{
-					updateSet->UpdateBinding(binding.Binding, 0, texture->GetSampler(), texture->GetImageView());
+					logger->WriteWarning(LogCategory::Resources, "[%-30s] Could not bind '%s' to mesh, array length is '%i' expected '%i'.", name.c_str(), binding.Name.c_str(), matBinding->Values.size(), binding.ArrayLength);
+					continue;
 				}
-				else
+
+				for (int i = 0; i < binding.ArrayLength; i++)
 				{
-					updateSet->UpdateBinding(binding.Binding, 0, matBinding->Value_ImageSampler, matBinding->Value_ImageView);
+					std::shared_ptr<TextureCube> texture = matBinding->Values[i].TextureCube.Get();
+					if (matBinding->Values[i].ImageSampler.ImageSampler == nullptr &&
+						matBinding->Values[i].ImageSampler.ImageView == nullptr)
+					{
+						updateSet->UpdateBinding(binding.Binding, i, texture->GetSampler(), texture->GetImageView());
+					}
+					else
+					{
+						updateSet->UpdateBinding(binding.Binding, i, matBinding->Values[i].ImageSampler.ImageSampler, matBinding->Values[i].ImageSampler.ImageView);
+					}
 				}
 
 				break;

@@ -17,3 +17,18 @@ struct Rect
 	{
 	}
 };
+
+__forceinline bool operator==(const Rect& first, const Rect& second)
+{
+	return 
+		first.x == second.x &&
+		first.y == second.y &&
+		first.width == second.width &&
+		first.height == second.height;
+}
+
+__forceinline bool operator!=(const Rect& first, const Rect& second)
+{
+	return !(first == second);
+}
+

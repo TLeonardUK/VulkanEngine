@@ -45,6 +45,8 @@ void VulkanMemoryAllocator::FreeResources()
 	}
 }
 
+//std::atomic<uint64_t> g_totalAllocated;
+
 bool VulkanMemoryAllocator::CreateBuffer(int size, VkBufferUsageFlags bufferUsage, VmaMemoryUsage memoryFlags, VmaAllocationCreateFlags allocFlags, VulkanAllocation& allocResult)
 {
 	VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
@@ -56,6 +58,9 @@ bool VulkanMemoryAllocator::CreateBuffer(int size, VkBufferUsageFlags bufferUsag
 	allocInfo.flags = allocFlags;
 
 	CheckVkResultReturnOnFail(vmaCreateBuffer(m_allocator, &bufferInfo, &allocInfo, &allocResult.Buffer, &allocResult.Allocation, &allocResult.AllocationInfo));
+
+	//g_totalAllocated += allocResult.Allocation->GetSize();
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Allocated Buffer %llu / %llu.", (uint64_t)allocResult.Allocation->GetSize(), (uint64_t)g_totalAllocated.load());
 
 	allocResult.Allocator = m_allocator;
 
@@ -74,6 +79,9 @@ bool VulkanMemoryAllocator::CreateImage(const VkImageCreateInfo& createInfo, Vma
 
 	allocResult.Allocator = m_allocator;
 
+	//g_totalAllocated += allocResult.Allocation->GetSize();
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Allocated Image %llu / %llu.", (uint64_t)allocResult.Allocation->GetSize(), (uint64_t)g_totalAllocated.load());
+
 	m_allocationsActive++;
 
 	return true;
@@ -81,6 +89,9 @@ bool VulkanMemoryAllocator::CreateImage(const VkImageCreateInfo& createInfo, Vma
 
 void VulkanMemoryAllocator::FreeBuffer(const VulkanAllocation& allocation)
 {
+	//g_totalAllocated -= allocation.Allocation->GetSize();
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Freed Buffer %llu / %llu.", (uint64_t)allocation.Allocation->GetSize(), (uint64_t)g_totalAllocated.load());
+
 	vmaDestroyBuffer(m_allocator, allocation.Buffer, allocation.Allocation);
 	m_allocationsActive--;
 	//allocation.Buffer = nullptr;
@@ -89,6 +100,9 @@ void VulkanMemoryAllocator::FreeBuffer(const VulkanAllocation& allocation)
 
 void VulkanMemoryAllocator::FreeImage(const VulkanAllocation& allocation)
 {
+	//g_totalAllocated -= allocation.Allocation->GetSize();
+	//m_logger->WriteInfo(LogCategory::Vulkan, "Freed Image %llu / %llu.", (uint64_t)allocation.Allocation->GetSize(), (uint64_t)g_totalAllocated.load());
+
 	vmaDestroyImage(m_allocator, allocation.Image, allocation.Allocation);
 	m_allocationsActive--;
 	//allocation.Buffer = nullptr;

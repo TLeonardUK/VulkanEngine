@@ -78,6 +78,7 @@ VkBlendFactor GraphicsBlendFactorToVk(GraphicsBlendFactor input)
 	case GraphicsBlendFactor::SrcAlpha: return VK_BLEND_FACTOR_SRC_ALPHA;
 	case GraphicsBlendFactor::SrcColor: return VK_BLEND_FACTOR_SRC_COLOR;
 	case GraphicsBlendFactor::Zero: return VK_BLEND_FACTOR_ZERO;
+	case GraphicsBlendFactor::One: return VK_BLEND_FACTOR_ONE;
 	}
 
 	assert(false);
@@ -295,7 +296,7 @@ bool VulkanPipeline::Build(const GraphicsPipelineSettings& settings)
 
 	VkPipelineRasterizationStateCreateInfo rasterizer = {};
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.depthClampEnable = settings.DepthClampEnabled ? VK_TRUE : VK_FALSE;;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = GraphicsPolygonModeToVk(settings.PolygonMode);
 	rasterizer.lineWidth = settings.LineWidth;

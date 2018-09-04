@@ -48,7 +48,7 @@ public:
 	ScopeLock(Mutex& mutex)
 		: m_mutex(mutex)
 	{
-		ProfileScope scope(ProfileColors::Synchronization, "Mutex Lock");
+		//ProfileScope scope(ProfileColors::Synchronization, "Mutex Lock");
 
 		m_mutex.Lock();
 	}

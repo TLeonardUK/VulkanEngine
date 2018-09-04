@@ -19,10 +19,12 @@ protected:
 	int m_frameCount;
 
 	Entity m_camera;
+	Entity m_camera2;
 	Entity m_skybox;
 	Entity m_environment1;
 	Entity m_environment2;
 	Entity m_directionalLight;
+	Entity m_directionalLight2;
 
 public:
 	VulkanGameInstance(std::shared_ptr<Engine> engine);

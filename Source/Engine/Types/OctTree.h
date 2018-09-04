@@ -139,7 +139,7 @@ private:
 
 		for (auto& subNode : result.nodes)
 		{
-			maxResults += subNode->entries.size();
+			maxResults += (int)subNode->entries.size();
 		}
 
 		result.entries.resize(maxResults);

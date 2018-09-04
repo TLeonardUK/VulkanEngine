@@ -65,8 +65,8 @@ InputSystem VulkanGameInstance::GetInputSystem()
 
 void VulkanGameInstance::GetWindowSettings(int& width, int& height, int& rate, WindowMode& mode)
 {
-	width = 1280;
-	height = 960;
+	width = 2560;
+	height = 1440;
 	rate = 60;
 	mode = WindowMode::Windowed;
 }
@@ -183,7 +183,7 @@ void VulkanGameInstance::Initialize()
 		}
 	}*/
 
-	{
+	/*{
 		m_environment1 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
@@ -191,8 +191,8 @@ void VulkanGameInstance::Initialize()
 
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/interior.json");
-	}
-	{
+	}*/
+	/*{
 		m_environment2 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment2);
@@ -200,14 +200,15 @@ void VulkanGameInstance::Initialize()
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment2);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/exterior.json");
 	}
-	/*{
+	{
 		m_environment1 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
+		rootTransform->localScale = Vector3(100.0f, 100.0f, 100.0f);
 
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/SanMiguel/san-miguel.json");
-	}	
+	}	*/
 	{
 		m_environment1 = world->CreateEntity();
 
@@ -215,7 +216,7 @@ void VulkanGameInstance::Initialize()
 
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
-	}*/
+	}
 
 	// Create skybox.
 	{
@@ -232,10 +233,27 @@ void VulkanGameInstance::Initialize()
 		m_directionalLight = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_directionalLight);
+	//	rootTransform->localPosition = Vector3(-809.201294f, 4059.02295f, -2213.07935f);
+	//	rootTransform->localRotation = Quaternion(-0.449642152f, -0.173942536f, 0.0897440314f, 0.871499717f);
+		rootTransform->localPosition = Vector3(2049.83472f, 3228.46704f, -483.595795f);
+		rootTransform->localRotation = Quaternion(0.389321238f, -0.530930877f, 0.299298376f, -0.690624118f);
 
 		DirectionalLightComponent* lightComponent = world->AddComponent<DirectionalLightComponent>(m_directionalLight);
 		lightComponent->isShadowCasting = true;
+		lightComponent->shadowMapSize = 512;// 1024;
+		lightComponent->shadowDistance = 10000.0f;
 	}
+	/*{
+		m_directionalLight2 = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_directionalLight2);
+		rootTransform->localPosition = Vector3(-3672.85278f, 4701.94482f, -142.922623f);
+		rootTransform->localRotation = Quaternion(-0.278151512f, -0.647214472f, 0.275164783f, 0.654239595f);
+
+		DirectionalLightComponent* lightComponent = world->AddComponent<DirectionalLightComponent>(m_directionalLight2);
+		lightComponent->isShadowCasting = true;
+		lightComponent->shadowMapSize = 1024;
+	}*/
 
 	// Create debug fly camera.
 	{
@@ -244,15 +262,30 @@ void VulkanGameInstance::Initialize()
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_camera);
 
 		CameraViewComponent* cameraView = world->AddComponent<CameraViewComponent>(m_camera);
-		cameraView->depthMin = 5.0f;
-		cameraView->depthMax = 15000.0f;
-		cameraView->fov = 65.0f;
+		cameraView->depthMin = 10.f;
+		cameraView->depthMax = 10000.0f;
+		cameraView->fov = 90.0f;
+		//cameraView->viewport = Rect(0.0f, 0.0f, 0.5f, 0.5f);
 		cameraView->viewport = Rect(0.0f, 0.0f, 1.0f, 1.0f);
 
 		FlyCameraComponent* flyCamera = world->AddComponent<FlyCameraComponent>(m_camera);
 		flyCamera->movementSpeed = 50.0f;
 		flyCamera->mouseSensitivity = 500.0f;
 	}
+
+	/*{
+		m_camera2 = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_camera2);
+		rootTransform->localPosition = Vector3(0.0f, 1000.0f, 0.0f);
+
+		CameraViewComponent* cameraView = world->AddComponent<CameraViewComponent>(m_camera2);
+		cameraView->depthMin = 5.0f;
+		cameraView->depthMax = 15000.0f;
+		cameraView->fov = 65.0f;
+		cameraView->viewport = Rect(0.5f, 0.5f, 0.5f, 0.5f);
+	}*/
+
 
 	m_viewPosition = Vector3(0.0f, 0.0f, -10.0f);
 	m_viewRotation = Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
@@ -268,4 +301,14 @@ void VulkanGameInstance::Tick(const FrameTime& time)
 {
 	ProfileScope scope(ProfileColors::Draw, "VulkanGameInstance::Tick");
 
+	std::shared_ptr<Engine> engine = GetEngine();
+	std::shared_ptr<World> world = engine->GetWorld();
+
+	TransformComponent* camTransform = world->GetComponent<TransformComponent>(m_camera);
+
+	// fix bad
+	//TransformComponent* rootTransform = world->GetComponent<TransformComponent>(m_directionalLight);
+	//;rootTransform->localPosition = camTransform->localPosition;
+	//rootTransform->localRotation = camTransform->localRotation;
+	//rootTransform->isDirty = true;
 }

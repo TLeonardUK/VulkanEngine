@@ -3,6 +3,7 @@
 
 #include "Engine/Types/String.h"
 #include "Engine/Types/Array.h"
+#include "Engine/Types/FixedList.h"
 #include "Engine/Engine/Logging.h"
 
 #include "Engine/Graphics/Graphics.h"
@@ -12,6 +13,17 @@
 #include "Engine/Graphics/Vulkan/VulkanResource.h"
 
 #include <vulkan/vulkan.h>
+
+struct VulkanResourceSetUniformBufferBinding
+{
+	std::shared_ptr<VulkanUniformBuffer> buffer;
+	VkBuffer vkBuffer;
+};
+
+__forceinline bool operator==(const VulkanResourceSetUniformBufferBinding& first, const VulkanResourceSetUniformBufferBinding& second)
+{
+	return first.buffer == second.buffer;
+}
 
 class VulkanResourceSet
 	: public IGraphicsResourceSet
@@ -28,6 +40,9 @@ private:
 	std::shared_ptr<VulkanResourceSetPool> m_pool;
 
 	Array<VulkanResourceSetBinding> m_currentBindings;
+
+	Mutex m_boundUniformBuffersMutex;
+	FixedList<VulkanGraphics::MAX_BOUND_UBO, VulkanResourceSetUniformBufferBinding> m_boundUniformBuffers;
 
 	Mutex m_updateMutex;
 
@@ -53,7 +68,8 @@ private:
 	void GetDescriptorSets(VkDescriptorSet* destination, int* count);
 
 	VulkanResourceSetBinding& GetBinding(int location, int arrayIndex);
-
+	
+	bool IsUpdateRequired();
 	void UpdateResources();
 
 public:

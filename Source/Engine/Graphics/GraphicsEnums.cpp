@@ -88,7 +88,8 @@ enum_end_implementation(GraphicsUsage)
 int GetValueCountForGraphicsBindingFormat(GraphicsBindingFormat format)
 {
 	static int lookupTable[static_cast<int>(GraphicsBindingFormat::COUNT)] = {
-		1,// Bool
+		0,//Undefined
+		1,//Bool
 		2,
 		3,
 		4,
@@ -121,6 +122,7 @@ int GetValueCountForGraphicsBindingFormat(GraphicsBindingFormat format)
 int GetByteSizeForGraphicsBindingFormat(GraphicsBindingFormat format)
 {
 	static int lookupTable[static_cast<int>(GraphicsBindingFormat::COUNT)] = {
+		0,
 		sizeof(bool),
 		sizeof(BVector2),
 		sizeof(BVector3),
@@ -151,7 +153,7 @@ int GetByteSizeForGraphicsBindingFormat(GraphicsBindingFormat format)
 	return lookupTable[static_cast<int>(format)];
 }
 
-int GetAlignmentForGraphicsBindingFormat(GraphicsBindingFormat format)
+int GetAlignmentForGraphicsBindingFormat(GraphicsBindingFormat format, bool isArray)
 {
 	// Based on 
 	// https://www.khronos.org/registry/vulkan/specs/1.0-wsi_extensions/html/vkspec.html#interfaces-resources
@@ -165,6 +167,7 @@ int GetAlignmentForGraphicsBindingFormat(GraphicsBindingFormat format)
 	// A column - major matrix has a base alignment equal to the base alignment of the matrix column type.
 
 	static int lookupTable[static_cast<int>(GraphicsBindingFormat::COUNT)] = {
+		0,
 		sizeof(bool),
 		sizeof(bool) * 2,
 		sizeof(bool) * 4,
@@ -192,5 +195,11 @@ int GetAlignmentForGraphicsBindingFormat(GraphicsBindingFormat format)
 		0,
 	};
 
-	return lookupTable[static_cast<int>(format)];
+	int baseAlignment = lookupTable[static_cast<int>(format)];
+	if (isArray)
+	{
+		baseAlignment = Math::Max(baseAlignment, (int)sizeof(float) * 4);
+	}
+
+	return baseAlignment;
 }

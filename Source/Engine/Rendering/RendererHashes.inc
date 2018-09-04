@@ -1,0 +1,15 @@
+HASH(ModelMatrix);
+HASH(ViewMatrix);
+HASH(ProjectionMatrix);
+HASH(CameraPosition);
+HASH(ShadowMap);
+HASH(GBuffer0);
+HASH(GBuffer1);
+HASH(GBuffer2);
+HASH(ShadowMask);
+HASH(LightAccumulation);
+HASH(LightViewPosition);
+HASH(LightCascadeCount);
+HASH(LightCascadeViewProj);
+HASH(LightCascadeSplitDistances);
+HASH(LightCascadeShadowMaps);

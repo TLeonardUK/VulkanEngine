@@ -93,6 +93,7 @@ class VulkanGraphics
 public:
 	static const uint32_t MAX_BOUND_DESCRIPTOR_SETS = 8;
 	static const uint32_t MAX_BOUND_UBO = 8;
+	static const uint32_t MAX_RESOURCE_SET_BINDINGS = 8;
 
 private:
 	static const Array<const char*> InstanceExtensionsToRequest;
@@ -253,7 +254,7 @@ public:
 
 	virtual void UpdateStatistics();
 
-	virtual void Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer);
+	virtual void Dispatch(const String& name, std::shared_ptr<IGraphicsCommandBuffer> buffer);
 
 	virtual void WaitForDeviceIdle();
 

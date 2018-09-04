@@ -305,7 +305,7 @@ void Mesh::UpdateResources()
 		m_vertexBuffer = m_graphics->CreateVertexBuffer(StringFormat("%s Vertex Buffer", m_name.c_str()), m_vertexBufferFormat, (int)m_vertices.size());
 		m_vertexBuffer->Stage((void*)interleavedData.data(), 0, (int)interleavedData.size());
 
-		m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+		m_renderer->QueueRenderCommand(RenderCommandStage::Global_PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 			buffer->Upload(m_vertexBuffer);
 			buffer->Upload(m_indexBuffer);
 		});

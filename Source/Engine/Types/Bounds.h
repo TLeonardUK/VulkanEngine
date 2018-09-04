@@ -33,15 +33,17 @@ public:
 	{
 	}
 
-	Bounds(const Array<Vector3>& points)
+	Bounds(const Vector3* points, int count)
 	{
-		if (points.size() > 0)
+		if (count > 0)
 		{
 			min = points[0];
 			max = points[0];
 
-			for (const Vector3& point : points)
+			for (int i = 0; i < count; i++)
 			{
+				const Vector3& point = points[i];
+
 				min = Vector3::Min(min, point);
 				max = Vector3::Max(max, point);
 			}
@@ -51,6 +53,16 @@ public:
 			min = Vector3::Zero;
 			max = Vector3::Zero;
 		}
+	}
+
+	Bounds(const Array<Vector3>& points)
+		: Bounds(points.data(), (int)points.size())
+	{
+	}
+
+	inline static Bounds FromCenterAndExtents(const Vector3& center, const Vector3& extents)
+	{
+		return Bounds(center - extents, center + extents);
 	}
 
 	Vector3 GetCenter() const

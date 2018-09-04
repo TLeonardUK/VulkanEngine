@@ -1,0 +1,4 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/directional_shadow_mask.json"
+}

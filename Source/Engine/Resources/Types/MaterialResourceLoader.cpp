@@ -60,6 +60,7 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 			RenderProperty binding;
 			binding.Name = iter.key();
 			binding.Hash = CalculateRenderPropertyHash(binding.Name);
+			binding.Values.resize(1);
 
 			json bindingJson = iter.value();
 
@@ -115,13 +116,13 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 
 			if (binding.Format == GraphicsBindingFormat::Texture)
 			{
-				binding.Value_Texture = manager->Load<Texture>(values[0]);
-				manager->AddResourceDependency(resource, binding.Value_Texture);
+				binding.Values[0].Texture = manager->Load<Texture>(values[0]);
+				manager->AddResourceDependency(resource, binding.Values[0].Texture);
 			}
 			else if (binding.Format == GraphicsBindingFormat::TextureCube)
 			{
-				binding.Value_TextureCube = manager->Load<TextureCube>(values[0]);
-				manager->AddResourceDependency(resource, binding.Value_TextureCube);
+				binding.Values[0].TextureCube = manager->Load<TextureCube>(values[0]);
+				manager->AddResourceDependency(resource, binding.Values[0].TextureCube);
 			}
 			else
 			{
@@ -143,7 +144,7 @@ std::shared_ptr<IResource> MaterialResourceLoader::Load(std::shared_ptr<Resource
 		MaterialVariant::Normal);
 
 	manager->AddResourceLoadedCallback(resource, [=]() {
-		m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+		m_renderer->QueueRenderCommand(RenderCommandStage::Global_PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 			material->UpdateResources();
 		});
 	});

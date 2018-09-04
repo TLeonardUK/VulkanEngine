@@ -350,6 +350,7 @@ bool VulkanGraphics::CreateLogicalDevice()
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
 	deviceFeatures.fillModeNonSolid = VK_TRUE;
 	deviceFeatures.depthBiasClamp = VK_TRUE;
+	deviceFeatures.depthClamp = VK_TRUE;
 	deviceFeatures.wideLines = VK_TRUE;
 
 	Array<const char*> extensions = DeviceExtensionsToRequest;
@@ -848,8 +849,6 @@ bool VulkanGraphics::Present()
 		buffers.push_back(buffer->GetCommandBuffer());
 	}
 
-	m_pendingCommandBuffers.clear();
-
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
@@ -888,6 +887,7 @@ bool VulkanGraphics::Present()
 		return false;
 	}
 
+	m_pendingCommandBuffers.clear();
 	m_currentFrame++;
 	return false;
 }
@@ -1075,9 +1075,11 @@ std::shared_ptr<IGraphicsSampler> VulkanGraphics::CreateSampler(const String& na
 	return pass;
 }
 
-void VulkanGraphics::Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer)
+void VulkanGraphics::Dispatch(const String& name, std::shared_ptr<IGraphicsCommandBuffer> buffer)
 {
-	m_pendingCommandBuffers.push_back(std::static_pointer_cast<VulkanCommandBuffer>(buffer));
+	std::shared_ptr<VulkanCommandBuffer> vkBuffer = std::static_pointer_cast<VulkanCommandBuffer>(buffer);
+	//printf("[0x%08x] %s\n", vkBuffer->GetCommandBuffer(), name.c_str());
+	m_pendingCommandBuffers.push_back(vkBuffer);
 }
 
 void VulkanGraphics::WaitForDeviceIdle()

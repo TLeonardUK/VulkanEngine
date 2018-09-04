@@ -30,6 +30,29 @@ void ShaderResourceLoader::AssignDefault(std::shared_ptr<ResourceStatus> resourc
 	resource->DefaultResource = m_defaultShader.Get();
 }
 
+bool ShaderResourceLoader::SplitArrayLength(String& format, int& arrayLength, std::shared_ptr<ResourceStatus> resource)
+{
+	size_t openBraceOffset = format.find('[');
+	size_t closeBraceOffset = format.find(']');
+	if (openBraceOffset != std::string::npos && closeBraceOffset != std::string::npos)
+	{
+		String fieldLength = format.substr(openBraceOffset + 1, closeBraceOffset - openBraceOffset);
+		arrayLength = atoi(fieldLength.c_str());
+
+		if (arrayLength < 1)
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] Encountered invalid array length %i.", resource->Path.c_str(), arrayLength);
+			return false;
+		}
+
+		format = format.substr(0, openBraceOffset);
+		return true;
+	}
+
+	arrayLength = 1;
+	return true;
+}
+
 bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& jsonData, std::shared_ptr<ResourceStatus> resource)
 {
 	for (auto iter = jsonData.begin(); iter != jsonData.end(); iter++)
@@ -37,15 +60,21 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 		String bindingName = iter.key();
 		json bindingJson = iter.value();
 
-		String bindingTypeName = bindingJson["Type"];
-
-		ShaderBinding binding;
+		ShaderBinding binding;	
 
 		if (bindingJson.count("Type") == 0)
 		{
 			m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding '%s' does not include required paramater 'Type'.", resource->Path.c_str(), bindingName.c_str());
 			return false;
 		}
+
+		String bindingTypeName = bindingJson["Type"];
+
+		if (!SplitArrayLength(bindingTypeName, binding.ArrayLength, resource))
+		{
+			return false;
+		}
+
 		if (!StringToEnum<GraphicsBindingType>(bindingTypeName, binding.Type))
 		{
 			m_logger->WriteError(LogCategory::Resources, "[%-30s] %s is not a recognised binding type.", resource->Path.c_str(), bindingTypeName.c_str());
@@ -119,19 +148,19 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 					m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding field '%s' does not include required paramater 'BindTo'.", resource->Path.c_str(), fieldName.c_str());
 					return false;
 				}
-				if (fieldJson.count("Location") == 0)
-				{
-					m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding field '%s' does not include required paramater 'Location'.", resource->Path.c_str(), fieldName.c_str());
-					return false;
-				}
 
 				UniformBufferLayoutField fieldBinding;
 				fieldBinding.Name = fieldName;
 				fieldBinding.BindTo = fieldJson["BindTo"];
 				fieldBinding.BindToHash = CalculateRenderPropertyHash(fieldBinding.BindTo);
-				fieldBinding.Location = fieldJson["Location"];
+				fieldBinding.ArrayLength = 1;
 
 				String fieldFormat = fieldJson["Format"];
+
+				if (!SplitArrayLength(fieldFormat, fieldBinding.ArrayLength, resource))
+				{
+					return false;
+				}
 
 				if (!StringToEnum<GraphicsBindingFormat>(fieldFormat, fieldBinding.Format))
 				{
@@ -142,23 +171,6 @@ bool ShaderResourceLoader::LoadBindings(Array<ShaderBinding>& bindings, json& js
 				binding.UniformBufferLayout.Fields.push_back(fieldBinding);
 			}
 			
-			// Sort by location in struct.
-			std::sort(binding.UniformBufferLayout.Fields.begin(), binding.UniformBufferLayout.Fields.end(),
-				[](const UniformBufferLayoutField& a, const UniformBufferLayoutField& b) -> bool
-			{
-				return a.Location < b.Location;
-			});
-
-			// Ensure fields are sequential.
-			for (int i = 0; i < binding.UniformBufferLayout.Fields.size(); i++)
-			{
-				if (binding.UniformBufferLayout.Fields[i].Location != i)
-				{
-					m_logger->WriteError(LogCategory::Resources, "[%-30s] Shader binding field '%s' is not sequential, expected location %i.", resource->Path.c_str(), binding.UniformBufferLayout.Fields[i].Name, i);
-					return false;
-				}
-			}
-
 			binding.UniformBufferLayout.CalculateHashCode();
 		}
 
@@ -396,6 +408,10 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 	{
 		pipelineDescription.DepthBiasEnabled = jsonValue["DepthBiasEnabled"];
 	}
+	if (jsonValue.count("DepthClampEnabled"))
+	{
+		pipelineDescription.DepthClampEnabled = jsonValue["DepthClampEnabled"];
+	}
 	if (jsonValue.count("LineWidth"))
 	{
 		pipelineDescription.LineWidth = jsonValue["LineWidth"];
@@ -535,5 +551,16 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 		}
 	}
 
-	return std::make_shared<Shader>(shaderStages, shaderBindings, pipelineDescription, target);
+	// Parse general shader properties.
+	ShaderProperties properties;
+	if (jsonValue.count("ShadowCaster"))
+	{
+		properties.ShadowCaster = jsonValue["ShadowCaster"];
+	}
+	if (jsonValue.count("ShadowReciever"))
+	{
+		properties.ShadowReciever = jsonValue["ShadowReciever"];
+	}
+
+	return std::make_shared<Shader>(shaderStages, shaderBindings, pipelineDescription, target, properties);
 }

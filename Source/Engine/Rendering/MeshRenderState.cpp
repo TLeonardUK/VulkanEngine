@@ -40,19 +40,8 @@ void MeshRenderState::RecreateHeirarchyResourceSet(
 	{
 		RenderPropertyCollection* collection = heirarchy->Get(set.frequency);
 
-		// Instantiate resource-set if neccessary.
-		collection->GetResourceSet(m_renderer, m_graphics, set);
-	}
-
-	for (const MaterialResourceSet& set : resourceSets)
-	{
-		RenderPropertyCollection* collection = heirarchy->Get(set.frequency);
-
-		// Update the heirarchy resources if required.
-		collection->UpdateResources(m_graphics, m_logger);
-
-		// Store our actual resource-set.
-		resourceSet->sets.push_back(collection->GetResourceSet(m_renderer, m_graphics, set));
+		// todo: do update in here if resource-set has changed.
+		resourceSet->sets.push_back(collection->GetResourceSet(m_renderer, m_graphics, m_logger, set)); 
 	}
 }
 
@@ -60,7 +49,7 @@ const Array<std::shared_ptr<IGraphicsResourceSet>>& MeshRenderState::UpdateAndGe
 	const std::shared_ptr<Material>& material,
 	RenderPropertyHeirarchy* heirarchy)
 {
-	ScopeLock lock(m_setsMutex);
+	ScopeLock lock(m_setsMutex); // todo: need to remove this fucker.
 
 	HeirarchyResourceSetData* resourceSet;
 
@@ -68,6 +57,10 @@ const Array<std::shared_ptr<IGraphicsResourceSet>>& MeshRenderState::UpdateAndGe
 	bool bIsNew = false;
 
 	// todo: purge old set instances (do we care? There won't be many and don't take much space?)
+	// what if we have 1000 lights in a scene? this could blow up fast?
+	// todo: something else should cache this data higher up? 
+	// only store last x in array? Can just shift through and grab whats important. New heirarchy values
+	// just do an atomic swap of entry they want? no locking required.
 
 	// Get state stored for this heirarchy combo.
 	auto setsIter = m_sets.find(hashCode);
@@ -82,16 +75,9 @@ const Array<std::shared_ptr<IGraphicsResourceSet>>& MeshRenderState::UpdateAndGe
 		resourceSet = setsIter->second;
 	}
 
-	// If material has changed, heirarchy version has changed or this
-	// is a heirarchy we haven't encountered before, we need to regenerate 
-	// our list of resource-sets. 
-	//
-	// TODO: This is super-shitty as the view heirarchy version updates each version,
-	// resulting in us re-running this every frame -_-. Update each heirarchy level at appropriate place 
-	// instead of here.
+	// If anything has changed that could cause resource-sets to be invalid, then re-generate.
 	if (bIsNew || 
-		&*material != &*resourceSet->lastKnownMaterial ||
-		heirarchy->GetVersion() != resourceSet->lastHeirarchyVersion)
+		&*material != &*resourceSet->lastKnownMaterial)
 	{
 		resourceSet->lastKnownMaterial = material;
 
@@ -99,63 +85,4 @@ const Array<std::shared_ptr<IGraphicsResourceSet>>& MeshRenderState::UpdateAndGe
 	}
 
 	return resourceSet->sets;
-
-
-
-
-	// should we take in a task-specific buffer we cache this data in? Save a mutex lock.
-
-	// need to cache unique values for each heirarchy combination.
-	// todo: purge out values if heirarchies are removed (is this really neccessary, meshes are not going to render with different heirarchies often)?
-	//ScopeLock lock(m_resourceMutex); // todo: not required.
-	
-	// Todo: ech this is gonna be slow.
-	//const Array<MaterialResourceSet>& resourceSets = material->GetResourceSets();
-	//const Array<ShaderBinding>& bindings = material->GetShader().Get()->GetBindings();
-
-	// ############################################
-	// TODO NOW: MaterialResourceSet's are currently shared. This explodes if multiple threads are tryhing
-	// to update the sames ones at the same time. Also won't meshes with seperate matrices etc.
-	// ############################################
-
-	//output->reserve(resourceSets.size());
-	//output->clear();
-
-	// todo: all mutex frequency ubo's/resource-set's neext to be updated
-	//       inside a mutex (they should only update once per frame though).
-
-	// Get all resource sets.
-	/*for (const MaterialResourceSet& set : resourceSets)
-	{
-		RenderPropertyCollection* collection = heirarchy->Get(set.frequency);
-
-		// This is slow as shit, fix nao.
-		collection->GetResourceSet(m_graphics, set); // once to create if neccessary.
-		collection->UpdateResources(m_graphics, m_logger);
-		output->push_back(collection->GetResourceSet(m_graphics, set));
-	}*/
-
-	/*if (&*material != &*m_lastKnownMaterial)
-	{
-		m_lastKnownMaterial = material;
-
-		Recreate(heirarchy);
-	}*/
 }
-
-/*	ScopeLock lock(m_resourceMutex); // todo: not required.
-
-	const Array<MaterialResourceSet>& resourceSets = m_lastKnownMaterial->GetResourceSets();
-	const Array<ShaderBinding>& bindings = m_lastKnownMaterial->GetShader().Get()->GetBindings();
-	
-	m_resourceSets.clear();
-
-	// todo: all mutex frequency ubo's/resource-set's neext to be updated
-	//       inside a mutex (they should only update once per frame though).
-
-	// Get all resource sets.
-	for (const MaterialResourceSet& set : resourceSets)
-	{
-		m_resourceSets.push_back(heirarchy->Get(set.frequency)->GetResourceSet(set));
-	}
-*/

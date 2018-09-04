@@ -86,6 +86,11 @@ String VulkanImage::GetName()
 	return m_name;
 }
 
+String VulkanImage::GetImageName()
+{
+	return m_name;
+}
+
 bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format, bool generateMips, GraphicsUsage usage)
 {
 	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image (%i x %i, %i layers): %s", width, height, layers, m_name.c_str());
@@ -105,7 +110,8 @@ bool VulkanImage::Build(int width, int height, int layers, GraphicsFormat format
 	m_memorySize = m_layerSize * layers;
 	m_isDepth = (
 		format == GraphicsFormat::UNORM_D24_UINT_S8 ||
-		format == GraphicsFormat::UNORM_D16);
+		format == GraphicsFormat::UNORM_D16 ||
+		format == GraphicsFormat::SFLOAT_D32);
 
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

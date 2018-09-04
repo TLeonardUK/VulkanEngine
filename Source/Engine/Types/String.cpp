@@ -67,7 +67,7 @@ String FormatBytes(int bytes)
 
 String SliceString(const String& value, int start, int end)
 {
-	int length = value.size();
+	int length = (int)value.size();
 
 	if (start < 0)
 	{
@@ -118,10 +118,10 @@ Array<String> SplitString(const String& value, const String& seperator, int maxS
 
 	for (size_t i = 0; i < value.size(); i++)
 	{
-		String res = SliceString(value, i, i + 1);
+		String res = SliceString(value, (int)i, (int)i + 1);
 		if (i <= value.size() - seperator.size())
 		{
-			res = SliceString(value, i, i + seperator.size());
+			res = SliceString(value, (int)i, (int)i + (int)seperator.size());
 		}
 
 		if (res == seperator && ((int)result.size() < maxSplits || maxSplits <= 0))
@@ -136,7 +136,7 @@ Array<String> SplitString(const String& value, const String& seperator, int maxS
 		}
 		else
 		{
-			split += SliceString(value, i, i + 1);
+			split += SliceString(value, (int)i, (int)i + 1);
 		}
 	}
 

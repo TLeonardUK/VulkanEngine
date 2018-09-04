@@ -79,7 +79,7 @@ std::shared_ptr<IResource> TextureCubeResourceLoader::Load(std::shared_ptr<Resou
 	}
 
 	std::shared_ptr<TextureCube> texture = std::make_shared<TextureCube>(m_renderer, image, imageView, sampler);
-	m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+	m_renderer->QueueRenderCommand(RenderCommandStage::Global_PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 		texture->UpdateResources();
 	});
 

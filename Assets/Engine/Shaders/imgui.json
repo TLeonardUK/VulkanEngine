@@ -76,13 +76,11 @@
                 "scale":
                 {
                     "Format": "Float2",
-                    "Location": 0,
                     "BindTo": "ImGuiScale"
                 },
                 "translation":
                 {
                     "Format": "Float2",
-                    "Location": 1,
                     "BindTo": "ImGuiTranslation"
                 }
             }

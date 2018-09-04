@@ -19,51 +19,75 @@ class IGraphicsSampler;
 typedef int RenderPropertyHash;
 RenderPropertyHash CalculateRenderPropertyHash(const String& name);
 
+struct RenderPropertyImageSamplerValue
+{
+	std::shared_ptr<IGraphicsImageView> ImageView;
+	std::shared_ptr<IGraphicsSampler> ImageSampler;
+
+	RenderPropertyImageSamplerValue() = default;
+
+	RenderPropertyImageSamplerValue(
+		std::shared_ptr<IGraphicsImageView> view,
+		std::shared_ptr<IGraphicsSampler> sampler
+	)
+		: ImageView(view)
+		, ImageSampler(sampler)
+	{
+	}
+};
+
+struct RenderPropertyValue
+{
+	union
+	{
+		bool		Bool;
+		BVector2	Bool2;
+		BVector3	Bool3;
+		BVector4	Bool4;
+
+		int32_t		Int;
+		IVector2	Int2;
+		IVector3	Int3;
+		IVector4	Int4;
+
+		uint32_t	UInt;
+		UVector2	UInt2;
+		UVector3	UInt3;
+		UVector4	UInt4;
+
+		float		Float;
+		Vector2		Float2;
+		Vector3		Float3;
+		Vector4		Float4;
+
+		double		Double;
+		DVector2	Double2;
+		DVector3	Double3;
+		DVector4	Double4;
+
+		Matrix2		Matrix2;
+		Matrix3		Matrix3;
+		Matrix4		Matrix4;
+	};
+
+	ResourcePtr<Texture> Texture;
+	ResourcePtr<TextureCube> TextureCube;
+
+	RenderPropertyImageSamplerValue ImageSampler;
+};
+
 struct RenderProperty
 {
+private:
+
 public:
 	GraphicsBindingFormat Format;
 	RenderPropertyHash Hash;
 	String Name;
 
-	union
-	{
-		bool		Value_Bool;
-		BVector2	Value_Bool2;
-		BVector3	Value_Bool3;
-		BVector4	Value_Bool4;
+	Array<RenderPropertyValue> Values;
 
-		int32_t		Value_Int;
-		IVector2	Value_Int2;
-		IVector3	Value_Int3;
-		IVector4	Value_Int4;
-
-		uint32_t	Value_UInt;
-		UVector2	Value_UInt2;
-		UVector3	Value_UInt3;
-		UVector4	Value_UInt4;
-
-		float		Value_Float;
-		Vector2		Value_Float2;
-		Vector3		Value_Float3;
-		Vector4		Value_Float4;
-
-		double		Value_Double;
-		DVector2	Value_Double2;
-		DVector3	Value_Double3;
-		DVector4	Value_Double4;
-
-		Matrix2		Value_Matrix2;
-		Matrix3		Value_Matrix3;
-		Matrix4		Value_Matrix4;
-	};
-
-	ResourcePtr<Texture>	 Value_Texture;
-	ResourcePtr<TextureCube> Value_TextureCube;
-
-	std::shared_ptr<IGraphicsImageView> Value_ImageView;
-	std::shared_ptr<IGraphicsSampler> Value_ImageSampler;
-
+	RenderProperty();
 	void ParseJsonValue(Array<json>& value);
 
 };

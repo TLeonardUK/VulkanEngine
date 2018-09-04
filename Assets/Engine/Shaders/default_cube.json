@@ -51,7 +51,6 @@
                 "model":
                 {
                     "Format": "Matrix4",
-                    "Location": 0,
                     "BindTo": "ModelMatrix"
                 }
             }
@@ -67,19 +66,16 @@
                 "view":
                 {
                     "Format": "Matrix4",
-                    "Location": 0,
                     "BindTo": "ViewMatrix"
                 },                        
                 "proj":
                 {
                     "Format": "Matrix4",
-                    "Location": 1,
                     "BindTo": "ProjectionMatrix"
                 },                        
                 "camPosition":
                 {
                     "Format": "Float3",
-                    "Location": 2,
                     "BindTo": "CameraPosition"
                 }
             }

@@ -28,12 +28,12 @@ public:
 	{
 	}
 
-	Plane(const Vector3& origin, const Vector3& normal)
+	Plane(const Vector3& normal, const Vector3& origin)
 	{
-		x = origin.x;
-		y = origin.y;
-		z = origin.z;
-		w = Vector3::Dot(origin, normal);
+		x = normal.x;
+		y = normal.y;
+		z = normal.z;
+		w = Vector3::Dot(normal, origin);
 	}
 
 	Vector3 GetNormal() const

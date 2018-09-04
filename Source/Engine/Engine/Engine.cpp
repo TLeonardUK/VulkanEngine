@@ -35,8 +35,10 @@
 #include "Engine/Systems/Transform/SpatialIndexSystem.h"
 #include "Engine/Systems/Mesh/MeshBoundsUpdateSystem.h"
 #include "Engine/Systems/Mesh/ModelMeshCreationSystem.h"
+#include "Engine/Systems/Mesh/MeshRenderStateUpdateSystem.h"
 #include "Engine/Systems/Camera/FlyCameraMovementSystem.h"
 #include "Engine/Systems/Render/RenderCameraViewSystem.h"
+#include "Engine/Systems/Render/RenderCameraViewShadowMaskSystem.h"
 #include "Engine/Systems/Render/RenderDebugSystem.h"
 #include "Engine/Systems/Render/RenderDirectionalShadowMapSystem.h"
 
@@ -420,10 +422,12 @@ bool Engine::InitWorld()
 	// Mesh
 	m_world->AddSystem<MeshBoundsUpdateSystem>(m_renderer);
 	m_world->AddSystem<ModelMeshCreationSystem>();
+	m_world->AddSystem<MeshRenderStateUpdateSystem>(m_graphics, m_logger);
 
 	// Render
 	m_world->AddSystem<RenderDebugSystem>(m_world, m_renderer, m_resourceManager, m_graphics);
 	m_world->AddSystem<RenderCameraViewSystem>(m_world, m_graphics, m_logger, m_renderer);
+	m_world->AddSystem<RenderCameraViewShadowMaskSystem>(m_world, m_graphics, m_logger, m_renderer, m_resourceManager);
 	m_world->AddSystem<RenderDirectionalShadowMapSystem>(m_world, m_logger, m_renderer, m_resourceManager, m_graphics);
 
 	// Transform

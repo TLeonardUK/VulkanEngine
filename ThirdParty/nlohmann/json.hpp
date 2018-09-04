@@ -55,6 +55,8 @@ SOFTWARE.
 #include <string> // string
 #include <vector> // vector
 
+#include <fifo_map.hpp>
+
 /*!
 @brief namespace for Niels Lohmann
 @see https://github.com/nlohmann
@@ -73,8 +75,10 @@ template<typename = void, typename = void>
 struct adl_serializer;
 
 template<template<typename U, typename V, typename... Args> class ObjectType =
-         std::map,
-         template<typename U, typename... Args> class ArrayType = std::vector,
+		// START-EDIT	 
+		nlohmann::fifo_map,
+		// END-EDIT	
+		template<typename U, typename... Args> class ArrayType = std::vector,
          class StringType = std::string, class BooleanType = bool,
          class NumberIntegerType = std::int64_t,
          class NumberUnsignedType = std::uint64_t,
@@ -9981,6 +9985,11 @@ class basic_json
     /// the template arguments passed to class @ref basic_json.
     /// @{
 
+	// START EDIT
+	using object_comparator_t = fifo_map_compare<StringType>;
+	// END EDIT
+
+	/*
 #if defined(JSON_HAS_CPP_14)
     // Use transparent comparator if possible, combined with perfect forwarding
     // on find() and count() calls prevents unnecessary string construction.
@@ -9988,6 +9997,7 @@ class basic_json
 #else
     using object_comparator_t = std::less<StringType>;
 #endif
+	*/
 
     /*!
     @brief a type for an object

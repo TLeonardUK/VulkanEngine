@@ -6,15 +6,34 @@ VkFormat GraphicsFormatToVkFormat(GraphicsFormat format)
 {
 	switch (format)
 	{
-	case GraphicsFormat::UNORM_R8:				return VK_FORMAT_R8G8_UNORM;
+	case GraphicsFormat::UNORM_R8:				return VK_FORMAT_R8_UNORM;
+	case GraphicsFormat::SNORM_R8:				return VK_FORMAT_R8_SNORM;
+
 	case GraphicsFormat::UNORM_R8G8B8:			return VK_FORMAT_R8G8B8_UNORM;
+	case GraphicsFormat::SNORM_R8G8B8:			return VK_FORMAT_R8G8B8_SNORM;
+
 	case GraphicsFormat::UNORM_R8G8B8A8:		return VK_FORMAT_R8G8B8A8_UNORM;
+	case GraphicsFormat::SNORM_R8G8B8A8:		return VK_FORMAT_R8G8B8A8_SNORM;
+
 	case GraphicsFormat::UNORM_B8G8R8:			return VK_FORMAT_B8G8R8_UINT;
+	case GraphicsFormat::SNORM_B8G8R8:			return VK_FORMAT_B8G8R8_SINT;
+
 	case GraphicsFormat::UNORM_B8G8R8A8:		return VK_FORMAT_B8G8R8A8_UNORM;
+	case GraphicsFormat::SNORM_B8G8R8A8:		return VK_FORMAT_B8G8R8A8_SNORM;
+
 	case GraphicsFormat::UNORM_R16G16B16:		return VK_FORMAT_R16G16B16_UNORM;
+	case GraphicsFormat::SNORM_R16G16B16:		return VK_FORMAT_R16G16B16_SNORM;
+	case GraphicsFormat::SFLOAT_R16G16B16:		return VK_FORMAT_R16G16B16_SFLOAT;
+
 	case GraphicsFormat::UNORM_R16G16B16A16:	return VK_FORMAT_R16G16B16A16_UNORM;
+	case GraphicsFormat::SNORM_R16G16B16A16:	return VK_FORMAT_R16G16B16A16_SNORM;
+	case GraphicsFormat::SFLOAT_R16G16B16A16:	return VK_FORMAT_R16G16B16A16_SFLOAT;
+
+	case GraphicsFormat::SFLOAT_R32G32B32A32:	return VK_FORMAT_R32G32B32A32_SFLOAT;
+
 	case GraphicsFormat::UNORM_D24_UINT_S8:		return VK_FORMAT_D24_UNORM_S8_UINT;
 	case GraphicsFormat::UNORM_D16:				return VK_FORMAT_D16_UNORM;
+	case GraphicsFormat::SFLOAT_D32:			return VK_FORMAT_D32_SFLOAT; // No option for no stencil if we want normalized format.
 	}
 
 	assert(false);
@@ -26,14 +45,25 @@ int GraphicsFormatBytesPerPixel(GraphicsFormat format)
 	switch (format)
 	{
 	case GraphicsFormat::UNORM_R8:				return 1;
+	case GraphicsFormat::SNORM_R8:				return 1;
 	case GraphicsFormat::UNORM_R8G8B8:			return 3;
+	case GraphicsFormat::SNORM_R8G8B8:			return 3;
 	case GraphicsFormat::UNORM_R8G8B8A8:		return 4;
+	case GraphicsFormat::SNORM_R8G8B8A8:		return 4;
 	case GraphicsFormat::UNORM_B8G8R8:			return 3;
+	case GraphicsFormat::SNORM_B8G8R8:			return 3;
 	case GraphicsFormat::UNORM_B8G8R8A8:		return 4;
+	case GraphicsFormat::SNORM_B8G8R8A8:		return 4;
 	case GraphicsFormat::UNORM_R16G16B16:		return 6;
+	case GraphicsFormat::SNORM_R16G16B16:		return 6;
+	case GraphicsFormat::SFLOAT_R16G16B16:		return 6;
 	case GraphicsFormat::UNORM_R16G16B16A16:	return 8;
+	case GraphicsFormat::SNORM_R16G16B16A16:	return 8;
+	case GraphicsFormat::SFLOAT_R16G16B16A16:	return 8;
+	case GraphicsFormat::SFLOAT_R32G32B32A32:	return 16;
 	case GraphicsFormat::UNORM_D24_UINT_S8:		return 4;
 	case GraphicsFormat::UNORM_D16:				return 2;
+	case GraphicsFormat::SFLOAT_D32:			return 4;
 	}
 
 	assert(false);
@@ -44,15 +74,26 @@ GraphicsFormat VkFormatToGraphicsFormat(VkFormat format)
 {
 	switch (format)
 	{
-	case VK_FORMAT_R8G8_UNORM:			return GraphicsFormat::UNORM_R8;
+	case VK_FORMAT_R8_UNORM:			return GraphicsFormat::UNORM_R8;
+	case VK_FORMAT_R8_SNORM:			return GraphicsFormat::SNORM_R8;
 	case VK_FORMAT_R8G8B8_UNORM:		return GraphicsFormat::UNORM_R8G8B8;
+	case VK_FORMAT_R8G8B8_SNORM:		return GraphicsFormat::SNORM_R8G8B8;
 	case VK_FORMAT_R8G8B8A8_UNORM:		return GraphicsFormat::UNORM_R8G8B8A8;
+	case VK_FORMAT_R8G8B8A8_SNORM:		return GraphicsFormat::SNORM_R8G8B8A8;
 	case VK_FORMAT_B8G8R8_UINT:			return GraphicsFormat::UNORM_B8G8R8;
+	case VK_FORMAT_B8G8R8_SINT:			return GraphicsFormat::SNORM_B8G8R8;
 	case VK_FORMAT_B8G8R8A8_UNORM:		return GraphicsFormat::UNORM_B8G8R8A8;
+	case VK_FORMAT_B8G8R8A8_SNORM:		return GraphicsFormat::SNORM_B8G8R8A8;
 	case VK_FORMAT_R16G16B16_UNORM:		return GraphicsFormat::UNORM_R16G16B16;
+	case VK_FORMAT_R16G16B16_SNORM:		return GraphicsFormat::SNORM_R16G16B16;
+	case VK_FORMAT_R16G16B16_SFLOAT:	return GraphicsFormat::SFLOAT_R16G16B16;
 	case VK_FORMAT_R16G16B16A16_UNORM:	return GraphicsFormat::UNORM_R16G16B16A16;
+	case VK_FORMAT_R16G16B16A16_SNORM:	return GraphicsFormat::SNORM_R16G16B16A16;
+	case VK_FORMAT_R16G16B16A16_SFLOAT:	return GraphicsFormat::SFLOAT_R16G16B16A16;
+	case VK_FORMAT_R32G32B32A32_SFLOAT:	return GraphicsFormat::SFLOAT_R32G32B32A32;
 	case VK_FORMAT_D24_UNORM_S8_UINT:	return GraphicsFormat::UNORM_D24_UINT_S8;
 	case VK_FORMAT_D16_UNORM:			return GraphicsFormat::UNORM_D16;
+	case VK_FORMAT_D32_SFLOAT:			return GraphicsFormat::SFLOAT_D32;
 	}
 
 	assert(false);

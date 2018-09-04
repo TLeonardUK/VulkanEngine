@@ -2,8 +2,6 @@
 
 #include "Engine/Systems/Transform/TransformUtils.h"
 
-#include "glm/glm.hpp"
-
 namespace TransformUtils {
 
 Vector3 GetWorldLocation(const TransformComponent* component)

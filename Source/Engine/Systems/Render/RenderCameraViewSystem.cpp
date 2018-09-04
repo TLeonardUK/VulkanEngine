@@ -5,6 +5,7 @@
 #include "Engine/Systems/Render/RenderCameraViewSystem.h"
 #include "Engine/Systems/Render/RenderDebugSystem.h"
 #include "Engine/Systems/Mesh/MeshBoundsUpdateSystem.h"
+#include "Engine/Systems/Mesh/MeshRenderStateUpdateSystem.h"
 #include "Engine/Systems/Transform/TransformSystem.h"
 #include "Engine/Systems/Transform/TransformUtils.h"
 #include "Engine/Systems/Transform/SpatialIndexSystem.h"
@@ -28,6 +29,7 @@ RenderCameraViewSystem::RenderCameraViewSystem(
 	, m_logger(logger)
 	, m_graphics(graphics)
 {
+	AddPredecessor<MeshRenderStateUpdateSystem>();
 	AddPredecessor<MeshBoundsUpdateSystem>();
 	AddPredecessor<TransformSystem>();
 
@@ -49,10 +51,10 @@ void RenderCameraViewSystem::TickView(
 	int swapHeight = m_renderer->GetSwapChainHeight();
 
 	Rect viewport(
-		view->viewport.x * swapWidth,
-		view->viewport.y * swapHeight,
-		view->viewport.width * swapWidth,
-		view->viewport.height * swapHeight
+		0.0f,
+		0.0f,
+		swapWidth,
+		swapHeight
 	);
 
 	view->viewMatrix = Matrix4::LookAt(worldLocation, worldLocation + TransformUtils::GetForwardVector(transform), Vector3::Up);
@@ -66,16 +68,22 @@ void RenderCameraViewSystem::TickView(
 
 	if (m_renderer->IsDrawBoundsEnabled())
 	{
-		DrawDebugFrustumMessage frusumDrawMsg;
+	/*	DrawDebugFrustumMessage frusumDrawMsg;
 		frusumDrawMsg.frustum = view->frustum;
 		frusumDrawMsg.color = Color::Green;
 		world.QueueMessage(frusumDrawMsg);
+
+		DrawDebugBoundsMessage boundsMsg;
+		boundsMsg.color = Color::PureRed;
+		boundsMsg.bounds = Bounds::FromCenterAndExtents(view->frustum.GetOrigin(), Vector3(5.0f, 5.0f, 5.0f));
+		world.QueueMessage(boundsMsg);*/
 	}
 
 	// Update global properties.
 	view->viewProperties.Set(ViewMatrixHash, view->viewMatrix);
 	view->viewProperties.Set(ProjectionMatrixHash, view->projectionMatrix);
 	view->viewProperties.Set(CameraPositionHash, cameraPosition);
+	view->viewProperties.UpdateResources(m_graphics, m_logger);
 
 	// Grab all visible entities from the oct-tree.
 	{
@@ -94,9 +102,9 @@ void RenderCameraViewSystem::TickView(
 
 	m_batchBuffers.resize(renderBatches.size());
 
-	ParallelFor(renderBatches.size(), [&](int index)
+	ParallelFor((int)renderBatches.size(), [&](int index)
 	{
-		std::shared_ptr<IGraphicsCommandBuffer> drawBuffer = m_renderer->RequestSecondaryBuffer();
+		std::shared_ptr<IGraphicsCommandBuffer> drawBuffer = m_renderer->RequestPrimaryBuffer();
 		m_batchBuffers[index] = drawBuffer;
 
 		MaterialRenderBatch*& batch = renderBatches[index];
@@ -104,7 +112,11 @@ void RenderCameraViewSystem::TickView(
 		ProfileScope scope(ProfileColors::Draw, "Render material batch: " + batch->material->GetName());
 
 		// Generate drawing buffer.
-		drawBuffer->Begin(batch->material->GetRenderPass(), batch->material->GetFrameBuffer());
+		drawBuffer->Reset();
+		drawBuffer->Begin();
+
+		drawBuffer->BeginPass(batch->material->GetRenderPass(), batch->material->GetFrameBuffer(), true);
+		drawBuffer->BeginSubPass();
 
 		if (m_renderer->IsWireframeEnabled())
 		{
@@ -135,42 +147,85 @@ void RenderCameraViewSystem::TickView(
 				MeshInstance& instance = *batch->meshInstances[i];
 				drawBuffer->SetIndexBuffer(*instance.indexBuffer);
 				drawBuffer->SetVertexBuffer(*instance.vertexBuffer);
-				drawBuffer->SetResourceSets(instance.resourceSets->data(), instance.resourceSets->size());
+				drawBuffer->SetResourceSets(instance.resourceSets->data(), (int)instance.resourceSets->size());
 				drawBuffer->DrawIndexedElements(instance.indexCount, 1, 0, 0, 0);
 			}
 		}
 
+		drawBuffer->EndSubPass();
+		drawBuffer->EndPass();
+
 		drawBuffer->End();
 
 	}, 1, "Command Buffer Creation");
+	
+	for (int i = 0; i < m_batchBuffers.size(); i++)
+	{
+		m_renderer->QueuePrimaryBuffer("Camera View Render", RenderCommandStage::View_GBuffer, m_batchBuffers[i], reinterpret_cast<uint64_t>(view));
+	}
 
-	// Dispatch each buffer.
-	if (m_batchBuffers.size() > 0)
+	// Transition buffer at start of rendering.
 	{
 		std::shared_ptr<IGraphicsCommandBuffer> buffer = m_renderer->RequestPrimaryBuffer();
+
 		buffer->Reset();
 		buffer->Begin();
 
+		// Transition all images so they can be written to.
+		buffer->TransitionResource(m_renderer->GetDepthImage(), GraphicsAccessMask::ReadWrite);
+		buffer->TransitionResource(m_renderer->GetShadowMaskImage(), GraphicsAccessMask::Write);
+		buffer->TransitionResource(m_renderer->GetLightAccumulationImage(), GraphicsAccessMask::Write);
+		for (int i = 0; i < Renderer::GBufferImageCount; i++)
 		{
-			ProfileScope scope(ProfileColors::Draw, "Dispatch Buffers");
-			for (int i = 0; i < m_batchBuffers.size(); i++)
-			{
-				MaterialRenderBatch*& batch = renderBatches[i];
-
-				ProfileScope scope(ProfileColors::Draw, StringFormat("Batch: %s", batch->material->GetName().c_str()));
-
-				buffer->BeginPass(batch->material->GetRenderPass(), batch->material->GetFrameBuffer(), false);
-				buffer->BeginSubPass();
-
-				buffer->Dispatch(m_batchBuffers[i]);
-
-				buffer->EndSubPass();
-				buffer->EndPass();
-			}
+			buffer->TransitionResource(m_renderer->GetGBufferImage(i), GraphicsAccessMask::Write);
 		}
 
+		// Clear all buffers we will be rendering to.
+		buffer->Clear(m_renderer->GetDepthImage(), Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
+		buffer->Clear(m_renderer->GetShadowMaskImage(), Color(0.0f, 0.0f, 0.0f, 0.0f), 1.0f, 0.0f);
+		buffer->Clear(m_renderer->GetLightAccumulationImage(), Color(0.0f, 0.0f, 0.0f, 0.0f), 1.0f, 0.0f);
+
+		// DBEUG DEBUG DEBUG DEBUG
+		buffer->Clear(m_renderer->GetLightAccumulationImage(), Color(1.0f, 1.0f, 1.0f, 1.0f), 1.0f, 0.0f);
+		// DBEUG DEBUG DEBUG DEBUG
+
+		// Clear G-Buffer
+		m_renderer->DrawFullScreenQuad(buffer, m_renderer->GetClearGBufferMaterial().Get(), &m_renderer->GetClearGBufferRenderState(), nullptr, nullptr);
+
 		buffer->End();
-		m_renderer->QueuePrimaryBuffer("Camera View Render", RenderCommandStage::Render, buffer);
+
+		m_renderer->QueuePrimaryBuffer("Camera View Pre Transitions", RenderCommandStage::View_PreRender, buffer, reinterpret_cast<uint64_t>(view));
+	}
+
+	// Transition/resolve buffer at end of rendering.
+	{
+		std::shared_ptr<IGraphicsCommandBuffer> buffer = m_renderer->RequestPrimaryBuffer();
+
+		buffer->Reset();
+		buffer->Begin();
+
+		// Transition all images so they can be read from.
+		buffer->TransitionResource(m_renderer->GetShadowMaskImage(), GraphicsAccessMask::Read);
+		buffer->TransitionResource(m_renderer->GetLightAccumulationImage(), GraphicsAccessMask::Read);
+		for (int i = 0; i < Renderer::GBufferImageCount; i++)
+		{
+			buffer->TransitionResource(m_renderer->GetGBufferImage(i), GraphicsAccessMask::Read);
+		}
+
+		// Resolve to framebuffer.
+		// todo: support resolving to texture etc.
+		m_renderer->DrawFullScreenQuad(
+			buffer, 
+			m_renderer->GetResolveToSwapChainMaterial().Get(), 
+			&m_renderer->GetResolveToSwapChainRenderState(), 
+			nullptr, 
+			nullptr,
+			view->viewport,
+			view->viewport);
+
+		buffer->End();
+
+		m_renderer->QueuePrimaryBuffer("Camera View Post Transitions", RenderCommandStage::View_PostRender, buffer, reinterpret_cast<uint64_t>(view));
 	}
 }
 

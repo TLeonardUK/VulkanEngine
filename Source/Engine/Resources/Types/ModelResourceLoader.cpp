@@ -318,7 +318,7 @@ std::shared_ptr<IResource> ModelResourceLoader::Load(std::shared_ptr<ResourceMan
 	}
 
 	manager->AddResourceLoadedCallback(resource, [=]() {
-		m_renderer->QueueRenderCommand(RenderCommandStage::PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+		m_renderer->QueueRenderCommand(RenderCommandStage::Global_PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 			model->UpdateResources();
 		});
 	});

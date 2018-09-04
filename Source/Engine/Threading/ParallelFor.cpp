@@ -2,10 +2,6 @@
 
 #include "Engine/Threading/ParallelFor.h"
 #include "Engine/Threading/TaskManager.h"
-#include "Engine/Threading/Event.h"
-
-#include "Engine/Profiling/Profiling.h"
-
 #include "Engine/Types/Math.h"
 
 struct ParallelForData

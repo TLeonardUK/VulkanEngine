@@ -70,6 +70,18 @@ namespace Math
 		return ceil(in);
 	}
 
+	template <typename T>
+	T Pow(T a, T b)
+	{
+		return pow(a, b);
+	}
+
+	template <typename T>
+	T Lerp(T a, T b, T delta)
+	{
+		return a + ((b - a) * delta);
+	}
+
 	__forceinline uint32_t RoundUpToPowerOfTwo(uint32_t v)
 	{
 		v--;

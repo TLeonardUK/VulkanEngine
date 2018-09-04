@@ -3,7 +3,10 @@
     
     "FrameBuffer": "GBuffer",
     "FaceWindingOrder": "Clockwise",
-    
+	
+	"ShadowCaster": false,
+	"ShadowReciever": false,
+	
     "Stages":
     {
         "Vertex":

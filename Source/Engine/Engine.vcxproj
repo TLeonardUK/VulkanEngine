@@ -233,7 +233,9 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClCompile Include="Resources\Types\TextureResourceLoader.cpp" />
     <ClCompile Include="Systems\Camera\FlyCameraMovementSystem.cpp" />
     <ClCompile Include="Systems\Mesh\MeshBoundsUpdateSystem.cpp" />
+    <ClCompile Include="Systems\Mesh\MeshRenderStateUpdateSystem.cpp" />
     <ClCompile Include="Systems\Mesh\ModelMeshCreationSystem.cpp" />
+    <ClCompile Include="Systems\Render\RenderCameraViewShadowMaskSystem.cpp" />
     <ClCompile Include="Systems\Render\RenderDebugSystem.cpp" />
     <ClCompile Include="Systems\Render\RenderDirectionalShadowMapSystem.cpp" />
     <ClCompile Include="Systems\Render\RenderCameraViewSystem.cpp" />
@@ -352,7 +354,9 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Resources\Types\TextureResourceLoader.h" />
     <ClInclude Include="Systems\Camera\FlyCameraMovementSystem.h" />
     <ClInclude Include="Systems\Mesh\MeshBoundsUpdateSystem.h" />
+    <ClInclude Include="Systems\Mesh\MeshRenderStateUpdateSystem.h" />
     <ClInclude Include="Systems\Mesh\ModelMeshCreationSystem.h" />
+    <ClInclude Include="Systems\Render\RenderCameraViewShadowMaskSystem.h" />
     <ClInclude Include="Systems\Render\RenderDebugSystem.h" />
     <ClInclude Include="Systems\Render\RenderDirectionalShadowMapSystem.h" />
     <ClInclude Include="Systems\Render\RenderCameraViewSystem.h" />
@@ -367,6 +371,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Threading\ParallelFor.h" />
     <ClInclude Include="Threading\Semaphore.h" />
     <ClInclude Include="Threading\TaskManager.h" />
+    <ClInclude Include="Types\FixedList.h" />
     <ClInclude Include="Types\Bounds.h" />
     <ClInclude Include="Types\Color.h" />
     <ClInclude Include="Types\Dictionary.h" />
@@ -426,6 +431,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <None Include="Graphics\EGraphicsStencilTestOp.inc" />
     <None Include="Graphics\EGraphicsUsage.inc" />
     <None Include="Rendering\EFrameBufferTarget.inc" />
+    <None Include="Rendering\RendererHashes.inc" />
     <None Include="Resources\Types\EShaderVertexStreamBinding.inc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

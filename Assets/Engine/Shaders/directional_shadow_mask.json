@@ -1,0 +1,94 @@
+{
+    "Type": "Shader",    
+           
+    "FrameBuffer": "ShadowMask",
+    
+    "BlendEnabled": true,    
+	"ColorBlendOp": "Max",   
+	"AlphaBlendOp": "Max",
+	"SrcColorBlendFactor": "One",
+	"DstColorBlendFactor": "One",
+	"SrcAlphaBlendFactor": "One",
+	"DstAlphaBlendFactor": "One",
+	
+    "DepthTestEnabled": false,
+    "DepthWriteEnabled": false,
+    
+    "Stages":
+    {
+        "Vertex":
+        {
+            "ShaderPath": "Engine/Shaders/directional_shadow_mask.vert",
+            "EntryPoint": "main",
+            "VertexStreams":
+            {
+                "inPosition":
+                {
+                    "Format": "Float2",
+                    "Location": 0,
+                    "BindTo": "Internal"
+                },
+                "inTexCoord":
+                {
+                    "Format": "Float2",
+                    "Location": 1,
+                    "BindTo": "Internal"
+                }
+            }
+        },
+        "Fragment":
+        {
+            "ShaderPath": "Engine/Shaders/directional_shadow_mask.frag",
+            "EntryPoint": "main"
+        }
+    },
+    "Bindings":
+    {     
+        "gbuffer2":
+        {
+            "Type": "Sampler",
+			"Frequency": "Global",
+            "Binding": 0,
+			"Set": 0,
+            "BindTo": "GBuffer2"
+        },
+        "cascadeShadowMaps":
+        {
+            "Type": "Sampler[8]",
+			"Frequency": "Mesh",
+            "Binding": 0,
+			"Set": 1,
+            "BindTo": "LightCascadeShadowMaps"
+        },
+        "lightProperties":
+        {
+            "Type": "UniformBufferObject",
+            "Binding": 0,
+			"Set": 2,
+			"Frequency": "Mesh",
+            "Fields":
+            {                      
+                "cascadeCount":
+                {
+                    "Format": "Int",
+                    "BindTo": "LightCascadeCount"
+                },                       
+                "viewPosition":
+                {
+                    "Format": "Float4",
+                    "BindTo": "LightViewPosition"
+                },                          
+                "cascadeSplitDistance":
+                {
+                    "Format": "Float[8]",
+                    "BindTo": "LightCascadeSplitDistances"
+                },                    
+                "cascadeViewProj":
+                {
+					"Format": "Matrix4[8]",
+                    "BindTo": "LightCascadeViewProj"
+                }     
+            }
+        }
+    }
+}

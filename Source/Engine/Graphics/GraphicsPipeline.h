@@ -31,6 +31,8 @@ public:
 	bool DepthWriteEnabled;
 	GraphicsDepthCompareOp DepthCompareOp;
 
+	bool DepthClampEnabled;
+
 	bool DepthBiasEnabled;
 	float DepthBiasConstant;
 	float DepthBiasClamp;

@@ -28,18 +28,16 @@ private:
 	std::shared_ptr<Logger> m_logger;
 
 	AspectId m_meshComponentAspectId;
-
-	OctTree<Entity>::Result m_visibleEntitiesResult;
-
-	MeshBatcher m_meshBatcher;
-	Array<std::shared_ptr<IGraphicsCommandBuffer>> m_batchBuffers;
+	AspectId m_cameraViewAspectId;
 
 private:
 	void RenderLight(
 		World& world,
 		const FrameTime& frameTime,
 		DirectionalLightComponent* light,
-		const TransformComponent* transforms);
+		CameraViewComponent* view,
+		const TransformComponent* transforms,
+		const TransformComponent* viewTransform);
 
 public:
 	RenderDirectionalShadowMapSystem(

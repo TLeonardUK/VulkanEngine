@@ -2,7 +2,16 @@
     "Type": "Shader",    
    
     "FrameBuffer": "DepthBuffer",
-    
+	
+	"CullMode": "None",
+	
+	"DepthBiasEnabled": true,
+    "DepthBiasConstant": 1.25,
+	"DepthBiasSlopeFactor": 1.75,
+	"DepthBiasClamp": 0.0,
+	
+	"DepthClampEnabled": true,
+	
     "Stages":
     {
         "Vertex":
@@ -38,7 +47,6 @@
                 "model":
                 {
                     "Format": "Matrix4",
-                    "Location": 0,
                     "BindTo": "ModelMatrix"
                 }
             }
@@ -54,13 +62,11 @@
                 "view":
                 {
                     "Format": "Matrix4",
-                    "Location": 0,
                     "BindTo": "ViewMatrix"
                 },                        
                 "proj":
                 {
                     "Format": "Matrix4",
-                    "Location": 1,
                     "BindTo": "ProjectionMatrix"
                 }
             }

@@ -50,7 +50,7 @@ public:
 
 	virtual void UpdateStatistics() = 0;
 
-	virtual void Dispatch(std::shared_ptr<IGraphicsCommandBuffer> buffer) = 0;
+	virtual void Dispatch(const String& name, std::shared_ptr<IGraphicsCommandBuffer> buffer) = 0;
 
 	virtual void WaitForDeviceIdle() = 0;
 

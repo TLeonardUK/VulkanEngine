@@ -51,39 +51,61 @@ String VulkanResourceSet::GetName()
 void VulkanResourceSet::UpdateDescriptorSet()
 {
 	ScopeLock lock(m_updateMutex);
+	ProfileScope scope(Color::PureRed, "Reallocate Descriptor Set");
 
 	//printf("Updating resource set (%s): 0x%08x (thread %i)\n", m_name.c_str(), this, std::this_thread::get_id());
-	if (m_descriptorSet != nullptr)
-	{
-		m_pool->FreeDescriptorSet(m_descriptorSet);
-		m_descriptorSet = nullptr;
-	}
+
+	auto oldDescriptor = m_descriptorSet;
+
 	m_descriptorSet = m_pool->AllocDescriptorSet(m_layout, m_currentBindings);
+
+	if (oldDescriptor != nullptr)
+	{
+		m_pool->FreeDescriptorSet(oldDescriptor);
+	}
+
+	for (int i = 0; i < m_boundUniformBuffers.Size(); i++)
+	{
+		VulkanResourceSetUniformBufferBinding& buffer = m_boundUniformBuffers[i];
+		if (buffer.buffer != nullptr && buffer.vkBuffer != buffer.buffer->GetGpuBuffer())
+		{
+			buffer.vkBuffer = buffer.buffer->GetGpuBuffer();
+		}
+	}
 }
 
 void VulkanResourceSet::UpdateResources()
 {
-	ScopeLock lock(m_updateMutex);
+	if (IsUpdateRequired())
+	{
+		ScopeLock lock(m_updateMutex);
+		if (IsUpdateRequired())
+		{
+			UpdateDescriptorSet();
+		}
+	}
+}
 
+bool VulkanResourceSet::IsUpdateRequired()
+{
 	bool bUpdateRequired = false;
 
-	// If any uniform buffers have been changed, we need to update.
-	for (auto& binding : m_currentBindings)
+	if (m_descriptorSet == nullptr)
 	{
-		if (binding.type == VulkanResourceSetBindingType::UniformBuffer)
+		return true;
+	}
+
+	for (int i = 0; i < m_boundUniformBuffers.Size(); i++)
+	{
+		VulkanResourceSetUniformBufferBinding& buffer = m_boundUniformBuffers[i];
+		if (buffer.buffer != nullptr && buffer.vkBuffer != buffer.buffer->GetGpuBuffer())
 		{
-			if (binding.vkUniformBuffer != binding.uniformBuffer->GetGpuBuffer())
-			{
-				binding.vkUniformBuffer = binding.uniformBuffer->GetGpuBuffer();
-				bUpdateRequired = true;
-			}
+			bUpdateRequired = true;
+			break;
 		}
 	}
 
-	if (bUpdateRequired || m_descriptorSet == nullptr)
-	{
-		UpdateDescriptorSet();
-	}
+	return bUpdateRequired;
 }
 
 VulkanResourceSetBinding& VulkanResourceSet::GetBinding(int location, int arrayIndex)
@@ -130,6 +152,20 @@ bool VulkanResourceSet::UpdateBinding(int location, int arrayIndex, std::shared_
 		binding.type = VulkanResourceSetBindingType::UniformBuffer;
 		binding.uniformBuffer = vkBuffer;
 		binding.vkUniformBuffer = vkBuffer->GetGpuBuffer();
+
+		// Remove old ubo binding, and add new one to cached list we use
+		// for lockless updating.
+		{
+			ScopeLock lock(m_boundUniformBuffersMutex);
+
+			VulkanResourceSetUniformBufferBinding uboBinding;
+			uboBinding.buffer = binding.uniformBuffer;
+			m_boundUniformBuffers.Remove(uboBinding);
+
+			uboBinding.buffer = binding.uniformBuffer;
+			uboBinding.vkBuffer = binding.vkUniformBuffer;
+			m_boundUniformBuffers.Add(uboBinding);
+		}
 
 		UpdateDescriptorSet();
 	}

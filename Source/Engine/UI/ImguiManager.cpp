@@ -1,22 +1,12 @@
 #include "Pch.h"
 
 #include "Engine/UI/ImguiManager.h"
-
-#include "Engine/Engine/Logging.h"
 #include "Engine/Rendering/Renderer.h"
-#include "Engine/Rendering/RenderPropertyHeirarchy.h"
-#include "Engine/Resources/Types/Material.h"
-
-#include "Engine/Input/Input.h"
-
-#include "Engine/Resources/Types/TextureResourceLoader.h"
-
-#include "Engine/ThirdParty/imgui/imgui.h"
-
 #include "Engine/Graphics/Vulkan/VulkanGraphics.h"
+#include "Engine/Input/Input.h"
 #include "Engine/Windowing/Sdl/SdlWindow.h"
-
-#include "Engine/Profiling/Profiling.h"
+#include "Engine/Resources/Types/Material.h"
+#include "Engine/Resources/Types/TextureResourceLoader.h"
 
 // todo: replace bindings with ones that interface with engine.
 
@@ -394,6 +384,7 @@ void ImguiManager::EndFrame()
 	material->GetProperties().Set(ImGuiScale, scale);
 	material->GetProperties().Set(ImGuiTranslation, translation);
 	material->GetProperties().Set(ImGuiTexture, m_fontTexture);
+	material->GetProperties().UpdateResources(m_graphics, m_logger);
 
 	material->UpdateResources();
 
@@ -417,7 +408,7 @@ void ImguiManager::EndFrame()
 
 	buffer->SetIndexBuffer(m_indexBuffer);
 	buffer->SetVertexBuffer(m_vertexBuffer);
-	buffer->SetResourceSets(resourceSets.data(), resourceSets.size());
+	buffer->SetResourceSets(resourceSets.data(), (int)resourceSets.size());
 	ImTextureID lastTextureId = 0;
 
 	for (int cmdListIndex = 0; cmdListIndex < drawData->CmdListsCount; cmdListIndex++)
@@ -439,13 +430,15 @@ void ImguiManager::EndFrame()
 					auto iter = m_storedImages.find(cmd->TextureId);
 					if (iter != m_storedImages.end())
 					{
-						material->GetProperties().Set(ImGuiTexture, iter->second.view, m_fontTexture.Get()->GetSampler());
+						material->GetProperties().Set(ImGuiTexture, RenderPropertyImageSamplerValue(iter->second.view, m_fontTexture.Get()->GetSampler()));
 					}
 				}
 
+				material->GetProperties().UpdateResources(m_graphics, m_logger);
+
 				const Array<std::shared_ptr<IGraphicsResourceSet>>& newResourceSets = m_MeshRenderState->UpdateAndGetResourceSets(material, &renderHeirarchy);
 				
-				buffer->SetResourceSets(newResourceSets.data(), newResourceSets.size());
+				buffer->SetResourceSets(newResourceSets.data(), (int)newResourceSets.size());
 					
 				lastTextureId = cmd->TextureId;
 			}
@@ -477,7 +470,7 @@ void ImguiManager::EndFrame()
 	buffer->EndPass();
 
 	buffer->End();
-	m_renderer->QueuePrimaryBuffer("ImGui Primitives", RenderCommandStage::PostResolve, buffer);
+	m_renderer->QueuePrimaryBuffer("ImGui Primitives", RenderCommandStage::Global_PostViews, buffer);
 
 	//});
 }

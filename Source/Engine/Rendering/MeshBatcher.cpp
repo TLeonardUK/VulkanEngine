@@ -42,7 +42,8 @@ void MeshBatcher::Batch(
 	const std::shared_ptr<IGraphics>& graphics,
 	const Array<Entity>& entities, 
 	MaterialVariant variant,
-	RenderPropertyCollection* viewProperties)
+	RenderPropertyCollection* viewProperties,
+	FilterFunction_t filter)
 {
 	ProfileScope scope(ProfileColors::Draw, "Renderer::BuildViewCommandBuffer_Meshes");
 
@@ -101,12 +102,17 @@ void MeshBatcher::Batch(
 				auto iter = entityIndexMap.find(entity);
 				if (iter == entityIndexMap.end())
 				{
-					return;
+					continue;
 				}
 
 				int entityArrayIndex = iter->second;
 				MeshComponent* meshComponent = meshComponents[entityArrayIndex];
 				TransformComponent* transformComponent = meshTransformComponents[entityArrayIndex];
+
+				if (filter != nullptr && !filter(entity, meshComponent, transformComponent))
+				{
+					continue;
+				}
 
 				std::shared_ptr<Material> material = nullptr;
 				material = meshComponent->mesh->GetMaterial().Get()->GetVariant(variant);
@@ -138,14 +144,16 @@ void MeshBatcher::Batch(
 				meshComponent->mesh->UpdateResources();
 				//}
 
-					// Create new instance.
+				// Create new instance.
 				MeshInstance& instance = batch->meshInstances[batch->meshInstanceCount++];
 				instance.indexBuffer = &meshComponent->mesh->GetIndexBuffer();
 				instance.vertexBuffer = &meshComponent->mesh->GetVertexBuffer();
 				instance.indexCount = meshComponent->mesh->GetIndexCount();
 				//{
 				//	ProfileScope scope(ProfileColors::Draw, "UpdateMeshRenderState");
-				meshComponent->properties.Set(ModelMatrixHash, transformComponent->localToWorld);
+
+				// todo: this needs to go elsewhere, but where?
+				material->GetProperties().UpdateResources(graphics, logger);
 
 				// Create render property heirarchy.
 				RenderPropertyHeirarchy renderHeirarchy;
@@ -211,12 +219,12 @@ void MeshBatcher::Batch(
 							batch->inUse = true;
 						}
 
-						int spaceAvailable = MaxMeshesPerBatch - batch->meshInstances.size();
+						int spaceAvailable = MaxMeshesPerBatch - (int)batch->meshInstances.size();
 						int itemsLeft = iter.second.meshInstanceCount - instanceOffset;
 						int itemsToAdd = Math::Min(spaceAvailable, itemsLeft);
 
-						int startIndex = batch->meshInstances.size();
-						batch->meshInstances.resize(batch->meshInstances.size() + itemsToAdd);
+						int startIndex = (int)batch->meshInstances.size();
+						batch->meshInstances.resize((int)batch->meshInstances.size() + itemsToAdd);
 						for (int k = 0; k < itemsToAdd; k++)
 						{
 							batch->meshInstances[startIndex + k] = &iter.second.meshInstances[instanceOffset + k];
@@ -229,5 +237,5 @@ void MeshBatcher::Batch(
 		}
 	}
 
-	Stat_Rendering_Budgets_BatchesRendered.Set(m_materialRenderBatches.size());
+	Stat_Rendering_Budgets_BatchesRendered.Set((double)m_materialRenderBatches.size());
 }

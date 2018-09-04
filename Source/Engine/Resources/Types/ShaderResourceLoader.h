@@ -22,6 +22,8 @@ private:
 	bool LoadBindings(Array<ShaderBinding>& bindings, json& bindingsJson, std::shared_ptr<ResourceStatus> resource);
 	bool LoadStageStreams(ShaderStage& stage, const String& stageName, json& bindingsJson, std::shared_ptr<ResourceStatus> resource);
 
+	bool SplitArrayLength(String& format, int& arrayLength, std::shared_ptr<ResourceStatus> resource);
+
 public:
 	ShaderResourceLoader(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> graphics);
 

@@ -86,6 +86,7 @@ public:
 	virtual GraphicsFormat GetFormat();
 	virtual bool IsDepth();
 	virtual bool IsStencil();
+	virtual String GetImageName();
 
 	virtual bool Stage(int layer, void* buffer, int offset, int length);
 

@@ -294,7 +294,7 @@ bool VulkanResourceSetPool::WriteDescriptorSet(VkDescriptorSet set, const Array<
 		write.dstSet = set;
 		write.dstBinding = binding.location;
 		write.dstArrayElement = binding.arrayIndex;
-		printf("Writing descriptor: 0x%08x\n", set);
+		//printf("Writing descriptor: 0x%08x\n", set);
 
 		switch (binding.type)
 		{
@@ -351,8 +351,6 @@ VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourc
 	// Nope, create a new one, generate binding data.
 	Array<VkDescriptorSetLayoutBinding> bindings(description.bindings.size());
 
-	printf("Creating layout: %i bindings\n", description.bindings.size());
-
 	for (int i = 0; i < description.bindings.size(); i++)
 	{
 		const GraphicsResourceSetBinding& bindingDescription = description.bindings[i];
@@ -403,8 +401,6 @@ VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourc
 	layout.description = description;
 	layout.layout = descriptorSetLayout;
 	m_layouts.push_back(layout);
-
-	printf("Result: 0x%08x\n", descriptorSetLayout);
 
 	m_logger->WriteInfo(LogCategory::Vulkan, "Allocated new layout.");
 

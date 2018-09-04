@@ -46,6 +46,13 @@ struct DrawDebugFrustumMessage
 	Color color;
 };
 
+// Renders a debug sphere to the camera view.
+struct DrawDebugSphereMessage
+{
+	Sphere sphere;
+	Color color;
+};
+
 // Generates command buffers to render all debug primitives.
 class RenderDebugSystem 
 	: public System<CameraViewComponent, const TransformComponent>

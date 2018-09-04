@@ -27,6 +27,8 @@ struct UniformBufferLayout;
 struct MaterialResourceSet;
 struct RenderPropertyCollectionRenderData;
 class Renderer;
+struct UniformBuffer;
+struct ResourceSet;
 
 struct RenderPropertyCollection
 {
@@ -40,13 +42,16 @@ private:
 	Mutex m_resourceMutex;
 
 protected:
-	RenderProperty* GetOrCreate(RenderPropertyHash name);
+	RenderProperty* GetOrCreate(RenderPropertyHash name, int arrayLength);
 
 	void UpdateResourceSets(const std::shared_ptr<IGraphics>& graphics, const std::shared_ptr<Logger>& logger);
 	void UpdateUniformBuffers(const std::shared_ptr<Logger>& logger);
 
-	std::shared_ptr<IGraphicsUniformBuffer> RegisterUniformBuffer(const std::shared_ptr<IGraphics>& graphics, const UniformBufferLayout& layout, const String& name);
-	std::shared_ptr<IGraphicsResourceSet> RegisterResourceSet(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<IGraphics>& graphics, const MaterialResourceSet& set);
+	void UpdateResourceSet(ResourceSet& set, const std::shared_ptr<IGraphics>& graphics, const std::shared_ptr<Logger>& logger);
+	void UpdateUniformBuffer(UniformBuffer& buffer, const std::shared_ptr<Logger>& logger);
+
+	std::shared_ptr<IGraphicsUniformBuffer> RegisterUniformBuffer(const std::shared_ptr<IGraphics>& graphics, const std::shared_ptr<Logger>& logger, const UniformBufferLayout& layout, const String& name);
+	std::shared_ptr<IGraphicsResourceSet> RegisterResourceSet(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<IGraphics>& graphics, const std::shared_ptr<Logger>& logger, const MaterialResourceSet& set);
 
 public:
 	RenderPropertyCollection();
@@ -60,42 +65,70 @@ public:
 	bool Get(RenderPropertyHash Hash, RenderProperty** binding);
 
 	void Set(RenderPropertyHash name, bool value);
+	void Set(RenderPropertyHash name, const Array<bool>& value);
 	void Set(RenderPropertyHash name, BVector2 value);
+	void Set(RenderPropertyHash name, const Array<BVector2>& value);
 	void Set(RenderPropertyHash name, BVector3 value);
+	void Set(RenderPropertyHash name, const Array<BVector3>& value);
 	void Set(RenderPropertyHash name, BVector4 value);
+	void Set(RenderPropertyHash name, const Array<BVector4>& value);
 
 	void Set(RenderPropertyHash name, int32_t value);
+	void Set(RenderPropertyHash name, const Array<int32_t>& value);
 	void Set(RenderPropertyHash name, IVector2 value);
+	void Set(RenderPropertyHash name, const Array<IVector2>& value);
 	void Set(RenderPropertyHash name, IVector3 value);
+	void Set(RenderPropertyHash name, const Array<IVector3>& value);
 	void Set(RenderPropertyHash name, IVector4 value);
+	void Set(RenderPropertyHash name, const Array<IVector4>& value);
 
 	void Set(RenderPropertyHash name, uint32_t value);
+	void Set(RenderPropertyHash name, const Array<uint32_t>& value);
 	void Set(RenderPropertyHash name, UVector2 value);
+	void Set(RenderPropertyHash name, const Array<UVector2>& value);
 	void Set(RenderPropertyHash name, UVector3 value);
+	void Set(RenderPropertyHash name, const Array<UVector3>& value);
 	void Set(RenderPropertyHash name, UVector4 value);
+	void Set(RenderPropertyHash name, const Array<UVector4>& value);
 
 	void Set(RenderPropertyHash name, float value);
+	void Set(RenderPropertyHash name, const Array<float>& value);
 	void Set(RenderPropertyHash name, Vector2 value);
+	void Set(RenderPropertyHash name, const Array<Vector2>& value);
 	void Set(RenderPropertyHash name, Vector3 value);
+	void Set(RenderPropertyHash name, const Array<Vector3>& value);
 	void Set(RenderPropertyHash name, Vector4 value);
+	void Set(RenderPropertyHash name, const Array<Vector4>& value);
 
 	void Set(RenderPropertyHash name, double value);
+	void Set(RenderPropertyHash name, const Array<double>& value);
 	void Set(RenderPropertyHash name, DVector2 value);
+	void Set(RenderPropertyHash name, const Array<DVector2>& value);
 	void Set(RenderPropertyHash name, DVector3 value);
+	void Set(RenderPropertyHash name, const Array<DVector3>& value);
 	void Set(RenderPropertyHash name, DVector4 value);
+	void Set(RenderPropertyHash name, const Array<DVector4>& value);
 
 	void Set(RenderPropertyHash name, Matrix2 value);
+	void Set(RenderPropertyHash name, const Array<Matrix2>& value);
 	void Set(RenderPropertyHash name, Matrix3 value);
+	void Set(RenderPropertyHash name, const Array<Matrix3>& value);
 	void Set(RenderPropertyHash name, Matrix4 value);
+	void Set(RenderPropertyHash name, const Array<Matrix4>& value);
 
 	void Set(RenderPropertyHash name, ResourcePtr<Texture> value);
+	void Set(RenderPropertyHash name, const Array<ResourcePtr<Texture>>& value);
+
 	void Set(RenderPropertyHash name, ResourcePtr<TextureCube> value);
-	void Set(RenderPropertyHash name, std::shared_ptr<IGraphicsImageView> imageView, std::shared_ptr<IGraphicsSampler> sampler);
+	void Set(RenderPropertyHash name, const Array<ResourcePtr<TextureCube>>& value);
+
+	void Set(RenderPropertyHash name, RenderPropertyImageSamplerValue sampler);
+	void Set(RenderPropertyHash name, const Array<RenderPropertyImageSamplerValue>& sampler);
 
 	void UpdateResources(const std::shared_ptr<IGraphics>& graphics, const std::shared_ptr<Logger>& logger);
 
-	std::shared_ptr<IGraphicsUniformBuffer> GetUniformBuffer(const std::shared_ptr<IGraphics>& graphics, const UniformBufferLayout& layout);
-	std::shared_ptr<IGraphicsResourceSet> GetResourceSet(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<IGraphics>& graphics, const MaterialResourceSet& set);
+	std::shared_ptr<IGraphicsUniformBuffer> GetUniformBuffer(const std::shared_ptr<IGraphics>& graphics, const std::shared_ptr<Logger>& logger, const UniformBufferLayout& layout);
+	std::shared_ptr<IGraphicsResourceSet> GetResourceSet(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<IGraphics>& graphics, const std::shared_ptr<Logger>& logger, const MaterialResourceSet& set);
 
 };
 

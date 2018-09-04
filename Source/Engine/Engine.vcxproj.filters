@@ -462,6 +462,12 @@
     <ClCompile Include="Profiling\Profiling.cpp">
       <Filter>Source Files\Profiling</Filter>
     </ClCompile>
+    <ClCompile Include="Systems\Mesh\MeshRenderStateUpdateSystem.cpp">
+      <Filter>Source Files\Systems\Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Render\RenderCameraViewShadowMaskSystem.cpp">
+      <Filter>Source Files\Systems\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Engine.h">
@@ -878,6 +884,15 @@
     <ClInclude Include="Types\Mutex.h">
       <Filter>Header Files\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Types\FixedList.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Mesh\MeshRenderStateUpdateSystem.h">
+      <Filter>Header Files\Systems\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Render\RenderCameraViewShadowMaskSystem.h">
+      <Filter>Header Files\Systems\Render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Graphics\EGraphicsAccessMask.inc">
@@ -948,6 +963,9 @@
     </None>
     <None Include="Graphics\EGraphicsBindingFrequency.inc">
       <Filter>Header Files\Graphics</Filter>
+    </None>
+    <None Include="Rendering\RendererHashes.inc">
+      <Filter>Header Files\Rendering</Filter>
     </None>
   </ItemGroup>
 </Project>
