@@ -51,8 +51,8 @@ public:
 
 struct ShaderProperties
 {
-	bool ShadowCaster;
-	bool ShadowReciever;
+	bool ShadowCaster = true;
+	bool ShadowReciever = true;
 };
 
 class Shader

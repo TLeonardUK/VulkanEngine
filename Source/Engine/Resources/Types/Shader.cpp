@@ -14,11 +14,12 @@ const char* Shader::Tag = "Shader";
 
 Statistic Stat_Resources_ShaderCount("Resources/Shader Count", StatisticFrequency::Persistent, StatisticFormat::Integer);
 
-Shader::Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription, FrameBufferTarget target)
+Shader::Shader(const Array<ShaderStage>& stages, const Array<ShaderBinding>& bindings, const GraphicsPipelineSettings& pipelineDescription, FrameBufferTarget target, const ShaderProperties& properties)
 	: m_stages(stages)
 	, m_bindings(bindings)
 	, m_pipelineDescription(pipelineDescription)
 	, m_target(target)
+	, m_properties(properties)
 {
 	Stat_Resources_ShaderCount.Add(1);
 }
@@ -60,4 +61,9 @@ const GraphicsPipelineSettings& Shader::GetPipelineDescription()
 FrameBufferTarget Shader::GetTarget()
 {
 	return m_target;
+}
+
+const ShaderProperties& Shader::GetProperties()
+{
+	return m_properties;
 }

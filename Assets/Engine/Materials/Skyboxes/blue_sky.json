@@ -1,6 +1,7 @@
 {
     "Type": "Material",    
     "ShaderPath": "Engine/Shaders/skybox.json",  
+	
     "Bindings":
     {        
         "AlbedoTexture":

@@ -2,10 +2,13 @@
 #include "Pch.h"
 
 #include "Engine/ECS/AspectCollection.h"
+#include "Engine/ECS/Component.h"
 #include "Engine/ECS/World.h"
 
 class AspectCollection;
 class Renderer;
+struct MeshComponent;
+struct TransformComponent;
 
 struct MeshInstance
 {
@@ -49,7 +52,7 @@ private:
 
 	static const int MaxMeshesPerBatch = 500;
 
-public:
+public:	
 	typedef std::function<bool(Entity entity, const MeshComponent* mesh, const TransformComponent* transform)> FilterFunction_t;
 
 	~MeshBatcher();
