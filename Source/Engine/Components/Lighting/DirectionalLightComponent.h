@@ -42,7 +42,7 @@ struct DirectionalLightComponent
 	bool isShadowCasting = false;
 	int shadowMapSize = 512;
 	int shadowMapCascades = 4;
-	float shadowMapSplitExponent = 0.8f; // 0 to 1, the lower the value the closer to a linear split the cascades will have.
+	float shadowMapSplitExponent = 0.9f; // 0 to 1, the lower the value the closer to a linear split the cascades will have.
 	float shadowDistance = 512;
 
 	RenderPropertyCollection shadowMaskProperties;

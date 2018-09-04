@@ -105,6 +105,7 @@ void main()
 	
 	int cascadeIndex = getCascadeIndex(worldPosition);	
 
+	/*
 	if (cascadeIndex == 0)
 	{
 		outColor.rgba = vec4(1.0f, 0.0f, 0.0f, 1.0f);
@@ -121,9 +122,8 @@ void main()
 	{
 		outColor.rgba = vec4(1.0f, 0.0f, 1.0f, 1.0f);
 	}
-
-
-	/*
+	*/
+	
 	vec4 worldPositionLightSpace = lightProperties.cascadeViewProj[cascadeIndex] * worldPosition;
 	vec4 worldPositionLightClipSpace = worldPositionLightSpace / worldPositionLightSpace.w;
 	
@@ -134,8 +134,7 @@ void main()
 		result = poissonSample(cascadeIndex, shadowMapCoord, worldPositionLightClipSpace.z, worldPosition);
 	}
 	
-	outColor.rgba = vec4(result, 0.0f, 0.0f, 1.0f);		
-	*/
+	outColor.rgba = vec4(result, 0.0f, 0.0f, 1.0f);	
 }
 
 

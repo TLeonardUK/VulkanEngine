@@ -240,7 +240,7 @@ void VulkanGameInstance::Initialize()
 
 		DirectionalLightComponent* lightComponent = world->AddComponent<DirectionalLightComponent>(m_directionalLight);
 		lightComponent->isShadowCasting = true;
-		lightComponent->shadowMapSize = 512;// 1024;
+		lightComponent->shadowMapSize = 512;
 		lightComponent->shadowDistance = 10000.0f;
 	}
 	/*{

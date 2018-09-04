@@ -397,12 +397,12 @@ public:
 
 			0.0f,
 			0.0f,
-			2.0f / (nearZ - farZ),
+			1.0f / (nearZ - farZ),
 			0.0f,
 
 			-(right + left) / (right - left),
 			-(bottom + top) / (bottom - top),
-			(nearZ + farZ) / (nearZ - farZ),
+			nearZ / (nearZ - farZ),
 			1.0f
 		);
 
