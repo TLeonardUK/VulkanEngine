@@ -44,11 +44,27 @@
     },
     "Bindings":
     {     
-        "gbuffer2":
+        "gbuffer0":
         {
             "Type": "Sampler",
 			"Frequency": "Global",
             "Binding": 0,
+			"Set": 0,
+            "BindTo": "GBuffer0"
+        },
+        "gbuffer1":
+        {
+            "Type": "Sampler",
+			"Frequency": "Global",
+            "Binding": 1,
+			"Set": 0,
+            "BindTo": "GBuffer1"
+        },
+        "gbuffer2":
+        {
+            "Type": "Sampler",
+			"Frequency": "Global",
+            "Binding": 2,
 			"Set": 0,
             "BindTo": "GBuffer2"
         },
@@ -72,17 +88,37 @@
                 {
                     "Format": "Int",
                     "BindTo": "LightCascadeCount"
-                },                       
+                },                    
+                "cascadeBlendFactor":
+                {
+                    "Format": "Float",
+                    "BindTo": "LightShadowCascadeBlendFactor"
+                },             				
                 "viewPosition":
                 {
                     "Format": "Float4",
                     "BindTo": "LightViewPosition"
-                },                          
+                },                      
+                "lightWorldDirection":
+                {
+                    "Format": "Float4",
+                    "BindTo": "LightWorldDirection"
+                },                                
+                "cascadeMapSize":
+                {
+                    "Format": "Float[8]",
+                    "BindTo": "LightCascadeMapSize"
+                },                  
                 "cascadeSplitDistance":
                 {
                     "Format": "Float[8]",
                     "BindTo": "LightCascadeSplitDistances"
-                },                    
+                },                       
+                "cascadeRadius":
+                {
+                    "Format": "Float[8]",
+                    "BindTo": "LightCascadeRadius"
+                },                          
                 "cascadeViewProj":
                 {
 					"Format": "Matrix4[8]",

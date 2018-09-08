@@ -1,5 +1,10 @@
-#version 450
-#extension GL_ARB_separate_shader_objects : enable
+#include "common/constants.h"
+#include "common/gbuffer.h"
+
+layout(set = 0, binding = 0) uniform MeshPropertiesBlock {
+    mat4 model;
+	int flags;
+} meshProperties;
 
 layout(set = 2, binding = 0) uniform sampler2D albedoTextureSampler;
 
@@ -13,8 +18,11 @@ layout(location = 2) out vec4 gbuffer2;
 
 void main() 
 {
-    gbuffer0.rgba = texture(albedoTextureSampler, inTexCoord1);
-    gbuffer1.rgba = vec4(normalize(inWorldNormal).xyz, 1.0);
-    gbuffer2.rgba = vec4(inWorldPosition.xyz, 1.0);
+	GBufferTexel texel;
+	texel.albedo = texture(albedoTextureSampler, inTexCoord1).rgb;
+	texel.flags = meshProperties.flags;
+	texel.worldNormal = normalize(inWorldNormal).xyz;
+	texel.worldPosition = inWorldPosition.xyz;
 
+	writeGBuffer(texel);
 }

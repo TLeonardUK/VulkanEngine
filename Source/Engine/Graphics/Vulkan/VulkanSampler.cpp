@@ -67,7 +67,7 @@ bool VulkanSampler::Build(const SamplerDescription& description)
 	samplerInfo.addressModeW = GraphicsAddressModeToVkAddressMode(description.AddressModeW);
 	samplerInfo.anisotropyEnable = (description.MaxAnisotropy > 0);
 	samplerInfo.maxAnisotropy = static_cast<float>(description.MaxAnisotropy);
-	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.borderColor = GraphicsBorderColorToVkBorderColor(description.BorderColor); ;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 	samplerInfo.compareEnable = VK_FALSE;
 	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;

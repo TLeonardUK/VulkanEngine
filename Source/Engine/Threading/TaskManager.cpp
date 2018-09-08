@@ -1,8 +1,46 @@
 #include "Pch.h"
 
 #include "Engine/Threading/TaskManager.h"
+#include "Engine/Engine/Logging.h"
 
 TaskManager* TaskManager::AsyncInstance = nullptr;
+
+String QueueFlagsToString(TaskQueueFlags flags)
+{
+	String result = "";
+
+	if ((static_cast<int>(flags) & static_cast<int>(TaskQueueFlags::Normal)) != 0)
+	{
+		if (result != "")
+		{
+			result += "|";
+		}
+		result += "Normal";
+	}
+	if ((static_cast<int>(flags) & static_cast<int>(TaskQueueFlags::Long)) != 0)
+	{
+		if (result != "")
+		{
+			result += "|";
+		}
+		result += "Long";
+	}
+	if ((static_cast<int>(flags) & static_cast<int>(TaskQueueFlags::TimeCritical)) != 0)
+	{
+		if (result != "")
+		{
+			result += "|";
+		}
+		result += "TimeCritical";
+	}
+
+	if (result == "")
+	{
+		result = "None";
+	}
+
+	return result;
+}
 
 TaskManager::TaskManager(std::shared_ptr<Logger> logger)
 	: m_active(false)
@@ -29,6 +67,7 @@ bool TaskManager::Init(Dictionary<TaskQueueFlags, int> queueWorkerCounts)
 
 	for (auto pair : queueWorkerCounts)
 	{
+		m_logger->WriteInfo(LogCategory::Engine, "Creating %i worker threads with %s flags.", pair.second, QueueFlagsToString(pair.first).c_str());
 		for (int i = 0; i < pair.second; i++)
 		{
 			m_workers.push_back(std::thread(&TaskManager::WorkerLoop, this, pair.first));
@@ -170,7 +209,7 @@ bool TaskManager::WaitForCompletionEvent(Event& evnt, Timeout timeout)
 			return false;
 		}
 
-		if (!RunTask(TaskQueueFlags::All, false))
+		if (!RunTask(TaskQueueFlags::AllExceptLong, false))
 		{
 			std::unique_lock<std::mutex> lock(m_taskAvailableLock);
 
@@ -195,7 +234,7 @@ bool TaskManager::WaitForCompletion(Task::Id task, Timeout timeout)
 			return false;
 		}
 
-		if (!RunTask(TaskQueueFlags::All, false))
+		if (!RunTask(TaskQueueFlags::AllExceptLong, false))
 		{
 			std::unique_lock<std::mutex> lock(m_taskAvailableLock);
 

@@ -61,11 +61,15 @@ bool TextureResourceLoader::LoadInternal(
 		}
 
 		int texWidth, texHeight, texChannels;
-		buffers[i] = stbi_load_from_memory(reinterpret_cast<stbi_uc*>(data.data()), (int)data.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		if (buffers[i] == nullptr)
 		{
-			m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to decode image, possibly corrupt or in unsupported format.", imagePath.c_str());
-			return false;
+			ProfileScope scope(ProfileColors::Streaming, StringFormat("Loading image: %s", imagePath.c_str()));
+
+			buffers[i] = stbi_load_from_memory(reinterpret_cast<stbi_uc*>(data.data()), (int)data.size(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+			if (buffers[i] == nullptr)
+			{
+				m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to decode image, possibly corrupt or in unsupported format.", imagePath.c_str());
+				return false;
+			}
 		}
 
 		if (i == 0)

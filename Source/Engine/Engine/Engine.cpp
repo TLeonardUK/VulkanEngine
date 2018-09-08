@@ -377,7 +377,7 @@ bool Engine::InitTaskManager()
 
 	int totalCores = std::thread::hardware_concurrency() - 1; // 1 to take into account the main thread.
 
-	int longQueues = Math::Max(1, totalCores / 4);
+	int longQueues = Math::Max(1, totalCores / 2);
 	int normalQueues = totalCores - longQueues;
 
 	// We create two types of queues:

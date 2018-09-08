@@ -108,6 +108,10 @@ public:
 	{
 		return Dot(*this, *this);
 	}
+	BaseVector4 Round() const
+	{
+		return BaseVector4(Math::Round(x), Math::Round(y), Math::Round(z), Math::Round(w));
+	}
 	BaseVector4 Normalize() const
 	{
 		float inveseLength = 1.0f / Length();

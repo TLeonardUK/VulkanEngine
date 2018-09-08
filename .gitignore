@@ -3,6 +3,12 @@ Binaries/*
 Temp/*
 Assets/Engine/Models/Bistro/*
 Assets/Engine/Models/SanMiguel/*
+Assets/Engine/Models/Bedroom/*
+Assets/Engine/Models/Conference/*
+Assets/Engine/Models/LostEmpire/*
+Assets/Engine/Models/PowerPlant/*
+Assets/Engine/Models/Rungholt/*
+Assets/Engine/Models/VokseliaSpawn/*
 Source/enc_temp_folder/
 
 ## Ignore Visual Studio temporary files, build results, and

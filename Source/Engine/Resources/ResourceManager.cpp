@@ -165,7 +165,9 @@ void ResourceManager::ProcessPendingLoads()
 					}
 				}
 
-				m_logger->WriteSuccess(LogCategory::Resources, "[%-30s] Successfully loaded", status->Path.c_str());
+				status->LoadTimer.Stop();
+
+				m_logger->WriteSuccess(LogCategory::Resources, "[%-30s] Successfully loaded in %.2f ms", status->Path.c_str(), status->LoadTimer.GetElapsed());
 			}
 			else
 			{
@@ -240,6 +242,7 @@ ResourcePtr<IResource> ResourceManager::LoadTypeLess(const String& path, const S
 	status->Path = path;
 	status->Status = ResourceLoadStatus::Pending;
 	status->ResourceManager = shared_from_this();
+	status->LoadTimer.Start();
 
 	if (loader != nullptr)
 	{
@@ -280,6 +283,8 @@ ResourcePtr<IResource> ResourceManager::CreateFromTypelessPointer(const String& 
 
 bool ResourceManager::ReadResourceBytes(const String& path, Array<char>& bytes)
 {
+	ProfileScope scope(ProfileColors::Streaming, StringFormat("Reading file: %s", path.c_str()));
+
 	for (String& mount : m_mountedDirectories)
 	{
 		if (File::ReadAllBytes(StringFormat("%s/%s", mount.c_str(), path.c_str()), bytes))
@@ -293,6 +298,8 @@ bool ResourceManager::ReadResourceBytes(const String& path, Array<char>& bytes)
 
 void ResourceManager::LoadResource(std::shared_ptr<ResourceStatus> resource)
 {
+	ProfileScope scope1(ProfileColors::Streaming, StringFormat("Loading resource: %s", resource->Path.c_str()));
+
 	m_logger->WriteInfo(LogCategory::Resources, "[%-30s] Starting to load", resource->Path.c_str());
 
 	resource->Status = ResourceLoadStatus::Loading;
@@ -309,6 +316,8 @@ void ResourceManager::LoadResource(std::shared_ptr<ResourceStatus> resource)
 
 	try
 	{
+		ProfileScope scope2(ProfileColors::Streaming, StringFormat("Parsing json"));
+
 		jsonValue = json::parse(bytes);
 	}
 	catch (json::exception ex)
@@ -337,11 +346,16 @@ void ResourceManager::LoadResource(std::shared_ptr<ResourceStatus> resource)
 	}
 
 	// Load the resource!
-	std::shared_ptr<IResource> result = loader->Load(shared_from_this(), resource, jsonValue);
-	if (result == nullptr)
+	std::shared_ptr<IResource> result = nullptr;
 	{
-		resource->Status = ResourceLoadStatus::Failed;
-		return;
+		ProfileScope scope3(ProfileColors::Streaming, StringFormat("Loading %s", type.c_str()));
+
+		result = loader->Load(shared_from_this(), resource, jsonValue);
+		if (result == nullptr)
+		{
+			resource->Status = ResourceLoadStatus::Failed;
+			return;
+		}
 	}
 
 	resource->Resource = result;

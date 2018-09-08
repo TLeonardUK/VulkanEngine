@@ -16,6 +16,8 @@ struct ProfileColors
 	static Color PrimaryTask;
 	static Color SecondaryTask;
 	static Color TertiaryTask;
+
+	static Color Streaming;
 };
 
 struct ProfileScope

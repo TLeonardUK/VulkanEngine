@@ -366,19 +366,16 @@ VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourc
 		case GraphicsBindingType::UniformBufferObject:
 			{
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-				printf("Binding %i = UBO\n", bindingDescription.location);
 				break;
 			}
 		case GraphicsBindingType::Sampler:
 			{
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				printf("Binding %i = Sampler\n", bindingDescription.location);
 				break;
 			}
 		case GraphicsBindingType::SamplerCube:
 			{
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				printf("Binding %i = SamplerCube\n", bindingDescription.location);
 				break;
 			}
 		default:
@@ -401,8 +398,6 @@ VkDescriptorSetLayout VulkanResourceSetPool::RequestLayout(const GraphicsResourc
 	layout.description = description;
 	layout.layout = descriptorSetLayout;
 	m_layouts.push_back(layout);
-
-	m_logger->WriteInfo(LogCategory::Vulkan, "Allocated new layout.");
 
 	return descriptorSetLayout;
 }

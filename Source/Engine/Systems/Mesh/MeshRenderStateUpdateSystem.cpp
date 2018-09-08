@@ -35,7 +35,18 @@ void MeshRenderStateUpdateSystem::Tick(
 		
 		if (mesh->lastTransformVersion != transform->version)
 		{
-			mesh->properties.Set(ModelMatrixHash, transform->localToWorld); 
+			// Calculate render flags for mesh.
+			RenderFlags flags = RenderFlags::None;
+
+			std::shared_ptr<Shader> shader = mesh->mesh->GetMaterial().Get()->GetShader().Get();
+			if (shader->GetProperties().ShadowReciever)
+			{
+				flags = (RenderFlags)((int)flags | (int)RenderFlags::ShadowReciever);
+			}
+
+			// Apply properties.
+			mesh->properties.Set(ModelMatrixHash, transform->localToWorld);
+			mesh->properties.Set(RenderFlagsHash, (int)flags);
 			mesh->properties.UpdateResources(m_graphics, m_logger);
 
 			mesh->lastTransformVersion = transform->version;

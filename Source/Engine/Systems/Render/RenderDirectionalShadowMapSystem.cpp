@@ -63,10 +63,12 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 {
 	SpatialIndexSystem* spatialSystem = world.GetSystem<SpatialIndexSystem>();
 
-	Vector3 viewWorldLocation = TransformUtils::GetWorldLocation(viewTransform);
-	Vector3 viewForward = TransformUtils::GetForwardVector(viewTransform);
+	Vector3 lightWorldDirection = TransformUtils::GetForwardVector(transform);
 
 	Matrix4 viewMatrix = Matrix4::LookAt(Vector3::Zero, TransformUtils::GetForwardVector(transform), Vector3::Up);
+
+	Vector3 viewWorldLocation = TransformUtils::GetWorldLocation(viewTransform);
+	Vector3 viewForward = TransformUtils::GetForwardVector(viewTransform);
 
 	// Calculate cascades based on view frustum.
 	float cascadeNearZ = view->depthMin;
@@ -80,19 +82,42 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		// Create resources if required.
 		if (cascade.shadowMapImage == nullptr)
 		{
-			cascade.shadowMapImage = m_graphics->CreateImage(StringFormat("Directional Shadow Map (Cascade %i)", i), light->shadowMapSize, light->shadowMapSize, 1, GraphicsFormat::UNORM_D16, false, GraphicsUsage::DepthAttachment);
+			cascade.mapSize = light->shadowMapSize;
+
+			// Double size of last cascade as it encompases a far larger area.
+			if (i == light->shadowMapCascades - 1)
+			{
+				cascade.mapSize *= 2;
+			}
+
+			cascade.shadowMapImage = m_graphics->CreateImage(StringFormat("Directional Shadow Map (Cascade %i)", i), cascade.mapSize, cascade.mapSize, 1, GraphicsFormat::SFLOAT_D32, false, GraphicsUsage::DepthAttachment);
 			cascade.shadowMapImageView = m_graphics->CreateImageView(StringFormat("Directional Shadow Map View (Cascade %i)", i), cascade.shadowMapImage);
 
 			// Create framebuffer.
 			GraphicsFramebufferSettings settings;
-			settings.width = light->shadowMapSize;
-			settings.height = light->shadowMapSize;
+			settings.width = cascade.mapSize;
+			settings.height = cascade.mapSize;
 			settings.renderPass = m_renderer->GetRenderPassForTarget(FrameBufferTarget::DepthBuffer);
 			settings.attachments.push_back(cascade.shadowMapImageView);
 
 			cascade.shadowMapFramebuffer = m_graphics->CreateFramebuffer(StringFormat("Directional Shadow Map Framebuffer (Cascade %i)", i), settings);
 
 			SamplerDescription samplerDescription;
+#if 0
+			samplerDescription.MagnificationFilter = GraphicsFilter::NearestNeighbour;
+			samplerDescription.MinificationFilter = GraphicsFilter::NearestNeighbour;
+			samplerDescription.AddressModeU = GraphicsAddressMode::ClampToEdge;
+			samplerDescription.AddressModeV = GraphicsAddressMode::ClampToEdge;
+			samplerDescription.AddressModeW = GraphicsAddressMode::ClampToEdge;
+			samplerDescription.BorderColor = GraphicsBorderColor::OpaqueWhite_Float;
+#else
+			samplerDescription.MagnificationFilter = GraphicsFilter::Linear;
+			samplerDescription.MinificationFilter = GraphicsFilter::Linear;
+			samplerDescription.AddressModeU = GraphicsAddressMode::ClampToBorder;
+			samplerDescription.AddressModeV = GraphicsAddressMode::ClampToBorder;
+			samplerDescription.AddressModeW = GraphicsAddressMode::ClampToBorder;
+			samplerDescription.BorderColor = GraphicsBorderColor::OpaqueWhite_Float;
+#endif
 			cascade.shadowMapSampler = m_graphics->CreateSampler(StringFormat("Directional Shadow Map Sampler (Cascade %i)", i), samplerDescription);
 		}
 
@@ -102,24 +127,43 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		double maxDistance = CalculateCascadeDistance(cascadeNearZ, cascadeFarZ, maxDelta, light->shadowMapSplitExponent);
 
 		cascade.viewFrustum = view->frustum.GetCascade(minDistance, maxDistance);
+		Frustum viewSpaceFrustum = view->viewSpaceFrustum.GetCascade(minDistance, maxDistance);
 
-		// Convert frustum corners to light-space.
+		// Calculate bounds of view space frustum.
 		Vector3 corners[(int)FrustumCorners::Count];
-		cascade.viewFrustum.GetCorners(corners);
+		viewSpaceFrustum.GetCorners(corners);
 		cascade.splitMinDistance = minDistance;
 		cascade.splitMaxDistance = maxDistance;
 
-		for (int i = 0; i < (int)FrustumCorners::Count; i++)
-		{
-			corners[i] = corners[i] * viewMatrix;
-		}
+		// Get world space bounds of frustum.
+		Bounds bounds(corners, (int)FrustumCorners::Count);
+
+		// Calculate sphere that fits inside orthographic bounds.
+#if 1
+		float radius = Math::Min(bounds.GetExtents().x, bounds.GetExtents().y);
+		cascade.worldRadius = radius;
+
+		Sphere sphere;
+		sphere.origin = cascade.viewFrustum.GetCenter() * viewMatrix;
+		sphere.radius = radius;
+#else
+		Sphere sphere(corners, (int)FrustumCorners::Count);
+		sphere.origin = cascade.viewFrustum.GetCenter() * viewMatrix;
+
+#endif
 
 		// Calculate sphere that encompases all corners (we do this as a sphere 
 		// is rotationally invariant so we don't get artifacts as the view area changes).
-		Sphere sphere(corners, (int)FrustumCorners::Count);
+		// update: don't do it this way, we want a sphere that is contained within frustum bounds, not one that
+		// containst the frustum (as we will end up rendering a ton of stuff thats not visible to the user).
+		//Sphere worldSphere(corners, (int)FrustumCorners::Count);
+//		sphere.origin = cascade.viewFrustum.GetCenter() * viewMatrix;
+//		sphere.radius *= 0.5f;
+
 
 		// Calculate bounding box in light-space.
 		Bounds lightSpaceBounds = sphere.GetBounds();
+		//Bounds worldBounds = worldSphere.GetBounds();
 
 		// Calculate projection matrix that encompases the light space bounds.
 		Vector3 originLightSpace = view->frustum.GetOrigin() * viewMatrix;
@@ -127,42 +171,35 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		float minZ = -originLightSpace.z - 10000.0f; // todo: Shouldn't attach this to frustum. Calculate scene bounds?
 		float maxZ = -originLightSpace.z + 10000.0f;
 
-		// Keep it fixed in x and y.
-		float maxSize = Math::Max(
-			(lightSpaceBounds.max.x - lightSpaceBounds.min.x), 
-			(lightSpaceBounds.max.y - lightSpaceBounds.min.y));
-		
 		cascade.projectionMatrix = Matrix4::Orthographic(
 			lightSpaceBounds.min.x,
-			lightSpaceBounds.max.x,//lightSpaceBounds.min.x + maxSize,
+			lightSpaceBounds.max.x,
 			lightSpaceBounds.min.y,
-			lightSpaceBounds.max.y,//lightSpaceBounds.min.y + maxSize,
+			lightSpaceBounds.max.y,
 			minZ, 
 			maxZ);
+
+		// Create the rounding matrix, by projecting the world-space origin and determining
+		// the fractional offset in texel space
+		Matrix4 shadowMatrix = cascade.projectionMatrix * viewMatrix;
+		Vector4 shadowOrigin = shadowMatrix.TransformVector(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+		shadowOrigin = shadowOrigin * cascade.mapSize / 2.0f;
+
+		Vector4 roundedOrigin = shadowOrigin.Round();
+		Vector4 roundOffset = roundedOrigin - shadowOrigin;
+		roundOffset = roundOffset * 2.0f / cascade.mapSize;
+		roundOffset.z = 0.0f;
+		roundOffset.w = 0.0f;
+
+		Matrix4 shadowProj = cascade.projectionMatrix;
+		shadowProj.SetColumn(3, shadowProj.GetColumn(3) + roundOffset);
+		cascade.projectionMatrix = shadowProj;
 
 		// Calculate frustum from projection matrix.
 		cascade.frustum = Frustum(cascade.projectionMatrix * viewMatrix);
 
 		if (m_renderer->IsDrawBoundsEnabled())
 		{
-			/*{
-				DrawDebugSphereMessage frusumDrawMsg;
-				frusumDrawMsg.sphere = sphere;
-				frusumDrawMsg.color = Color::Red;
-				world.QueueMessage(frusumDrawMsg);
-			}
-			{
-				DrawDebugBoundsMessage frusumDrawMsg;
-				frusumDrawMsg.bounds = lightSpaceBounds;
-				frusumDrawMsg.color = Color::Green;
-				world.QueueMessage(frusumDrawMsg);
-			}*/
-			{
-				DrawDebugFrustumMessage frusumDrawMsg;
-				frusumDrawMsg.frustum = cascade.viewFrustum;
-				frusumDrawMsg.color = Color::Red;
-				world.QueueMessage(frusumDrawMsg);
-			}
 			{
 				DrawDebugFrustumMessage frusumDrawMsg;
 				frusumDrawMsg.frustum = cascade.frustum;
@@ -223,8 +260,8 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 
 			drawBuffer->SetPipeline(batch->material->GetPipeline());
 
-			drawBuffer->SetScissor(0, 0, light->shadowMapSize, light->shadowMapSize);
-			drawBuffer->SetViewport(0, 0, light->shadowMapSize, light->shadowMapSize);
+			drawBuffer->SetScissor(0, 0, cascade.mapSize, cascade.mapSize);
+			drawBuffer->SetViewport(0, 0, cascade.mapSize, cascade.mapSize);
 
 			{
 				ProfileScope scope(ProfileColors::Draw, "Draw Meshes");
@@ -262,7 +299,7 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		// Queue all shadow-map generation buffers.
 		for (int i = 0; i < cascade.batchBuffers.size(); i++)
 		{
-			m_renderer->QueuePrimaryBuffer("Shadow Map Generation", RenderCommandStage::View_ShadowMap, cascade.batchBuffers[i], reinterpret_cast<uint64_t>(view));
+			m_renderer->QueuePrimaryBuffer("Shadow Map Generation", RenderCommandStage::View_ShadowMap, cascade.batchBuffers[i], reinterpret_cast<uint64_t>(view), renderBatches[i]->material->GetShader().Get()->GetProperties().RenderOrder);
 		}
 
 		// Transition back to reading format.
@@ -280,9 +317,11 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 	}, 1, "Shadow Map Cascade Building");
 
 	// Update shadow mesh rendering properties.
+	Array<RenderPropertyImageSamplerValue> cascadeShadowMapsArray;
 	Array<Matrix4> cascadeViewProjArray;
 	Array<float> cascadeSplitDistanceArray;
-	Array<RenderPropertyImageSamplerValue> cascadeShadowMapsArray;
+	Array<float> cascadeRadiusArray;
+	Array<float> cascadeMapSizeArray;
 
 	for (int i = 0; i < Renderer::MaxShadowCascades; i++)
 	{
@@ -292,6 +331,8 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 
 			cascadeViewProjArray.push_back(cascade.projectionMatrix * viewMatrix);
 			cascadeSplitDistanceArray.push_back(cascade.splitMaxDistance);
+			cascadeRadiusArray.push_back(cascade.worldRadius);
+			cascadeMapSizeArray.push_back(cascade.mapSize);
 			cascadeShadowMapsArray.push_back(RenderPropertyImageSamplerValue(cascade.shadowMapImageView, cascade.shadowMapSampler));
 		}
 		else
@@ -300,6 +341,8 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 
 			cascadeViewProjArray.push_back(Matrix4::Identity);
 			cascadeSplitDistanceArray.push_back(0.0f);
+			cascadeRadiusArray.push_back(0.0f);
+			cascadeMapSizeArray.push_back(0.0f);
 			cascadeShadowMapsArray.push_back(RenderPropertyImageSamplerValue(cascade.shadowMapImageView, cascade.shadowMapSampler));
 		}
 	}
@@ -309,6 +352,11 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 	light->shadowMaskProperties.Set(LightCascadeViewProjHash, cascadeViewProjArray);
 	light->shadowMaskProperties.Set(LightCascadeSplitDistancesHash, cascadeSplitDistanceArray);
 	light->shadowMaskProperties.Set(LightCascadeShadowMapsHash, cascadeShadowMapsArray);
+	light->shadowMaskProperties.Set(LightCascadeRadiusHash, cascadeRadiusArray);	
+	light->shadowMaskProperties.Set(LightWorldDirectionHash, Vector4(lightWorldDirection, 1.0f));
+	light->shadowMaskProperties.Set(LightCascadeMapSizeHash, cascadeMapSizeArray);
+	light->shadowMaskProperties.Set(LightShadowCascadeBlendFactorHash, (float)light->shadowMapCascadeBlendFactor);
+	
 	light->shadowMaskProperties.UpdateResources(m_graphics, m_logger);
 }
 

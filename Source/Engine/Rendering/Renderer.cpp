@@ -41,8 +41,8 @@ Renderer::Renderer(std::shared_ptr<Logger> logger, std::shared_ptr<IGraphics> gr
 	, m_frameIndex(0)
 	// DEBUG DEBUG DEBUG
 	, m_drawFrameBuffersEnabled(true)
-	, m_drawBoundsEnabled(true)
 	// DEBUG DEBUG DEBUG
+	, m_drawBoundsEnabled(false)
 	, m_drawWireframeEnabled(false)
 	, m_renderingIsFrozen(false)
 	, m_frameCounter(0)
@@ -336,7 +336,7 @@ void Renderer::CreateSwapChainDependentResources()
 	{
 		GraphicsRenderPassSettings renderPassSettings;
 		renderPassSettings.transitionToPresentFormat = false;
-		renderPassSettings.AddDepthAttachment(GraphicsFormat::UNORM_D16);
+		renderPassSettings.AddDepthAttachment(GraphicsFormat::SFLOAT_D32);
 
 		GraphicsSubPassIndex subPass1 = renderPassSettings.AddSubPass();
 		renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
@@ -450,7 +450,7 @@ void Renderer::CreateGBufferResources()
 	m_gbufferRenderPass = m_graphics->CreateRenderPass("GBuffer Render Pass", renderPassSettings);
 
 	// Create our G-Buffer.
-	m_gbufferImages[0] = m_graphics->CreateImage("GBuffer 0 - RGB:Diffuse A:Unused", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::UNORM_R16G16B16A16, false, GraphicsUsage::ColorAttachment);
+	m_gbufferImages[0] = m_graphics->CreateImage("GBuffer 0 - RGB:Diffuse A:Flags", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::UNORM_R16G16B16A16, false, GraphicsUsage::ColorAttachment);
 	m_gbufferImages[1] = m_graphics->CreateImage("GBuffer 1 - RGB:World Normal A:Unused", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::SFLOAT_R16G16B16A16, false, GraphicsUsage::ColorAttachment);
 	m_gbufferImages[2] = m_graphics->CreateImage("GBuffer 2 - RGB:World Position A:Unused", m_swapChainWidth, m_swapChainHeight, 1, GraphicsFormat::SFLOAT_R32G32B32A32, false, GraphicsUsage::ColorAttachment);
 
@@ -621,7 +621,14 @@ void Renderer::Present()
 		{
 			if (a.viewId == b.viewId)
 			{
-				return (int)a.stage < (int)b.stage;
+				if (a.stage == b.stage)
+				{
+					return a.renderOrder < b.renderOrder;
+				}
+				else
+				{
+					return (int)a.stage < (int)b.stage;
+				}
 			}
 			else
 			{
@@ -843,7 +850,7 @@ void Renderer::UpdateCommandBufferPools()
 	}
 }
 
-void Renderer::QueuePrimaryBuffer(const String& name, RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer, uint64_t viewId)
+void Renderer::QueuePrimaryBuffer(const String& name, RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer, uint64_t viewId, float renderOrder)
 {
 	ScopeLock lock(m_queuedBuffersMutex);
 
@@ -852,6 +859,7 @@ void Renderer::QueuePrimaryBuffer(const String& name, RenderCommandStage stage, 
 	qbuffer.stage = stage;
 	qbuffer.buffer = buffer;
 	qbuffer.viewId = viewId;
+	qbuffer.renderOrder = renderOrder;
 	m_queuedBuffers.push_back(qbuffer);
 }
 

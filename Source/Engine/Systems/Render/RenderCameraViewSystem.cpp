@@ -64,11 +64,12 @@ void RenderCameraViewSystem::TickView(
 	if (!m_renderer->IsRenderingFrozen())
 	{
 		view->frustum = Frustum(view->projectionMatrix * view->viewMatrix);
+		view->viewSpaceFrustum = Frustum(view->projectionMatrix);
 	}
 
 	if (m_renderer->IsDrawBoundsEnabled())
 	{
-	/*	DrawDebugFrustumMessage frusumDrawMsg;
+		DrawDebugFrustumMessage frusumDrawMsg;
 		frusumDrawMsg.frustum = view->frustum;
 		frusumDrawMsg.color = Color::Green;
 		world.QueueMessage(frusumDrawMsg);
@@ -76,7 +77,7 @@ void RenderCameraViewSystem::TickView(
 		DrawDebugBoundsMessage boundsMsg;
 		boundsMsg.color = Color::PureRed;
 		boundsMsg.bounds = Bounds::FromCenterAndExtents(view->frustum.GetOrigin(), Vector3(5.0f, 5.0f, 5.0f));
-		world.QueueMessage(boundsMsg);*/
+		world.QueueMessage(boundsMsg);
 	}
 
 	// Update global properties.
@@ -161,7 +162,7 @@ void RenderCameraViewSystem::TickView(
 	
 	for (int i = 0; i < m_batchBuffers.size(); i++)
 	{
-		m_renderer->QueuePrimaryBuffer("Camera View Render", RenderCommandStage::View_GBuffer, m_batchBuffers[i], reinterpret_cast<uint64_t>(view));
+		m_renderer->QueuePrimaryBuffer("Camera View Render", RenderCommandStage::View_GBuffer, m_batchBuffers[i], reinterpret_cast<uint64_t>(view), renderBatches[i]->material->GetShader().Get()->GetProperties().RenderOrder);
 	}
 
 	// Transition buffer at start of rendering.

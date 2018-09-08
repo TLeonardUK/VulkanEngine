@@ -15,6 +15,7 @@ struct CameraViewComponent
 	float fov = 45.0f;
 
 	Frustum frustum = Frustum::Empty;
+	Frustum viewSpaceFrustum = Frustum::Empty;
 	Matrix4 viewMatrix = Matrix4::Identity;
 	Matrix4 projectionMatrix = Matrix4::Identity;
 

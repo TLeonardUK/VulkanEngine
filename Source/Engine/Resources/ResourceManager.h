@@ -6,6 +6,7 @@
 #include "Engine/Types/Dictionary.h"
 #include "Engine/Types/Queue.h"
 #include "Engine/Types/Mutex.h"
+#include "Engine/Types/Timer.h"
 #include "Engine/Threading/Semaphore.h"
 #include "Engine/Threading/TaskManager.h"
 
@@ -36,6 +37,7 @@ public:
 	Array<std::shared_ptr<ResourceStatus>> Dependencies;
 	std::string Tag;
 	Task::Id LoadTask;
+	Timer LoadTimer;
 
 public:
 	void WaitUntilLoaded();

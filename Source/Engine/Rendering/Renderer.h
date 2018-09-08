@@ -35,6 +35,14 @@ struct GraphicsResourceSetDescription;
 #include "Engine/Rendering/RendererHashes.inc"
 #undef HASH
 
+// Flags that are written into the gbuffer for individual meshes. Determines
+// how they are affected by various rendering passes.
+enum class RenderFlags
+{
+	None			= 0,
+	ShadowReciever	= 1,
+};
+
 enum class RenderCommandStage
 {
 	Global_PreRender,				// Before primary render buffers.
@@ -81,6 +89,7 @@ private:
 	{
 		String name;
 		uint64_t viewId;
+		float renderOrder;
 		RenderCommandStage stage;
 		std::shared_ptr<IGraphicsCommandBuffer> buffer;
 	};
@@ -258,7 +267,7 @@ public:
 
 	void CreateMeshRenderState(std::shared_ptr<MeshRenderState>* state);
 
-	void QueuePrimaryBuffer(const String& name, RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer, uint64_t viewId = -1);
+	void QueuePrimaryBuffer(const String& name, RenderCommandStage stage, std::shared_ptr<IGraphicsCommandBuffer>& buffer, uint64_t viewId = -1, float renderOrder = 0.0f);
 	void QueueRenderCommand(RenderCommandStage stage, RenderCommand::CommandSignature_t callback);
 
 	ResourcePtr<Material> GetResolveToSwapChainMaterial();

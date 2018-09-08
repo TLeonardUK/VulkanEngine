@@ -4,6 +4,7 @@
 #include "Engine/Components/Transform/TransformComponent.h"
 #include "Engine/Components/Mesh/MeshComponent.h"
 
+#include "Engine/Systems/Render/RenderDebugSystem.h"
 #include "Engine/Systems/Mesh/ModelMeshCreationSystem.h"
 #include "Engine/Systems/Mesh/MeshBoundsUpdateSystem.h"
 #include "Engine/Systems/Transform/TransformSystem.h"
@@ -55,9 +56,9 @@ void SpatialIndexSystem::Tick(
 	}
 
 	// Draw bounds.
-	//Array<const OctTree<Entity>::Node*> nodes;
-	//m_tree.GetNodes(nodes);
-	/*for (auto& cell : nodes)
+	/*Array<const OctTree<Entity>::Node*> nodes;
+	m_tree.GetNodes(nodes);
+	for (auto& cell : nodes)
 	{
 		if (cell->level == 0 || cell->level == 1)
 		{
@@ -71,7 +72,7 @@ void SpatialIndexSystem::Tick(
 			for (auto& entry : cell->entries)
 			{
 				DrawDebugBoundsMessage boundsDrawMsg;
-				boundsDrawMsg.bounds = entry.second.bounds;
+				boundsDrawMsg.bounds = entry.bounds;
 				boundsDrawMsg.color = Color(0.0f, 1.0f, 0.0f, 1.0f);
 				world.QueueMessage(boundsDrawMsg);
 			}

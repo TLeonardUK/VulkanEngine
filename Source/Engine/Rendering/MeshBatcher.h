@@ -46,7 +46,6 @@ private:
 	AspectId m_meshComponentAspectId = -1;
 
 	Array<Dictionary<Material*, MaterialBatch>> m_asyncMaterialBatches;
-	Dictionary<Material*, MaterialBatch> m_materialBatches;
 	Array<MaterialRenderBatch*> m_materialRenderBatches;
 	Array<MaterialRenderBatch*> m_finalRenderBatches;
 

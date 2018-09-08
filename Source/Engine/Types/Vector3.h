@@ -80,6 +80,7 @@ public:
 		x *= inverse;
 		y *= inverse;
 		z *= inverse;
+		return *this;
 	}
 	BaseVector3& operator/=(const BaseVector3& vector)
 	{

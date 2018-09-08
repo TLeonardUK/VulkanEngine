@@ -14,6 +14,8 @@ public:
 	GraphicsAddressMode AddressModeV;
 	GraphicsAddressMode AddressModeW;
 
+	GraphicsBorderColor BorderColor;
+
 	GraphicsMipMapMode MipmapMode;
 
 	float MinLod;
@@ -33,6 +35,7 @@ public:
 		, MaxLod(-1.0f)
 		, MipLodBias(0.0f)
 		, MipmapMode(GraphicsMipMapMode::Linear)
+		, BorderColor(GraphicsBorderColor::OpaqueBlack)
 	{
 	}
 };

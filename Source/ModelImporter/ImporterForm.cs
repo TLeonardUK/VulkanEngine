@@ -74,7 +74,10 @@ namespace ModelImporter
                     WriteTextureFile(textureAssetPath, texturePath);
                     WriteMaterialFile(materialAssetPath, textureAssetPath);
 
-                    materialMap.Add(currentMaterialName, materialAssetPath);
+                    if (!materialMap.ContainsKey(currentMaterialName))
+                    {
+                        materialMap.Add(currentMaterialName, materialAssetPath);
+                    }
                 }
             }
 

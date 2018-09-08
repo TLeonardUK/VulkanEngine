@@ -53,6 +53,7 @@ struct ShaderProperties
 {
 	bool ShadowCaster = true;
 	bool ShadowReciever = true;
+	float RenderOrder = 0.0f;
 };
 
 class Shader

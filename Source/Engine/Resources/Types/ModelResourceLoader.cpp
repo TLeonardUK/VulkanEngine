@@ -203,49 +203,57 @@ std::shared_ptr<IResource> ModelResourceLoader::Load(std::shared_ptr<ResourceMan
 	ModelLoadState objectData;
 	objectData.name = resource->Path;
 
-	if (!tinyobj::LoadObjWithCallback(in, callbacks, &objectData, nullptr, &err))
 	{
-		m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to load model, possibly invalid or corrupt?.", resource->Path.c_str());
-		return nullptr;
+		ProfileScope scope(ProfileColors::Streaming, "Loading obj file");
+
+		if (!tinyobj::LoadObjWithCallback(in, callbacks, &objectData, nullptr, &err))
+		{
+			m_logger->WriteError(LogCategory::Resources, "[%-30s] Failed to load model, possibly invalid or corrupt?.", resource->Path.c_str());
+			return nullptr;
+		}
 	}
 
 	// De-index normals/texcoords/positions.
-	for (int meshIndex = 0; meshIndex < objectData.meshes.size(); meshIndex++)
 	{
-		MeshLoadState& mesh = objectData.meshes[meshIndex];
-		mesh.vertices.reserve(mesh.tmpIndices.size());
-		mesh.normals.reserve(mesh.tmpIndices.size());
-		mesh.texcoords.reserve(mesh.tmpIndices.size());
-		mesh.indices.reserve(mesh.tmpIndices.size());
+		ProfileScope scope(ProfileColors::Streaming, "De-indexing streams");
 
-		for (int index = 0; index < mesh.tmpIndices.size(); index++)
+		for (int meshIndex = 0; meshIndex < objectData.meshes.size(); meshIndex++)
 		{
-			tinyobj::index_t tinyIndex = mesh.tmpIndices[index];
+			MeshLoadState& mesh = objectData.meshes[meshIndex];
+			mesh.vertices.reserve(mesh.tmpIndices.size());
+			mesh.normals.reserve(mesh.tmpIndices.size());
+			mesh.texcoords.reserve(mesh.tmpIndices.size());
+			mesh.indices.reserve(mesh.tmpIndices.size());
 
-			mesh.vertices.push_back(objectData.tmpVertices[tinyIndex.vertex_index - 1]);
-			if (!objectData.tmpNormals.empty())
+			for (int index = 0; index < mesh.tmpIndices.size(); index++)
 			{
-				if (tinyIndex.normal_index == 0)
+				tinyobj::index_t tinyIndex = mesh.tmpIndices[index];
+
+				mesh.vertices.push_back(objectData.tmpVertices[tinyIndex.vertex_index - 1]);
+				if (!objectData.tmpNormals.empty())
 				{
-					mesh.normals.push_back(Vector3(0.0f, 0.0f, 0.0f));
+					if (tinyIndex.normal_index == 0)
+					{
+						mesh.normals.push_back(Vector3(0.0f, 0.0f, 0.0f));
+					}
+					else
+					{
+						mesh.normals.push_back(objectData.tmpNormals[tinyIndex.normal_index - 1]);
+					}
 				}
-				else
+				if (!objectData.tmpTexcoords.empty())
 				{
-					mesh.normals.push_back(objectData.tmpNormals[tinyIndex.normal_index - 1]);
+					if (tinyIndex.texcoord_index == 0)
+					{
+						mesh.texcoords.push_back(Vector2(0.0f, 0.0f));
+					}
+					else
+					{
+						mesh.texcoords.push_back(Vector2(objectData.tmpTexcoords[tinyIndex.texcoord_index - 1].x, 1.0f - objectData.tmpTexcoords[tinyIndex.texcoord_index - 1].y)); // no support for 3d texture coordinates (yet!)
+					}
 				}
+				mesh.indices.push_back((int)mesh.indices.size());
 			}
-			if (!objectData.tmpTexcoords.empty())
-			{
-				if (tinyIndex.texcoord_index == 0)
-				{
-					mesh.texcoords.push_back(Vector2(0.0f, 0.0f));
-				}
-				else
-				{
-					mesh.texcoords.push_back(Vector2(objectData.tmpTexcoords[tinyIndex.texcoord_index - 1].x, 1.0f - objectData.tmpTexcoords[tinyIndex.texcoord_index - 1].y)); // no support for 3d texture coordinates (yet!)
-				}
-			}
-			mesh.indices.push_back((int)mesh.indices.size());
 		}
 	}
 
@@ -280,6 +288,8 @@ std::shared_ptr<IResource> ModelResourceLoader::Load(std::shared_ptr<ResourceMan
 
 	for (int i = 0; i < objectData.meshes.size(); i++)
 	{
+		ProfileScope scope(ProfileColors::Streaming, "Creating mesh");
+
 		MeshLoadState& mesh = objectData.meshes[i];
 		if (mesh.material.empty())
 		{

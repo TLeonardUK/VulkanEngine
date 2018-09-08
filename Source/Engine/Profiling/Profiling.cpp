@@ -7,6 +7,8 @@ Color ProfileColors::Draw = Color::Blue;
 Color ProfileColors::Render = Color::Yellow;
 Color ProfileColors::Synchronization = Color::Black;
 
+Color ProfileColors::Streaming = Color::Brown;
+
 Color ProfileColors::PrimaryTask = Color::LightGreen;
 Color ProfileColors::SecondaryTask = Color::Amber;
 Color ProfileColors::TertiaryTask = Color::DeepPurple;

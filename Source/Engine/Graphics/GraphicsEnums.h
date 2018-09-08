@@ -35,6 +35,10 @@ enum_begin_declaration(GraphicsAddressMode)
 #include "Engine/Graphics/EGraphicsAddressMode.inc"
 enum_end_declaration(GraphicsAddressMode)
 
+enum_begin_declaration(GraphicsBorderColor)
+#include "Engine/Graphics/EGraphicsBorderColor.inc"
+enum_end_declaration(GraphicsBorderColor)
+
 enum_begin_declaration(GraphicsFilter)
 #include "Engine/Graphics/EGraphicsFilter.inc"
 enum_end_declaration(GraphicsFilter)

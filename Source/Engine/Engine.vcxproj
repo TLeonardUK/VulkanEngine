@@ -257,6 +257,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClCompile Include="Types\Sphere.cpp" />
     <ClCompile Include="Types\String.cpp" />
     <ClCompile Include="Types\Timeout.cpp" />
+    <ClCompile Include="Types\Timer.cpp" />
     <ClCompile Include="Types\Vector.cpp" />
     <ClCompile Include="UI\ImguiManager.cpp" />
     <ClCompile Include="Utilities\Enum.cpp" />
@@ -270,6 +271,8 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Components\Camera\FlyCameraComponent.h" />
     <ClInclude Include="Components\Lighting\DirectionalLightComponent.h" />
+    <ClInclude Include="Components\Lighting\PointLightComponent.h" />
+    <ClInclude Include="Components\Lighting\SpotLightComponent.h" />
     <ClInclude Include="Components\Mesh\MeshComponent.h" />
     <ClInclude Include="Components\Mesh\ModelComponent.h" />
     <ClInclude Include="Components\Transform\BoundsComponent.h" />
@@ -395,6 +398,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Types\String.h" />
     <ClInclude Include="Types\Array.h" />
     <ClInclude Include="Types\Timeout.h" />
+    <ClInclude Include="Types\Timer.h" />
     <ClInclude Include="Types\Vector.h" />
     <ClInclude Include="Types\Vector2.h" />
     <ClInclude Include="Types\Vector3.h" />
@@ -418,6 +422,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <None Include="Graphics\EGraphicsBindingType.inc" />
     <None Include="Graphics\EGraphicsBlendFactor.inc" />
     <None Include="Graphics\EGraphicsBlendOp.inc" />
+    <None Include="Graphics\EGraphicsBorderColor.inc" />
     <None Include="Graphics\EGraphicsCullMode.inc" />
     <None Include="Graphics\EGraphicsDepthCompareOp.inc" />
     <None Include="Graphics\EGraphicsFaceWindingOrder.inc" />

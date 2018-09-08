@@ -1,0 +1,6 @@
+enum_entry(TransparentBlack)
+enum_entry(TransparentBlack_Float)
+enum_entry(OpaqueBlack)
+enum_entry(OpaqueBlack_Float)
+enum_entry(OpaqueWhite)
+enum_entry(OpaqueWhite_Float)

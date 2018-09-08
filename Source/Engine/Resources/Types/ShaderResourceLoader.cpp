@@ -236,7 +236,6 @@ bool ShaderResourceLoader::LoadStageStreams(ShaderStage& stage, const String& st
 		return a.Location < b.Location;
 	});
 
-
 	return true;
 }
 
@@ -560,6 +559,10 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 	if (jsonValue.count("ShadowReciever"))
 	{
 		properties.ShadowReciever = jsonValue["ShadowReciever"];
+	}
+	if (jsonValue.count("RenderOrder"))
+	{
+		properties.RenderOrder = jsonValue["RenderOrder"];
 	}
 
 	return std::make_shared<Shader>(shaderStages, shaderBindings, pipelineDescription, target, properties);

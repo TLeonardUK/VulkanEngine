@@ -56,7 +56,8 @@ bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image)
 
 	bool isDepth = (
 		vulkanImage->GetVkFormat() == VK_FORMAT_D24_UNORM_S8_UINT ||
-		vulkanImage->GetVkFormat() == VK_FORMAT_D16_UNORM);
+		vulkanImage->GetVkFormat() == VK_FORMAT_D16_UNORM ||
+		vulkanImage->GetVkFormat() == VK_FORMAT_D32_SFLOAT);
 	
 	bool isStencil = (vulkanImage->GetVkFormat() == VK_FORMAT_D24_UNORM_S8_UINT);
 

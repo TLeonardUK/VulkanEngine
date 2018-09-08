@@ -22,8 +22,12 @@ struct DirectionalLightCascadeInfo
 	std::shared_ptr<IGraphicsFramebuffer> shadowMapFramebuffer;
 	std::shared_ptr<IGraphicsSampler> shadowMapSampler;
 
+	int mapSize;
+
 	float splitMinDistance;
 	float splitMaxDistance;
+
+	float worldRadius;
 
 	Matrix4 projectionMatrix;
 	Frustum viewFrustum;
@@ -39,11 +43,23 @@ struct DirectionalLightCascadeInfo
 // Describes a directional light.
 struct DirectionalLightComponent
 {
+	// If true this light will cast shadows into the scene.
 	bool isShadowCasting = false;
+
+	// Size of shadow map texture allocated for each cascade.
 	int shadowMapSize = 512;
+
+	// Number of shadow cascades the view frustum is split into for shadow rendering.
 	int shadowMapCascades = 4;
-	float shadowMapSplitExponent = 0.9f; // 0 to 1, the lower the value the closer to a linear split the cascades will have.
+
+	// 0 to 1, the lower the value the closer to a linear split the cascades will have.
+	float shadowMapSplitExponent = 0.9f; 
+
+	// Maximum distance shadows are rendered to, and thus what cascades are fitted to.
 	float shadowDistance = 512;
+
+	// Fraction of shadow cascade which will fade in/out to blend between cascades.
+	float shadowMapCascadeBlendFactor = 0.05f; 
 
 	RenderPropertyCollection shadowMaskProperties;
 	Array<DirectionalLightCascadeInfo> shadowMapCascadeInfo;

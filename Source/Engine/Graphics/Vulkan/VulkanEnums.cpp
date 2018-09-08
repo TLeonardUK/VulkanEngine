@@ -156,6 +156,22 @@ VkSamplerAddressMode GraphicsAddressModeToVkAddressMode(GraphicsAddressMode addr
 	return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
 }
 
+VkBorderColor GraphicsBorderColorToVkBorderColor(GraphicsBorderColor color)
+{
+	switch (color)
+	{
+	case GraphicsBorderColor::TransparentBlack:			return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+	case GraphicsBorderColor::TransparentBlack_Float:	return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+	case GraphicsBorderColor::OpaqueBlack:				return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	case GraphicsBorderColor::OpaqueBlack_Float:		return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+	case GraphicsBorderColor::OpaqueWhite:				return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+	case GraphicsBorderColor::OpaqueWhite_Float:		return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	}
+
+	assert(false);
+	return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+}
+
 VkSamplerMipmapMode GraphicsMipMapModeToVkSamplerMipMapMode(GraphicsMipMapMode mode)
 {
 	switch (mode)

@@ -1,13 +1,13 @@
 {
     "Type": "Shader",    
-   
+    
     "FrameBuffer": "DepthBuffer",
 	
-	"CullMode": "None",
+	"CullMode": "Back",
 	
 	"DepthBiasEnabled": true,
-    "DepthBiasConstant": 1.25,
-	"DepthBiasSlopeFactor": 1.75,
+    "DepthBiasConstant": 1.0,
+	"DepthBiasSlopeFactor": 1.0,
 	"DepthBiasClamp": 0.0,
 	
 	"DepthClampEnabled": true,

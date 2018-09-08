@@ -237,5 +237,38 @@ void MeshBatcher::Batch(
 		}
 	}
 
+	size_t capacity = 0;
+	size_t size = 0;
+	for (auto& asyncBatches : m_asyncMaterialBatches)
+	{
+		for (auto& batchIter : asyncBatches)
+		{
+			capacity += batchIter.second.meshInstances.capacity();
+			size += batchIter.second.meshInstances.size();
+		}
+	}
+	
+	if (size > 16)
+	{
+		printf("===================================\n");
+		printf("MeshInstance = %i\n", sizeof(MeshInstance));
+
+		printf("Async: capacity=%i size=%i mb=%.2f\n", capacity, size, ((capacity * sizeof(MeshInstance)) / 1024.0f) / 1024.0f);
+
+		for (auto& asyncBatches : m_asyncMaterialBatches)
+		{
+			printf("Async Material Batch: Count=%i\n", asyncBatches.size());
+		}
+
+		capacity = 0;
+		size = 0;
+		for (MaterialRenderBatch* batch : m_materialRenderBatches)
+		{
+			capacity += batch->meshInstances.capacity();
+			size += batch->meshInstances.size();
+		}
+		printf("Batches: capacity=%i size=%i\n", capacity, size);
+	}
+
 	Stat_Rendering_Budgets_BatchesRendered.Set((double)m_materialRenderBatches.size());
 }

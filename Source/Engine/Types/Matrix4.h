@@ -181,6 +181,16 @@ public:
 
 		return BaseVector3<T>(result.x, result.y, result.z);
 	}
+	BaseVector4<T> TransformDirection(const BaseVector4<T>& vec) const
+	{
+		BaseVector4<T> result(
+					 1.0f * vec.x + columns[1][0] * vec.y + columns[2][0] * vec.z + columns[3][0] * vec.w,
+			columns[0][1] * vec.x +			 1.0f * vec.y + columns[2][1] * vec.z + columns[3][1] * vec.w,
+			columns[0][2] * vec.x + columns[1][2] * vec.y +			 1.0f * vec.z + columns[3][2] * vec.w,
+			columns[0][3] * vec.x + columns[1][3] * vec.y + columns[2][3] * vec.z +			 1.0f * vec.w);
+
+		return BaseVector4<T>(result.x, result.y, result.z, result.w);
+	}
 
 	// Transform without translation.
 	BaseVector3<T> TransformVector(const BaseVector3<T>& vec) const
@@ -193,6 +203,16 @@ public:
 
 		return BaseVector3<T>(result.x, result.y, result.z);
 	}
+	BaseVector4<T> TransformVector(const BaseVector4<T>& vec) const
+	{
+		BaseVector4<T> result(
+			columns[0][0] * vec.x + columns[1][0] * vec.y + columns[2][0] * vec.z + columns[3][0] * vec.w,
+			columns[0][1] * vec.x + columns[1][1] * vec.y + columns[2][1] * vec.z + columns[3][1] * vec.w,
+			columns[0][2] * vec.x + columns[1][2] * vec.y + columns[2][2] * vec.z + columns[3][2] * vec.w,
+			columns[0][3] * vec.x + columns[1][3] * vec.y + columns[2][3] * vec.z + columns[3][3] * vec.w);
+
+		return BaseVector4<T>(result.x, result.y, result.z, result.w);
+	}
 
 	// Translate point.
 	BaseVector3<T> TransformLocation(const BaseVector3<T>& vec) const
@@ -204,6 +224,16 @@ public:
 			columns[0][3] * vec.x + columns[1][3] * vec.y + columns[2][3] * vec.z + columns[3][3] * 1.0f);
 
 		return BaseVector3<T>(result.x, result.y, result.z);
+	}
+	BaseVector4<T> TransformLocation(const BaseVector4<T>& vec) const
+	{
+		BaseVector4<T> result(
+			columns[0][0] * vec.x + columns[1][0] * vec.y + columns[2][0] * vec.z + columns[3][0] * vec.w,
+			columns[0][1] * vec.x + columns[1][1] * vec.y + columns[2][1] * vec.z + columns[3][1] * vec.w,
+			columns[0][2] * vec.x + columns[1][2] * vec.y + columns[2][2] * vec.z + columns[3][2] * vec.w,
+			columns[0][3] * vec.x + columns[1][3] * vec.y + columns[2][3] * vec.z + columns[3][3] * vec.w);
+
+		return BaseVector4<T>(result.x, result.y, result.z, result.w);
 	}
 
 	BaseMatrix4 Inverse() const

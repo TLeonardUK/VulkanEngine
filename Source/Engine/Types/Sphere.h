@@ -21,17 +21,22 @@ struct Sphere
 
 	Sphere(const Vector3* points, int count)
 	{
-		Vector3 min = points[0];
-		Vector3 max = points[0];
-
+		origin = points[0];
 		for (int i = 1; i < count; i++)
 		{
-			min = Vector3::Min(min, points[i]);
-			max = Vector3::Max(max, points[i]);
+			origin += points[i];
 		}
+		origin /= count;
 
-		radius = (max - min).Length() * 0.5f;
-		origin = min + radius;
+		radius = 0.0f;
+		for (int i = 0; i < count; i++)
+		{
+			float distance = (points[i] - origin).Length();
+			if (distance > radius)
+			{
+				radius = distance;
+			}
+		}
 	}
 
 	Sphere(const Array<Vector3>& points)

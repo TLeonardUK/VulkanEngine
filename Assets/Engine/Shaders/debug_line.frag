@@ -1,5 +1,5 @@
-#version 450
-#extension GL_ARB_separate_shader_objects : enable
+#include "common/constants.h"
+#include "common/gbuffer.h"
 
 layout(location = 0) in vec4 inColor;
 
@@ -9,7 +9,11 @@ layout(location = 2) out vec4 gbuffer2;
 
 void main() 
 {
-    gbuffer0.rgba = inColor;
-    gbuffer1.rgba = vec4(0.0, 0.0, 0.0, 1.0);
-    gbuffer2.rgba = vec4(0.0, 0.0, 0.0, 1.0);
+	GBufferTexel texel;
+	texel.albedo = inColor.rgb;
+	texel.flags = RenderFlags_None;
+	texel.worldNormal = vec3(0.0);
+	texel.worldPosition = vec3(0.0);
+
+	writeGBuffer(texel);
 }

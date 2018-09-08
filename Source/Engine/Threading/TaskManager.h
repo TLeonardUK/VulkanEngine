@@ -17,6 +17,7 @@ enum class TaskQueueFlags : int
 	TimeCritical = 4,	// Time-critical things, these will be picked up by workers above all other queues.
 
 	All = Normal | Long | TimeCritical,
+	AllExceptLong = Normal | TimeCritical,
 
 	Count = 3
 };

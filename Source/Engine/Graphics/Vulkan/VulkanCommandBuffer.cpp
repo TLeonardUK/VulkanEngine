@@ -452,7 +452,7 @@ void VulkanCommandBuffer::TransitionImage(VkImage image, int mipLevels, VkImageL
 
 	VkImageAspectFlags aspectFlags = 0;
 
-	bool isDepth = (format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D16_UNORM);
+	bool isDepth = (format == VK_FORMAT_D24_UNORM_S8_UINT || format == VK_FORMAT_D16_UNORM || format == VK_FORMAT_D32_SFLOAT);
 	bool isStencil = (format == VK_FORMAT_D24_UNORM_S8_UINT);
 
 	if (isDepth)

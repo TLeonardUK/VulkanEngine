@@ -192,7 +192,7 @@ void VulkanGameInstance::Initialize()
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/interior.json");
 	}*/
-	/*{
+	{
 		m_environment2 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment2);
@@ -200,7 +200,15 @@ void VulkanGameInstance::Initialize()
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment2);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/exterior.json");
 	}
-	{
+	/*{
+		m_environment2 = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment2);
+
+		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment2);
+		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bedroom/iscv2.json");
+	}*/
+	/*{
 		m_environment1 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
@@ -208,15 +216,29 @@ void VulkanGameInstance::Initialize()
 
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/SanMiguel/san-miguel.json");
-	}	*/
-	{
+	}*/
+	/*{
 		m_environment1 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
 
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
-	}
+	}*/
+
+	/*for (int x = -1; x < 3; x++)
+	{
+		for (int z = -1; z < 3; z++)
+		{
+			Entity sponzaEntity = world->CreateEntity();
+
+			TransformComponent* rootTransform = world->AddComponent<TransformComponent>(sponzaEntity);
+			rootTransform->localPosition = Vector3(x * 5000.0f, 0.0f, z * 5000.0f);
+
+			ModelComponent* modelComponent = world->AddComponent<ModelComponent>(sponzaEntity);
+			modelComponent->model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
+		}
+	}*/
 
 	// Create skybox.
 	{
@@ -237,11 +259,16 @@ void VulkanGameInstance::Initialize()
 	//	rootTransform->localRotation = Quaternion(-0.449642152f, -0.173942536f, 0.0897440314f, 0.871499717f);
 		rootTransform->localPosition = Vector3(2049.83472f, 3228.46704f, -483.595795f);
 		rootTransform->localRotation = Quaternion(0.389321238f, -0.530930877f, 0.299298376f, -0.690624118f);
+	//	rootTransform->localPosition = Vector3(0.0f, 1000.0f, 0.0f);
+	//	rootTransform->localRotation = Quaternion::AngleAxis(Math::Pi * 2.0f, Vector3::Right);
 
 		DirectionalLightComponent* lightComponent = world->AddComponent<DirectionalLightComponent>(m_directionalLight);
 		lightComponent->isShadowCasting = true;
+		lightComponent->shadowMapCascades = 3;
 		lightComponent->shadowMapSize = 512;
-		lightComponent->shadowDistance = 10000.0f;
+		lightComponent->shadowDistance = 4000.0f;
+		lightComponent->shadowMapSplitExponent = 0.95f;// 0.98f;
+		lightComponent->shadowMapCascadeBlendFactor = 0.1f;
 	}
 	/*{
 		m_directionalLight2 = world->CreateEntity();
@@ -304,11 +331,10 @@ void VulkanGameInstance::Tick(const FrameTime& time)
 	std::shared_ptr<Engine> engine = GetEngine();
 	std::shared_ptr<World> world = engine->GetWorld();
 
-	TransformComponent* camTransform = world->GetComponent<TransformComponent>(m_camera);
+	static float angle = 0.2f;
+	angle += time.DeltaTime * 0.001f;
 
-	// fix bad
-	//TransformComponent* rootTransform = world->GetComponent<TransformComponent>(m_directionalLight);
-	//;rootTransform->localPosition = camTransform->localPosition;
-	//rootTransform->localRotation = camTransform->localRotation;
-	//rootTransform->isDirty = true;
+	TransformComponent* rootTransform = world->GetComponent<TransformComponent>(m_directionalLight);
+	rootTransform->localRotation = Quaternion::AngleAxis(Math::Pi*1.25f, Vector3::Right) * Quaternion::AngleAxis(angle, Vector3::Up);
+	rootTransform->isDirty = true;
 }

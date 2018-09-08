@@ -82,6 +82,18 @@ namespace Math
 		return a + ((b - a) * delta);
 	}
 
+	template <typename T>
+	T Mod(T a, T b)
+	{
+		return std::remainder(a, b);
+	}
+
+	template <typename T>
+	T Round(T a)
+	{
+		return (T)round(a);
+	}
+
 	__forceinline uint32_t RoundUpToPowerOfTwo(uint32_t v)
 	{
 		v--;

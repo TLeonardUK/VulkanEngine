@@ -63,7 +63,7 @@ public:
 		points.reserve(8);
 		for (int i = 0; i < (int)BoundsCorners::Count; i++)
 		{
-			points.push_back(worldCorners[i]);
+			points.push_back(transform.TransformLocation(worldCorners[i]));
 		}
 
 		return Bounds(points);
