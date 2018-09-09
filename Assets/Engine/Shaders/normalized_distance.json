@@ -1,0 +1,85 @@
+{
+    "Type": "Shader",    
+    
+    "FrameBuffer": "DepthBuffer",
+	
+	"CullMode": "Back",
+	
+	"DepthBiasEnabled": true,
+    "DepthBiasConstant": 1.0,
+	"DepthBiasSlopeFactor": 1.0,
+	"DepthBiasClamp": 0.0,
+	
+	"DepthClampEnabled": true,
+	
+    "Stages":
+    {
+        "Vertex":
+        {
+            "ShaderPath": "Engine/Shaders/normalized_distance.vert",
+            "EntryPoint": "main",
+            "VertexStreams":
+            {
+                "inPosition":
+                {
+                    "Format": "Float3",
+                    "Location": 0,
+                    "BindTo": "Position"
+                }
+            }
+        },
+        "Fragment":
+        {
+            "ShaderPath": "Engine/Shaders/normalized_distance.frag",
+            "EntryPoint": "main"
+        }
+    },
+    "Bindings":
+    {   
+        "meshProperties":
+        {
+            "Type": "UniformBufferObject",
+            "Binding": 0,
+			"Set": 0,
+			"Frequency": "Mesh",
+            "Fields":
+            {
+                "model":
+                {
+                    "Format": "Matrix4",
+                    "BindTo": "ModelMatrix"
+                }
+            }
+        },	
+        "viewProperties":
+        {
+            "Type": "UniformBufferObject",
+            "Binding": 0,
+			"Set": 1,
+			"Frequency": "View",
+            "Fields":
+            {                                
+                "view":
+                {
+                    "Format": "Matrix4",
+                    "BindTo": "ViewMatrix"
+                },                        
+                "proj":
+                {
+                    "Format": "Matrix4",
+                    "BindTo": "ProjectionMatrix"
+                },       
+                "distanceOrigin":
+                {
+                    "Format": "Float4",
+                    "BindTo": "DistanceOrigin"
+                },                        
+                "maxDistance":
+                {
+                    "Format": "Float",
+                    "BindTo": "MaxDistance"
+                }
+            }
+        }
+    }
+}

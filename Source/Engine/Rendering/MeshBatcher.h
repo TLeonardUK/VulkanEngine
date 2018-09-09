@@ -5,10 +5,18 @@
 #include "Engine/ECS/Component.h"
 #include "Engine/ECS/World.h"
 
+#include "Engine/Resources/Types/Material.h"
+#include "Engine/Rendering/RendererEnums.h"
+
+#include "Engine/Types/StackAllocator.h"
+
 class AspectCollection;
 class Renderer;
 struct MeshComponent;
 struct TransformComponent;
+class IGraphicsIndexBuffer;
+class IGraphicsVertexBuffer;
+class IGraphicsResourceSet;
 
 struct MeshInstance
 {
@@ -16,12 +24,14 @@ struct MeshInstance
 	const std::shared_ptr<IGraphicsIndexBuffer>* indexBuffer;
 	const std::shared_ptr<IGraphicsVertexBuffer>* vertexBuffer;
 	int indexCount;
+
+	MeshInstance* nextMesh;
 };
 
 struct MaterialBatch
 {
 	Material* material;
-	Array<MeshInstance> meshInstances;
+	MeshInstance* firstMesh;
 	int meshInstanceCount;
 };
 
@@ -35,8 +45,9 @@ struct MaterialRenderSubBatch
 struct MaterialRenderBatch
 {
 	Material* material;
-	Array<MeshInstance*> meshInstances;
-	bool inUse = false;
+	MeshInstance* firstMesh;
+	int meshInstanceCount;
+	bool inUse;
 };
 
 struct MeshBatcher
@@ -48,12 +59,12 @@ private:
 	Array<Dictionary<Material*, MaterialBatch>> m_asyncMaterialBatches;
 	Array<MaterialRenderBatch*> m_materialRenderBatches;
 	Array<MaterialRenderBatch*> m_finalRenderBatches;
+	
+	StackAllocator<MeshInstance> m_meshInstanceAllocator;
 
 	static const int MaxMeshesPerBatch = 500;
 
 public:	
-	typedef std::function<bool(Entity entity, const MeshComponent* mesh, const TransformComponent* transform)> FilterFunction_t;
-
 	~MeshBatcher();
 
 	void Batch(
@@ -64,7 +75,8 @@ public:
 		const Array<Entity>& entities, 
 		MaterialVariant variant,
 		RenderPropertyCollection* viewProperties,
-		FilterFunction_t filter = nullptr);
+		RenderFlags requiredFlags = RenderFlags::None,
+		RenderFlags excludedFlags = RenderFlags::None);
 
 	Array<MaterialRenderBatch*>& GetBatches();
 

@@ -34,6 +34,7 @@ enum class MaterialVariant
 {
 	Normal,
 	DepthOnly,
+	NormalizedDistance,
 	Count
 };
 
@@ -55,7 +56,6 @@ private:
 	std::shared_ptr<IGraphicsPipeline> m_wireframePipeline;
 
 	Array<MaterialResourceSet> m_resourceSets;
-	Array<MaterialResourceSet> m_depthOnlyResourceSets;
 	
 	std::shared_ptr<Shader> m_lastUpdatedShader;
 

@@ -9,6 +9,7 @@
 #include "Engine/Profiling/Profiling.h"
 
 #include "Engine/Engine/Logging.h"
+#include "Engine/ECS/World.h"
 
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/GraphicsResourceSet.h"
@@ -19,6 +20,8 @@
 
 #include "Engine/Utilities/Statistic.h"
 #include "Engine/Threading/ParallelFor.h"
+
+#include "Engine/Systems/Transform/SpatialIndexSystem.h"
 
 #define HASH(x) const RenderPropertyHash x##Hash = CalculateRenderPropertyHash(#x);
 #include "Engine/Rendering/RendererHashes.inc"
@@ -120,7 +123,7 @@ void Renderer::InitDebugMenus(std::shared_ptr<ImguiManager> manager)
 
 		if (m_drawFrameBuffersEnabled)
 		{
-			int imageSize = 300;
+			int imageSize = 250;
 			
 			ImGui::SetNextWindowContentSize(ImVec2(imageSize * 3.0f, 0.0f));
 
@@ -131,6 +134,14 @@ void Renderer::InitDebugMenus(std::shared_ptr<ImguiManager> manager)
 			ImGui::SetColumnWidth(2, (float)imageSize);
 
 			ScopeLock lock(m_debugDisplayFrameBuffersMutex);
+
+			// We sort the display buffers as they are enqueued on different threads, so this ensures somewhat
+			// consistent ordering.
+			std::sort(m_debugDisplayFrameBuffers.begin(), m_debugDisplayFrameBuffers.end(),
+				[](const std::shared_ptr<IGraphicsImageView>& a, const std::shared_ptr<IGraphicsImageView>& b) -> bool
+			{
+				return reinterpret_cast<intptr_t>(&*a) < reinterpret_cast<intptr_t>(&*b);
+			});
 
 			for (int i = 0; i < m_debugDisplayFrameBuffers.size(); i++)
 			{
@@ -230,6 +241,7 @@ void Renderer::CreateResources()
 	m_clearGBufferMaterial = m_resourceManager->Load<Material>("Engine/Materials/clear_gbuffer.json");
 	m_resolveToSwapchainMaterial = m_resourceManager->Load<Material>("Engine/Materials/resolve_to_swapchain.json");
 	m_depthOnlyShader = m_resourceManager->Load<Shader>("Engine/Shaders/depth_only.json");
+	m_normalizedDistanceShader = m_resourceManager->Load<Shader>("Engine/Shaders/normalized_distance.json");
 
 	m_resourceManager->WaitUntilIdle();
 
@@ -287,6 +299,7 @@ void Renderer::FreeSwapChainDependentResources()
 	m_depthBufferView = nullptr;
 	m_resolveToSwapChainRenderPass = nullptr;
 	m_depthOnlyRenderPass = nullptr;
+	m_normalizedDistanceRenderPass = nullptr;
 	m_swapChainFramebuffers.clear();
 
 	for (int i = 0; i < m_commandBufferPools.size(); i++)
@@ -342,6 +355,18 @@ void Renderer::CreateSwapChainDependentResources()
 		renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
 
 		m_depthOnlyRenderPass = m_graphics->CreateRenderPass("Depth Only Render Pass", renderPassSettings);
+	}
+
+	// Create normalized distance render pass.
+	{
+		GraphicsRenderPassSettings renderPassSettings;
+		renderPassSettings.transitionToPresentFormat = false;
+		renderPassSettings.AddDepthAttachment(GraphicsFormat::SFLOAT_D32);
+
+		GraphicsSubPassIndex subPass1 = renderPassSettings.AddSubPass();
+		renderPassSettings.AddSubPassDependency(GraphicsExternalPassIndex, GraphicsAccessMask::None, subPass1, GraphicsAccessMask::ReadWrite);
+
+		m_normalizedDistanceRenderPass = m_graphics->CreateRenderPass("Normalized Distance Render Pass", renderPassSettings);
 	}
 
 	// Create depth buffer.
@@ -700,6 +725,11 @@ ResourcePtr<Shader> Renderer::GetDepthOnlyShader()
 	return m_depthOnlyShader;
 }
 
+ResourcePtr<Shader> Renderer::GetNormalizedDistanceShader()
+{
+	return m_normalizedDistanceShader;
+}
+
 std::shared_ptr<IGraphicsFramebuffer> Renderer::GetCurrentFramebuffer()
 {
 	return m_swapChainFramebuffers[m_frameIndex];
@@ -901,4 +931,98 @@ std::shared_ptr<IGraphicsImage> Renderer::GetLightAccumulationImage()
 std::shared_ptr<IGraphicsImage> Renderer::GetDepthImage()
 {
 	return m_depthBufferImage;
+}
+
+void Renderer::DrawView(DrawViewState& state)
+{
+	SpatialIndexSystem* spatialSystem = state.world->GetSystem<SpatialIndexSystem>();
+
+	// Grab all visible entities from the oct-tree.
+	{
+		ProfileScope scope(ProfileColors::Draw, "Search OctTree");
+		spatialSystem->GetTree().Get(state.frustum, state.visibleEntitiesResult, false);
+	}
+
+	// Batch up all meshes.
+	{
+		ProfileScope scope(ProfileColors::Draw, "Batch Meshes");
+		state.meshBatcher.Batch(
+			*state.world, 
+			shared_from_this(), 
+			m_logger, 
+			m_graphics, 
+			state.visibleEntitiesResult.entries, 
+			state.materialVariant, 
+			state.viewProperties, 
+			state.requiredFlags, 
+			state.excludedFlags
+		);
+	}
+
+	// Generate command buffers for each batch.
+	Array<MaterialRenderBatch*>& renderBatches = state.meshBatcher.GetBatches();
+
+	state.batchBuffers.resize(renderBatches.size());
+
+	ParallelFor((int)renderBatches.size(), [&](int index)
+	{
+		std::shared_ptr<IGraphicsCommandBuffer> drawBuffer = RequestPrimaryBuffer();
+		state.batchBuffers[index] = drawBuffer;
+
+		MaterialRenderBatch*& batch = renderBatches[index];
+
+		ProfileScope scope(ProfileColors::Draw, "Render material batch: " + batch->material->GetName());
+
+		// Generate drawing buffer.
+		drawBuffer->Reset();
+		drawBuffer->Begin();
+
+		drawBuffer->BeginPass(batch->material->GetRenderPass(), state.framebuffer ? state.framebuffer : batch->material->GetFrameBuffer(), true);
+		drawBuffer->BeginSubPass();
+
+		if (IsWireframeEnabled())
+		{
+			drawBuffer->SetPipeline(batch->material->GetWireframePipeline());
+		}
+		else
+		{
+			drawBuffer->SetPipeline(batch->material->GetPipeline());
+		}
+
+		drawBuffer->SetScissor(
+			static_cast<int>(state.viewport.x),
+			static_cast<int>(state.viewport.y),
+			static_cast<int>(state.viewport.width),
+			static_cast<int>(state.viewport.height)
+		);
+		drawBuffer->SetViewport(
+			static_cast<int>(state.viewport.x),
+			static_cast<int>(state.viewport.y),
+			static_cast<int>(state.viewport.width),
+			static_cast<int>(state.viewport.height)
+		);
+
+		{
+			ProfileScope scope(ProfileColors::Draw, "Draw Meshes");
+			
+			for (MeshInstance* instance = batch->firstMesh; instance != nullptr; instance = instance->nextMesh)
+			{
+				drawBuffer->SetIndexBuffer(*instance->indexBuffer);
+				drawBuffer->SetVertexBuffer(*instance->vertexBuffer);
+				drawBuffer->SetResourceSets(instance->resourceSets->data(), (int)instance->resourceSets->size());
+				drawBuffer->DrawIndexedElements(instance->indexCount, 1, 0, 0, 0);
+			}
+		}
+
+		drawBuffer->EndSubPass();
+		drawBuffer->EndPass();
+
+		drawBuffer->End();
+
+	}, 1, "Command Buffer Creation");
+	
+	for (int i = 0; i < state.batchBuffers.size(); i++)
+	{
+		QueuePrimaryBuffer(state.name, state.stage, state.batchBuffers[i], state.viewId, renderBatches[i]->material->GetShader().Get()->GetProperties().RenderOrder);
+	}
 }

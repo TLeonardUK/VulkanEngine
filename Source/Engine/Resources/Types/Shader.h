@@ -51,8 +51,7 @@ public:
 
 struct ShaderProperties
 {
-	bool ShadowCaster = true;
-	bool ShadowReciever = true;
+	RenderFlags Flags = RenderFlags::None;
 	float RenderOrder = 0.0f;
 };
 

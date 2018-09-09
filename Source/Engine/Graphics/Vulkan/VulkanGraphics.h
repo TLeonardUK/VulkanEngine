@@ -243,7 +243,7 @@ public:
 	virtual std::shared_ptr<IGraphicsRenderPass> CreateRenderPass(const String& name, const GraphicsRenderPassSettings& settings);
 	virtual std::shared_ptr<IGraphicsPipeline> CreatePipeline(const String& name, const GraphicsPipelineSettings& settings);
 	virtual std::shared_ptr<IGraphicsFramebuffer> CreateFramebuffer(const String& name, const GraphicsFramebufferSettings& settings);
-	virtual std::shared_ptr<IGraphicsImageView> CreateImageView(const String& name, std::shared_ptr<IGraphicsImage> image);
+	virtual std::shared_ptr<IGraphicsImageView> CreateImageView(const String& name, std::shared_ptr<IGraphicsImage> image, int baseLayer = -1, int layerCount = -1);
 	virtual std::shared_ptr<IGraphicsVertexBuffer> CreateVertexBuffer(const String& name, const VertexBufferBindingDescription& binding, int vertexCount);
 	virtual std::shared_ptr<IGraphicsIndexBuffer> CreateIndexBuffer(const String& name, int indexSize, int indexCount);
 	virtual std::shared_ptr<IGraphicsUniformBuffer> CreateUniformBuffer(const String& name, int dataSize);

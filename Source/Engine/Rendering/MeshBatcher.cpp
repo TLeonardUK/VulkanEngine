@@ -43,7 +43,8 @@ void MeshBatcher::Batch(
 	const Array<Entity>& entities, 
 	MaterialVariant variant,
 	RenderPropertyCollection* viewProperties,
-	FilterFunction_t filter)
+	RenderFlags requiredFlags,
+	RenderFlags excludedFlags)
 {
 	ProfileScope scope(ProfileColors::Draw, "Renderer::BuildViewCommandBuffer_Meshes");
 
@@ -57,6 +58,9 @@ void MeshBatcher::Batch(
 	const Array<MeshComponent*>& meshComponents = collection->GetEntityComponents<MeshComponent>();
 	const Array<TransformComponent*>& meshTransformComponents = collection->GetEntityComponents<TransformComponent>();
 
+	// Reset stack allocator.
+	m_meshInstanceAllocator.Reset(entities.size());
+
 	// Batch meshes by material.
 	int splitFactor = TaskManager::AsyncInstance->GetConcurrency() * 4;
 	int chunkSize = (int)Math::Ceil(entities.size() / (float)splitFactor);
@@ -68,8 +72,9 @@ void MeshBatcher::Batch(
 		m_asyncMaterialBatches.resize(splitFactor);
 		for (MaterialRenderBatch* batch : m_materialRenderBatches)
 		{
+			batch->firstMesh = nullptr;
+			batch->meshInstanceCount = 0;
 			batch->inUse = false;
-			batch->meshInstances.clear();
 		}
 		m_finalRenderBatches.clear();
 	}
@@ -84,11 +89,8 @@ void MeshBatcher::Batch(
 
 			for (auto& iter : batches)
 			{
+				iter.second.firstMesh = nullptr;
 				iter.second.meshInstanceCount = 0;
-				if (iter.second.meshInstances.size() < entities.size())
-				{
-					iter.second.meshInstances.resize(entities.size());
-				}
 			}
 
 			int startIndex = (index * chunkSize);
@@ -109,9 +111,28 @@ void MeshBatcher::Batch(
 				MeshComponent* meshComponent = meshComponents[entityArrayIndex];
 				TransformComponent* transformComponent = meshTransformComponents[entityArrayIndex];
 
-				if (filter != nullptr && !filter(entity, meshComponent, transformComponent))
+				// Filter based on render flags if required.
+				if (requiredFlags != RenderFlags::None || excludedFlags != RenderFlags::None)
 				{
-					continue;
+					std::shared_ptr<Material> baseMaterial = meshComponent->mesh->GetMaterial().Get();
+					std::shared_ptr<Shader> baseShader = baseMaterial->GetShader().Get();
+
+					RenderFlags flags = baseShader->GetProperties().Flags;
+
+					if (requiredFlags != RenderFlags::None)
+					{
+						if ((static_cast<int>(flags) & static_cast<int>(requiredFlags)) != static_cast<int>(requiredFlags))
+						{
+							continue;
+						}
+					}
+					if (excludedFlags != RenderFlags::None)
+					{
+						if ((static_cast<int>(flags) & static_cast<int>(requiredFlags)) != 0)
+						{
+							continue;
+						}
+					}
 				}
 
 				std::shared_ptr<Material> material = nullptr;
@@ -132,8 +153,7 @@ void MeshBatcher::Batch(
 
 					batch = &batches[materialPtr];
 					batch->material = materialPtr;
-					batch->meshInstanceCount = 0;
-					batch->meshInstances.resize(entities.size());
+					batch->firstMesh = nullptr;
 				}
 
 				std::shared_ptr<MeshRenderState>& renderData = meshComponent->renderData[(int)variant];
@@ -145,10 +165,15 @@ void MeshBatcher::Batch(
 				//}
 
 				// Create new instance.
-				MeshInstance& instance = batch->meshInstances[batch->meshInstanceCount++];
-				instance.indexBuffer = &meshComponent->mesh->GetIndexBuffer();
-				instance.vertexBuffer = &meshComponent->mesh->GetVertexBuffer();
-				instance.indexCount = meshComponent->mesh->GetIndexCount();
+				MeshInstance* instance = m_meshInstanceAllocator.New();
+				instance->indexBuffer = &meshComponent->mesh->GetIndexBuffer();
+				instance->vertexBuffer = &meshComponent->mesh->GetVertexBuffer();
+				instance->indexCount = meshComponent->mesh->GetIndexCount();
+
+				instance->nextMesh = batch->firstMesh;
+				batch->firstMesh = instance;
+				batch->meshInstanceCount++;
+
 				//{
 				//	ProfileScope scope(ProfileColors::Draw, "UpdateMeshRenderState");
 
@@ -166,13 +191,13 @@ void MeshBatcher::Batch(
 				{
 					renderer->CreateMeshRenderState(&renderData);
 				}
-				instance.resourceSets = &renderData->UpdateAndGetResourceSets(material, &renderHeirarchy);
+				instance->resourceSets = &renderData->UpdateAndGetResourceSets(material, &renderHeirarchy);
 				//}
 
 				//{
 				//	ProfileScope scope(ProfileColors::Draw, "InstanceData");
 				Stat_Rendering_Budgets_MeshesRendered.Add(1);
-				Stat_Rendering_Budgets_TrianglesRendered.Add(instance.indexCount / 3);
+				Stat_Rendering_Budgets_TrianglesRendered.Add(instance->indexCount / 3);
 				//}
 			}
 		}, 1, "Mesh Batching");
@@ -198,7 +223,7 @@ void MeshBatcher::Batch(
 						for (int j = 0; j < m_materialRenderBatches.size(); j++)
 						{
 							if (m_materialRenderBatches[j]->material == iter.first &&
-								m_materialRenderBatches[j]->meshInstances.size() < MaxMeshesPerBatch)
+								m_materialRenderBatches[j]->meshInstanceCount < MaxMeshesPerBatch)
 							{
 								batch = m_materialRenderBatches[j];
 								break;
@@ -219,15 +244,19 @@ void MeshBatcher::Batch(
 							batch->inUse = true;
 						}
 
-						int spaceAvailable = MaxMeshesPerBatch - (int)batch->meshInstances.size();
+						int spaceAvailable = MaxMeshesPerBatch - (int)batch->meshInstanceCount;
 						int itemsLeft = iter.second.meshInstanceCount - instanceOffset;
 						int itemsToAdd = Math::Min(spaceAvailable, itemsLeft);
 
-						int startIndex = (int)batch->meshInstances.size();
-						batch->meshInstances.resize((int)batch->meshInstances.size() + itemsToAdd);
 						for (int k = 0; k < itemsToAdd; k++)
 						{
-							batch->meshInstances[startIndex + k] = &iter.second.meshInstances[instanceOffset + k];
+							MeshInstance* tmpNext = iter.second.firstMesh->nextMesh;
+
+							iter.second.firstMesh->nextMesh = batch->firstMesh;
+							batch->firstMesh = iter.second.firstMesh;
+							iter.second.firstMesh = tmpNext;
+
+							batch->meshInstanceCount++;
 						}
 						instanceOffset += itemsToAdd;
 						totalMeshInstances += itemsToAdd;
@@ -237,6 +266,7 @@ void MeshBatcher::Batch(
 		}
 	}
 
+	/*
 	size_t capacity = 0;
 	size_t size = 0;
 	for (auto& asyncBatches : m_asyncMaterialBatches)
@@ -268,7 +298,7 @@ void MeshBatcher::Batch(
 			size += batch->meshInstances.size();
 		}
 		printf("Batches: capacity=%i size=%i\n", capacity, size);
-	}
+	}*/
 
-	Stat_Rendering_Budgets_BatchesRendered.Set((double)m_materialRenderBatches.size());
+	Stat_Rendering_Budgets_BatchesRendered.Add((double)m_finalRenderBatches.size());
 }

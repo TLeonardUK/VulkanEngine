@@ -7,6 +7,7 @@
 #include "Engine/Types/Frustum.h"
 
 #include "Engine/Rendering/MeshBatcher.h"
+#include "Engine/Rendering/Renderer.h"
 
 #include "Engine/Types/OctTree.h"
 
@@ -33,9 +34,7 @@ struct DirectionalLightCascadeInfo
 	Frustum viewFrustum;
 	Frustum frustum;
 
-	MeshBatcher meshBatcher;
-	OctTree<Entity>::Result visibleEntitiesResult;
-	Array<std::shared_ptr<IGraphicsCommandBuffer>> batchBuffers;
+	DrawViewState drawViewState;
 
 	RenderPropertyCollection viewProperties;
 };

@@ -239,6 +239,8 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClCompile Include="Systems\Render\RenderDebugSystem.cpp" />
     <ClCompile Include="Systems\Render\RenderDirectionalShadowMapSystem.cpp" />
     <ClCompile Include="Systems\Render\RenderCameraViewSystem.cpp" />
+    <ClCompile Include="Systems\Render\RenderPointLightShadowMapSystem.cpp" />
+    <ClCompile Include="Systems\Render\RenderSpotLightShadowMapSystem.cpp" />
     <ClCompile Include="Systems\Transform\SpatialIndexSystem.cpp" />
     <ClCompile Include="Systems\Transform\TransformSystem.cpp" />
     <ClCompile Include="Systems\Transform\TransformUtils.cpp" />
@@ -270,6 +272,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Build.h" />
     <ClInclude Include="Components\Camera\CameraViewComponent.h" />
     <ClInclude Include="Components\Camera\FlyCameraComponent.h" />
+    <ClInclude Include="Components\Lighting\AmbientLightComponent.h" />
     <ClInclude Include="Components\Lighting\DirectionalLightComponent.h" />
     <ClInclude Include="Components\Lighting\PointLightComponent.h" />
     <ClInclude Include="Components\Lighting\SpotLightComponent.h" />
@@ -363,6 +366,8 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Systems\Render\RenderDebugSystem.h" />
     <ClInclude Include="Systems\Render\RenderDirectionalShadowMapSystem.h" />
     <ClInclude Include="Systems\Render\RenderCameraViewSystem.h" />
+    <ClInclude Include="Systems\Render\RenderPointLightShadowMapSystem.h" />
+    <ClInclude Include="Systems\Render\RenderSpotLightShadowMapSystem.h" />
     <ClInclude Include="Systems\Transform\SpatialIndexSystem.h" />
     <ClInclude Include="Systems\Transform\TransformSystem.h" />
     <ClInclude Include="Systems\Transform\TransformUtils.h" />
@@ -395,6 +400,7 @@ XCOPY /d "$(SolutionDir)..\ThirdParty\pix\bin\WinPixEventRuntime.dll" "$(Solutio
     <ClInclude Include="Types\Rectangle.h" />
     <ClInclude Include="Types\Set.h" />
     <ClInclude Include="Types\Sphere.h" />
+    <ClInclude Include="Types\StackAllocator.h" />
     <ClInclude Include="Types\String.h" />
     <ClInclude Include="Types\Array.h" />
     <ClInclude Include="Types\Timeout.h" />

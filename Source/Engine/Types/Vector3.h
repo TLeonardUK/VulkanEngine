@@ -105,8 +105,16 @@ public:
 	}
 	BaseVector3 Normalize() const
 	{
-		float inveseLength = 1.0f / Length();
-		return BaseVector3<T>(x * inveseLength, y * inveseLength, z * inveseLength);
+		T length = Length();
+		if (length == 0.0f)
+		{
+			return *this;
+		}
+		else
+		{
+			T inveseLength = T(1.0) / length;
+			return BaseVector3<T>(x * inveseLength, y * inveseLength, z * inveseLength);
+		}
 	}
 	static BaseVector3 Determinant(const BaseVector3& a, const BaseVector3& b)
 	{

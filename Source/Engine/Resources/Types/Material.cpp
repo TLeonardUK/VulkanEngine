@@ -240,6 +240,16 @@ void Material::UpdateResources()
 			shared_from_this(),
 			MaterialVariant::DepthOnly
 		);
+		m_variants[(int)MaterialVariant::NormalizedDistance] = std::make_shared<Material>(
+			m_graphics,
+			m_renderer,
+			m_logger,
+			m_name + " (Normalized Distance)",
+			m_renderer->GetNormalizedDistanceShader(),
+			m_properties,
+			shared_from_this(),
+			MaterialVariant::NormalizedDistance
+		);
 		m_variantsCreated = true;
 	}
 

@@ -80,8 +80,16 @@ public:
 	}
 	BaseVector2 Normalize() const
 	{
-		float inveseLength = 1.0f / Length();
-		return BaseVector2<T>(x * inveseLength, y * inveseLength);
+		T length = Length();
+		if (length == 0.0f)
+		{
+			return *this;
+		}
+		else
+		{
+			T inveseLength = T(1.0) / length;
+			return BaseVector2<T>(x * inveseLength, y * inveseLength);
+		}
 	}
 	static float Dot(const BaseVector2& a, const BaseVector2& b)
 	{

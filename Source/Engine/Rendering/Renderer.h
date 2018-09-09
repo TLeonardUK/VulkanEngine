@@ -9,13 +9,17 @@
 //#include "Engine/Resources/Types/Model.h"
 //#include "Engine/Resources/Types/Material.h"
 #include "Engine/Rendering/MeshRenderState.h"
+#include "Engine/Rendering/MeshBatcher.h"
 
 #include "Engine/Rendering/RenderView.h"
 
 #include "Engine/UI/ImguiManager.h"
 
+#include "Engine/Types/OctTree.h"
+
 #include "Engine/ThirdParty/imgui/imgui.h"
 
+class World;
 class Material;
 class IGraphics;
 class IGraphicsCommandBuffer;
@@ -35,40 +39,40 @@ struct GraphicsResourceSetDescription;
 #include "Engine/Rendering/RendererHashes.inc"
 #undef HASH
 
-// Flags that are written into the gbuffer for individual meshes. Determines
-// how they are affected by various rendering passes.
-enum class RenderFlags
-{
-	None			= 0,
-	ShadowReciever	= 1,
-};
-
-enum class RenderCommandStage
-{
-	Global_PreRender,				// Before primary render buffers.
-
-	// Per view stages.
-	View_START,
-	View_PreRender,					// Before rendering view (namely for resource transitions etc).
-	View_ShadowMap,					// Shadow map rendering.
-	View_GBuffer,					// GBuffer generation.
-	View_ShadowMask,				// Generating shadow mask.
-	View_Debug,						// Rendering debug primitives.
-	View_Lighting,					// Render lighting information.	
-	View_PostRender,				// After gbuffer etc has completed.
-	View_PostResolve,				// After gbuffer has been resolved to swapchain.
-	View_END,
-
-	Global_PostViews,				// After all views have been rendered.
-	Global_PrePresent,				// Just before present, used to transition swap chain to appropriate layout.
-};
-
 struct RenderCommand
 {
 	typedef std::function<void(std::shared_ptr<IGraphicsCommandBuffer> buffer)> CommandSignature_t;
 
 	RenderCommandStage stage;
 	CommandSignature_t command;
+};
+
+struct DrawViewState
+{
+	World* world = nullptr;
+	Frustum frustum = Frustum::Empty; 
+
+	MaterialVariant materialVariant = MaterialVariant::Normal;
+	RenderPropertyCollection* viewProperties = nullptr;
+
+	String name = "Untitled";
+	RenderCommandStage stage = RenderCommandStage::View_GBuffer;
+
+	Rect viewport = Rect::Empty;
+	uint64_t viewId = 0;
+
+	RenderFlags requiredFlags = RenderFlags::None;
+	RenderFlags excludedFlags = RenderFlags::None;
+
+	std::shared_ptr<IGraphicsFramebuffer> framebuffer = nullptr;
+
+private:
+	friend class Renderer;
+
+	OctTree<Entity>::Result visibleEntitiesResult;
+	MeshBatcher meshBatcher;
+
+	Array<std::shared_ptr<IGraphicsCommandBuffer>> batchBuffers;
 };
 
 class Renderer
@@ -177,6 +181,9 @@ private:
 	ResourcePtr<Shader> m_depthOnlyShader;
 	std::shared_ptr<IGraphicsRenderPass> m_depthOnlyRenderPass;
 
+	ResourcePtr<Shader> m_normalizedDistanceShader;
+	std::shared_ptr<IGraphicsRenderPass> m_normalizedDistanceRenderPass;
+
 	std::shared_ptr<IGraphicsVertexBuffer> m_fullscreenQuadVertexBuffer;
 	std::shared_ptr<IGraphicsIndexBuffer> m_fullscreenQuadIndexBuffer;
 	bool m_fullscreenQuadsUploaded;
@@ -246,6 +253,7 @@ public:
 	int GetSwapChainHeight();
 
 	ResourcePtr<Shader> GetDepthOnlyShader();
+	ResourcePtr<Shader> GetNormalizedDistanceShader();
 
 	void DisplayDebugFrameBuffer(std::shared_ptr<IGraphicsImageView> view);
 
@@ -257,6 +265,8 @@ public:
 		RenderPropertyCollection* meshProperties,
 		Rect viewport = Rect::Empty,
 		Rect scissor = Rect::Empty);
+
+	void DrawView(DrawViewState& state);
 
 	std::shared_ptr<IGraphicsRenderPass> GetRenderPassForTarget(FrameBufferTarget target);
 	std::shared_ptr<IGraphicsFramebuffer> GetFramebufferForTarget(FrameBufferTarget target);
@@ -280,6 +290,5 @@ public:
 	std::shared_ptr<IGraphicsImage> GetShadowMaskImage();
 	std::shared_ptr<IGraphicsImage> GetLightAccumulationImage();
 	std::shared_ptr<IGraphicsImage> GetDepthImage();
-
 
 };

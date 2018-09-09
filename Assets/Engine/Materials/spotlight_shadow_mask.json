@@ -1,0 +1,4 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/spotlight_shadow_mask.json"
+}

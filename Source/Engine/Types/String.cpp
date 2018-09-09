@@ -44,7 +44,7 @@ String StringFormat(String Format, ...)
 	return buffer;
 }
 
-String FormatBytes(int bytes)
+String FormatBytes(size_t bytes)
 {
 	const int suffixCount = 5;
 	const char* suffixes[suffixCount] = { "Bytes", "KB", "MB", "GB", "TB" };

@@ -57,7 +57,7 @@ void MeshBoundsUpdateSystem::Tick(
 		}
 
 		// Draw bounds.
-		if (m_renderer->IsDrawBoundsEnabled())
+		if (false)//m_renderer->IsDrawBoundsEnabled())
 		{
 			DrawDebugOrientedBoundsMessage boundsDrawMsg;
 			boundsDrawMsg.bounds = bound->bounds;

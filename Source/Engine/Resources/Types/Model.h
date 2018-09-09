@@ -40,6 +40,8 @@ private:
 	Array<Vector4> m_colors;
 	Array<int> m_indices;
 
+	int m_indexCount;
+
 	//Array<char> m_interleavedData;
 
 	std::shared_ptr<Material> m_lastUpdatedMaterial;
@@ -53,6 +55,8 @@ private:
 	Bounds m_bounds;
 
 	bool m_dirty;
+
+	bool m_keepCpuShadowCopy;
 
 private:
 	friend class Model;

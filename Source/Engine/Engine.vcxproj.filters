@@ -471,6 +471,12 @@
     <ClCompile Include="Types\Timer.cpp">
       <Filter>Source Files\Types</Filter>
     </ClCompile>
+    <ClCompile Include="Systems\Render\RenderSpotLightShadowMapSystem.cpp">
+      <Filter>Source Files\Systems\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Systems\Render\RenderPointLightShadowMapSystem.cpp">
+      <Filter>Source Files\Systems\Render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Engine.h">
@@ -904,6 +910,18 @@
     </ClInclude>
     <ClInclude Include="Types\Timer.h">
       <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\StackAllocator.h">
+      <Filter>Header Files\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Lighting\AmbientLightComponent.h">
+      <Filter>Header Files\Components\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Render\RenderSpotLightShadowMapSystem.h">
+      <Filter>Header Files\Systems\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Systems\Render\RenderPointLightShadowMapSystem.h">
+      <Filter>Header Files\Systems\Render</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

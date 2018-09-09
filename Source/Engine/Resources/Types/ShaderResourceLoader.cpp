@@ -552,14 +552,37 @@ std::shared_ptr<IResource> ShaderResourceLoader::Load(std::shared_ptr<ResourceMa
 
 	// Parse general shader properties.
 	ShaderProperties properties;
+
+	int flags = 0;
+
 	if (jsonValue.count("ShadowCaster"))
 	{
-		properties.ShadowCaster = jsonValue["ShadowCaster"];
+		bool shadowCaster = jsonValue["ShadowCaster"];
+		if (shadowCaster)
+		{
+			flags |= (int)RenderFlags::ShadowCaster;
+		}
 	}
+	else
+	{
+		flags |= (int)RenderFlags::ShadowCaster;
+	}
+
 	if (jsonValue.count("ShadowReciever"))
 	{
-		properties.ShadowReciever = jsonValue["ShadowReciever"];
+		bool shadowReciever = jsonValue["ShadowReciever"];
+		if (shadowReciever)
+		{
+			flags |= (int)RenderFlags::ShadowReciever;
+		}
 	}
+	else
+	{
+		flags |= (int)RenderFlags::ShadowReciever;
+	}
+
+	properties.Flags = (RenderFlags)flags;
+
 	if (jsonValue.count("RenderOrder"))
 	{
 		properties.RenderOrder = jsonValue["RenderOrder"];

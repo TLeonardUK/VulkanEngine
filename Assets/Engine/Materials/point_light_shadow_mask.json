@@ -1,0 +1,4 @@
+{
+    "Type": "Material",    
+    "ShaderPath": "Engine/Shaders/point_light_shadow_mask.json"
+}

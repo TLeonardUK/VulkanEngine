@@ -34,7 +34,7 @@ private:
 	friend struct VulkanResourceSetBinding;
 	friend class VulkanCommandBuffer;
 
-	bool Build(std::shared_ptr<IGraphicsImage> image);
+	bool Build(std::shared_ptr<IGraphicsImage> image, int baseLayer, int layerCount);
 
 	VkImageView GetImageView()
 	{

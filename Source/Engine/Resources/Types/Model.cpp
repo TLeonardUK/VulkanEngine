@@ -55,6 +55,10 @@ Mesh::Mesh(std::shared_ptr<Logger> logger, std::shared_ptr<Renderer> renderer, s
 	, m_logger(logger)
 	, m_name(name)
 	, m_dirty(true)
+	// Make sure to toggle this on if you intend to change materials at any point, 
+	// as the vertex format / buffers may need to be rebuilt.
+	, m_keepCpuShadowCopy(false) 
+	, m_indexCount(0)
 {
 	Stat_Resources_MeshCount.Add(1);
 }
@@ -86,7 +90,7 @@ const std::shared_ptr<IGraphicsVertexBuffer>& Mesh::GetVertexBuffer()
 
 int Mesh::GetIndexCount()
 {
-	return (int)m_indices.size();
+	return m_indexCount;
 }
 
 void Mesh::SetMaterial(ResourcePtr<Material> material)
@@ -130,6 +134,7 @@ void Mesh::SetColors(const Array<Vector4>& colors)
 void Mesh::SetIndices(const Array<int>& indices)
 {
 	m_indices = indices;
+	m_indexCount = (int)indices.size();
 	m_dirty = true;
 }
 
@@ -305,9 +310,18 @@ void Mesh::UpdateResources()
 		m_vertexBuffer = m_graphics->CreateVertexBuffer(StringFormat("%s Vertex Buffer", m_name.c_str()), m_vertexBufferFormat, (int)m_vertices.size());
 		m_vertexBuffer->Stage((void*)interleavedData.data(), 0, (int)interleavedData.size());
 
-		m_renderer->QueueRenderCommand(RenderCommandStage::Global_PreRender, [=](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
+		m_renderer->QueueRenderCommand(RenderCommandStage::Global_PreRender, [&](std::shared_ptr<IGraphicsCommandBuffer> buffer) {
 			buffer->Upload(m_vertexBuffer);
 			buffer->Upload(m_indexBuffer);
+
+			if (!m_keepCpuShadowCopy)
+			{
+				m_vertices.clear();
+				m_normals.clear();
+				m_texCoords.clear();
+				m_colors.clear();
+				m_indices.clear();
+			}
 		});
 	}
 }

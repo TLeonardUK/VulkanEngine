@@ -953,12 +953,12 @@ std::shared_ptr<IGraphicsFramebuffer> VulkanGraphics::CreateFramebuffer(const St
 	return pass;
 }
 
-std::shared_ptr<IGraphicsImageView> VulkanGraphics::CreateImageView(const String& name, std::shared_ptr<IGraphicsImage> image)
+std::shared_ptr<IGraphicsImageView> VulkanGraphics::CreateImageView(const String& name, std::shared_ptr<IGraphicsImage> image, int baseLayer, int layerCount)
 {
 	ScopeLock guard(m_resourcesMutex);
 
 	std::shared_ptr<VulkanImageView> pass = std::make_shared<VulkanImageView>(shared_from_this(), m_logicalDevice, m_logger, name);
-	if (!pass->Build(image))
+	if (!pass->Build(image, baseLayer, layerCount))
 	{
 		return nullptr;
 	}

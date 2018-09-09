@@ -225,7 +225,7 @@ void VulkanCommandBuffer::Clear(const std::shared_ptr<IGraphicsImage>& image, Co
 	VkImageSubresourceRange imageRange = {};
 	imageRange.aspectMask = aspectFlags;
 	imageRange.levelCount = 1;
-	imageRange.layerCount = 1;
+	imageRange.layerCount = vulkanImage->GetLayers();
 
 	VkImageLayout originallLayout = vulkanImage->GetVkLayout();
 	TransitionImage(vulkanImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);

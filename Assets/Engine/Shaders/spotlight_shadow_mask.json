@@ -18,7 +18,7 @@
     {
         "Vertex":
         {
-            "ShaderPath": "Engine/Shaders/directional_shadow_mask.vert",
+            "ShaderPath": "Engine/Shaders/spotlight_shadow_mask.vert",
             "EntryPoint": "main",
             "VertexStreams":
             {
@@ -38,7 +38,7 @@
         },
         "Fragment":
         {
-            "ShaderPath": "Engine/Shaders/directional_shadow_mask.frag",
+            "ShaderPath": "Engine/Shaders/spotlight_shadow_mask.frag",
             "EntryPoint": "main"
         }
     },
@@ -68,13 +68,13 @@
 			"Set": 0,
             "BindTo": "GBuffer2"
         },
-        "cascadeShadowMaps":
+        "lightShadowMap":
         {
-            "Type": "Sampler[8]",
+            "Type": "Sampler",
 			"Frequency": "Mesh",
             "Binding": 0,
 			"Set": 1,
-            "BindTo": "LightCascadeShadowMaps"
+            "BindTo": "LightShadowMap"
         },
         "lightProperties":
         {
@@ -83,46 +83,21 @@
 			"Set": 2,
 			"Frequency": "Mesh",
             "Fields":
-            {                      
-                "cascadeCount":
-                {
-                    "Format": "Int",
-                    "BindTo": "LightCascadeCount"
-                },                    
-                "cascadeBlendFactor":
-                {
-                    "Format": "Float",
-                    "BindTo": "LightShadowCascadeBlendFactor"
-                },             				
-                "viewPosition":
-                {
-                    "Format": "Float4",
-                    "BindTo": "LightViewPosition"
-                },                      
+            {                           
                 "lightWorldDirection":
                 {
                     "Format": "Float4",
                     "BindTo": "LightWorldDirection"
                 },                                
-                "cascadeMapSize":
+                "lightMapSize":
                 {
-                    "Format": "Float[8]",
-                    "BindTo": "LightCascadeMapSize"
+                    "Format": "Float",
+                    "BindTo": "LightShadowMapSize"
                 },                  
-                "cascadeSplitDistance":
+                "shadowViewProj":
                 {
-                    "Format": "Float[8]",
-                    "BindTo": "LightCascadeSplitDistances"
-                },                       
-                "cascadeRadius":
-                {
-                    "Format": "Float[8]",
-                    "BindTo": "LightCascadeRadius"
-                },                          
-                "cascadeViewProj":
-                {
-					"Format": "Matrix4[8]",
-                    "BindTo": "LightCascadeViewProj"
+					"Format": "Matrix4",
+                    "BindTo": "LightShadowViewProj"
                 }     
             }
         }

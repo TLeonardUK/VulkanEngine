@@ -198,7 +198,7 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		// Calculate frustum from projection matrix.
 		cascade.frustum = Frustum(cascade.projectionMatrix * viewMatrix);
 
-		if (m_renderer->IsDrawBoundsEnabled())
+		if (false)//m_renderer->IsDrawBoundsEnabled())
 		{
 			{
 				DrawDebugFrustumMessage frusumDrawMsg;
@@ -220,67 +220,18 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 		cascade.viewProperties.Set(ProjectionMatrixHash, cascade.projectionMatrix);
 		cascade.viewProperties.UpdateResources(m_graphics, m_logger);
 
-		// Grab all visible entities from the oct-tree.
-		{
-			ProfileScope scope(ProfileColors::Draw, "Search OctTree");
-			spatialSystem->GetTree().Get(cascade.frustum, cascade.visibleEntitiesResult, false);
-		}
-		// Batch up all meshes.
-		{
-			ProfileScope scope(ProfileColors::Draw, "Batch Meshes");
-			cascade.meshBatcher.Batch(world, m_renderer, m_logger, m_graphics, cascade.visibleEntitiesResult.entries, MaterialVariant::DepthOnly, &cascade.viewProperties,
-				[=](Entity entity, const MeshComponent* mesh, const TransformComponent* transform) -> bool
-				{
-					std::shared_ptr<Material> material = mesh->mesh->GetMaterial().Get();
-					std::shared_ptr<Shader> shader = material->GetShader().Get();
-					return (shader->GetProperties().ShadowCaster);
-				}
-			);
-		}
-
-		// Generate command buffers for each batch.
-		Array<MaterialRenderBatch*>& renderBatches = cascade.meshBatcher.GetBatches();
-		cascade.batchBuffers.resize(renderBatches.size());
-		
-		ParallelFor((int)renderBatches.size(), [&](int index)
-		{
-			std::shared_ptr<IGraphicsCommandBuffer> drawBuffer = m_renderer->RequestPrimaryBuffer();
-			cascade.batchBuffers[index] = drawBuffer;
-
-			MaterialRenderBatch*& batch = renderBatches[index];
-
-			ProfileScope scope(ProfileColors::Draw, "Render material batch: " + batch->material->GetName());
-
-			// Generate drawing buffer.
-			drawBuffer->Reset();
-			drawBuffer->Begin();
-
-			drawBuffer->BeginPass(batch->material->GetRenderPass(), cascade.shadowMapFramebuffer, true);
-			drawBuffer->BeginSubPass();
-
-			drawBuffer->SetPipeline(batch->material->GetPipeline());
-
-			drawBuffer->SetScissor(0, 0, cascade.mapSize, cascade.mapSize);
-			drawBuffer->SetViewport(0, 0, cascade.mapSize, cascade.mapSize);
-
-			{
-				ProfileScope scope(ProfileColors::Draw, "Draw Meshes");
-				for (int i = 0; i < batch->meshInstances.size(); i++)
-				{
-					MeshInstance& instance = *batch->meshInstances[i];
-					drawBuffer->SetIndexBuffer(*instance.indexBuffer);
-					drawBuffer->SetVertexBuffer(*instance.vertexBuffer);
-					drawBuffer->SetResourceSets(instance.resourceSets->data(), (int)instance.resourceSets->size());
-					drawBuffer->DrawIndexedElements(instance.indexCount, 1, 0, 0, 0);
-				}
-			}
-
-			drawBuffer->EndSubPass();
-			drawBuffer->EndPass();
-
-			drawBuffer->End();
-
-		}, 1, "Command Buffer Creation");
+		// Draw view to frame buffer.
+		cascade.drawViewState.world = &world;
+		cascade.drawViewState.frustum = cascade.frustum;
+		cascade.drawViewState.viewProperties = &cascade.viewProperties;
+		cascade.drawViewState.name = "Shadow Map Cascade";
+		cascade.drawViewState.stage = RenderCommandStage::View_ShadowMap;
+		cascade.drawViewState.viewport = Rect(0, 0, cascade.mapSize, cascade.mapSize);
+		cascade.drawViewState.viewId = reinterpret_cast<uint64_t>(view);
+		cascade.drawViewState.requiredFlags = RenderFlags::ShadowCaster;
+		cascade.drawViewState.materialVariant = MaterialVariant::DepthOnly;
+		cascade.drawViewState.framebuffer = cascade.shadowMapFramebuffer;
+		m_renderer->DrawView(cascade.drawViewState);
 
 		// Transition and clear the shadow map.
 		{
@@ -296,12 +247,6 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 			m_renderer->QueuePrimaryBuffer("Shadow Map Clear", RenderCommandStage::View_PreRender, clearBuffer, reinterpret_cast<uint64_t>(view));
 		}
 
-		// Queue all shadow-map generation buffers.
-		for (int i = 0; i < cascade.batchBuffers.size(); i++)
-		{
-			m_renderer->QueuePrimaryBuffer("Shadow Map Generation", RenderCommandStage::View_ShadowMap, cascade.batchBuffers[i], reinterpret_cast<uint64_t>(view), renderBatches[i]->material->GetShader().Get()->GetProperties().RenderOrder);
-		}
-
 		// Transition back to reading format.
 		{
 			std::shared_ptr<IGraphicsCommandBuffer> drawBuffer = m_renderer->RequestPrimaryBuffer();
@@ -314,9 +259,10 @@ void RenderDirectionalShadowMapSystem::RenderLight(
 
 			m_renderer->QueuePrimaryBuffer("Shadow Map Transition", RenderCommandStage::View_GBuffer, drawBuffer, reinterpret_cast<uint64_t>(view));
 		}
+
 	}, 1, "Shadow Map Cascade Building");
 
-	// Update shadow mesh rendering properties.
+	// Update shadow mask rendering properties.
 	Array<RenderPropertyImageSamplerValue> cascadeShadowMapsArray;
 	Array<Matrix4> cascadeViewProjArray;
 	Array<float> cascadeSplitDistanceArray;
@@ -369,7 +315,7 @@ void RenderDirectionalShadowMapSystem::Tick(
 {
 	// Draw shadow map for each light.
 	{
-		ProfileScope scope(Color::Blue, "Update Shadow Maps");
+		ProfileScope scope(Color::Blue, "Update Directional Shadow Maps");
 
 		std::shared_ptr<AspectCollection> viewCollection = world.GetAspectCollection(m_cameraViewAspectId);
 		const Array<CameraViewComponent*>& viewComponents = viewCollection->GetEntityComponents<CameraViewComponent>();

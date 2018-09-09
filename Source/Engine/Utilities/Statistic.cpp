@@ -136,7 +136,7 @@ String Statistic::FormatValue(double value)
 	{
 	case StatisticFormat::Integer:			return StringFormat("%i", (int)value);
 	case StatisticFormat::Float:			return StringFormat("%.2f", value);
-	case StatisticFormat::Bytes:			return FormatBytes((int)value);
+	case StatisticFormat::Bytes:			return FormatBytes((size_t)value);
 	case StatisticFormat::Milliseconds:		return StringFormat("%.2f ms", value);
 	}
 	return StringFormat("%f", value);

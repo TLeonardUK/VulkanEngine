@@ -15,6 +15,8 @@
 #include "Engine/Components/Mesh/ModelComponent.h"
 #include "Engine/Components/Transform/TransformComponent.h"
 #include "Engine/Components/Lighting/DirectionalLightComponent.h"
+#include "Engine/Components/Lighting/SpotLightComponent.h"
+#include "Engine/Components/Lighting/PointLightComponent.h"
 
 VulkanGameInstance::VulkanGameInstance(std::shared_ptr<Engine> engine)
 	: IGameInstance(engine)
@@ -192,14 +194,14 @@ void VulkanGameInstance::Initialize()
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/interior.json");
 	}*/
-	{
+	/*{
 		m_environment2 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment2);
 
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment2);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Bistro/exterior.json");
-	}
+	}*/
 	/*{
 		m_environment2 = world->CreateEntity();
 
@@ -217,14 +219,14 @@ void VulkanGameInstance::Initialize()
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/SanMiguel/san-miguel.json");
 	}*/
-	/*{
+	{
 		m_environment1 = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_environment1);
 
 		ModelComponent* modelComponent = world->AddComponent<ModelComponent>(m_environment1);
 		modelComponent->model = resourceManager->Load<Model>("Engine/Models/Sponza/sponza.json");
-	}*/
+	}
 
 	/*for (int x = -1; x < 3; x++)
 	{
@@ -251,37 +253,22 @@ void VulkanGameInstance::Initialize()
 	}
 
 	// Create directional light.
-	{
+	/*{
 		m_directionalLight = world->CreateEntity();
 
 		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_directionalLight);
-	//	rootTransform->localPosition = Vector3(-809.201294f, 4059.02295f, -2213.07935f);
-	//	rootTransform->localRotation = Quaternion(-0.449642152f, -0.173942536f, 0.0897440314f, 0.871499717f);
 		rootTransform->localPosition = Vector3(2049.83472f, 3228.46704f, -483.595795f);
 		rootTransform->localRotation = Quaternion(0.389321238f, -0.530930877f, 0.299298376f, -0.690624118f);
-	//	rootTransform->localPosition = Vector3(0.0f, 1000.0f, 0.0f);
-	//	rootTransform->localRotation = Quaternion::AngleAxis(Math::Pi * 2.0f, Vector3::Right);
 
 		DirectionalLightComponent* lightComponent = world->AddComponent<DirectionalLightComponent>(m_directionalLight);
 		lightComponent->isShadowCasting = true;
 		lightComponent->shadowMapCascades = 3;
-		lightComponent->shadowMapSize = 512;
+		lightComponent->shadowMapSize = 1024;
 		lightComponent->shadowDistance = 4000.0f;
 		lightComponent->shadowMapSplitExponent = 0.95f;// 0.98f;
 		lightComponent->shadowMapCascadeBlendFactor = 0.1f;
-	}
-	/*{
-		m_directionalLight2 = world->CreateEntity();
-
-		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_directionalLight2);
-		rootTransform->localPosition = Vector3(-3672.85278f, 4701.94482f, -142.922623f);
-		rootTransform->localRotation = Quaternion(-0.278151512f, -0.647214472f, 0.275164783f, 0.654239595f);
-
-		DirectionalLightComponent* lightComponent = world->AddComponent<DirectionalLightComponent>(m_directionalLight2);
-		lightComponent->isShadowCasting = true;
-		lightComponent->shadowMapSize = 1024;
 	}*/
-
+	
 	// Create debug fly camera.
 	{
 		m_camera = world->CreateEntity();
@@ -298,6 +285,45 @@ void VulkanGameInstance::Initialize()
 		FlyCameraComponent* flyCamera = world->AddComponent<FlyCameraComponent>(m_camera);
 		flyCamera->movementSpeed = 50.0f;
 		flyCamera->mouseSensitivity = 500.0f;
+	}
+
+	// Create spot light.
+	/*{
+		m_spotLight = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_spotLight);
+		rootTransform->localPosition = Vector3(500.0f, 1500.0f, 500.0f);
+		rootTransform->localRotation = Quaternion::Identity;
+		//rootTransform->parent = m_camera;
+
+		// Hack: We shouldn't be modifiying any of these components directly, we should be using messages ...
+		//TransformComponent* cameraTransform = world->GetComponent<TransformComponent>(m_camera);
+		//cameraTransform->children.push_back(m_spotLight);
+
+		SpotLightComponent* lightComponent = world->AddComponent<SpotLightComponent>(m_spotLight);
+		lightComponent->isShadowCasting = true;
+		lightComponent->shadowMapSize = 512;
+		lightComponent->angle = 45.0f;
+		lightComponent->range = 2500.0f;
+	}*/
+
+	// Create point light.
+	{
+		m_pointLight = world->CreateEntity();
+
+		TransformComponent* rootTransform = world->AddComponent<TransformComponent>(m_pointLight);
+		rootTransform->localPosition = Vector3(0.0f, 500.0f, 0.0f);// Vector3(500.0f, 1500.0f, 500.0f);
+		rootTransform->localRotation = Quaternion::Identity;
+		//rootTransform->parent = m_camera;
+
+		// Hack: We shouldn't be modifiying any of these components directly, we should be using messages ...
+		//TransformComponent* cameraTransform = world->GetComponent<TransformComponent>(m_camera);
+		//cameraTransform->children.push_back(m_pointLight);
+
+		PointLightComponent* lightComponent = world->AddComponent<PointLightComponent>(m_pointLight);
+		lightComponent->isShadowCasting = true;
+		lightComponent->shadowMapSize = 1024;
+		lightComponent->radius = 5000.0f;
 	}
 
 	/*{
@@ -332,9 +358,14 @@ void VulkanGameInstance::Tick(const FrameTime& time)
 	std::shared_ptr<World> world = engine->GetWorld();
 
 	static float angle = 0.2f;
-	angle += time.DeltaTime * 0.001f;
+	angle += time.DeltaTime * 2.0f;
 
-	TransformComponent* rootTransform = world->GetComponent<TransformComponent>(m_directionalLight);
-	rootTransform->localRotation = Quaternion::AngleAxis(Math::Pi*1.25f, Vector3::Right) * Quaternion::AngleAxis(angle, Vector3::Up);
-	rootTransform->isDirty = true;
+	//TransformComponent* rootTransform = world->GetComponent<TransformComponent>(m_directionalLight);
+	//rootTransform->localRotation = Quaternion::AngleAxis(Math::Pi*1.25f, Vector3::Right) * Quaternion::AngleAxis(angle, Vector3::Up);
+	//rootTransform->isDirty = true;
+
+
+//	TransformComponent* rootTransform = world->GetComponent<TransformComponent>(m_spotLight);
+//	rootTransform->localRotation = Quaternion::AngleAxis(Math::Pi*1.25f, Vector3::Right) * Quaternion::AngleAxis(angle, Vector3::Up);
+//	rootTransform->isDirty = true;
 }

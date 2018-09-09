@@ -25,6 +25,8 @@ protected:
 	Entity m_environment2;
 	Entity m_directionalLight;
 	Entity m_directionalLight2;
+	Entity m_spotLight;
+	Entity m_pointLight;
 
 public:
 	VulkanGameInstance(std::shared_ptr<Engine> engine);

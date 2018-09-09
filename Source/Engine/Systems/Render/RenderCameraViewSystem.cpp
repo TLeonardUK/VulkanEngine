@@ -86,84 +86,15 @@ void RenderCameraViewSystem::TickView(
 	view->viewProperties.Set(CameraPositionHash, cameraPosition);
 	view->viewProperties.UpdateResources(m_graphics, m_logger);
 
-	// Grab all visible entities from the oct-tree.
-	{
-		ProfileScope scope(ProfileColors::Draw, "Search OctTree");
-		spatialSystem->GetTree().Get(view->frustum, m_visibleEntitiesResult, false);
-	}
-
-	// Batch up all meshes.
-	{
-		ProfileScope scope(ProfileColors::Draw, "Batch Meshes");
-		m_meshBatcher.Batch(world, m_renderer, m_logger, m_graphics, m_visibleEntitiesResult.entries, MaterialVariant::Normal, &view->viewProperties);
-	}
-
-	// Generate command buffers for each batch.
-	Array<MaterialRenderBatch*>& renderBatches = m_meshBatcher.GetBatches();
-
-	m_batchBuffers.resize(renderBatches.size());
-
-	ParallelFor((int)renderBatches.size(), [&](int index)
-	{
-		std::shared_ptr<IGraphicsCommandBuffer> drawBuffer = m_renderer->RequestPrimaryBuffer();
-		m_batchBuffers[index] = drawBuffer;
-
-		MaterialRenderBatch*& batch = renderBatches[index];
-
-		ProfileScope scope(ProfileColors::Draw, "Render material batch: " + batch->material->GetName());
-
-		// Generate drawing buffer.
-		drawBuffer->Reset();
-		drawBuffer->Begin();
-
-		drawBuffer->BeginPass(batch->material->GetRenderPass(), batch->material->GetFrameBuffer(), true);
-		drawBuffer->BeginSubPass();
-
-		if (m_renderer->IsWireframeEnabled())
-		{
-			drawBuffer->SetPipeline(batch->material->GetWireframePipeline());
-		}
-		else
-		{
-			drawBuffer->SetPipeline(batch->material->GetPipeline());
-		}
-
-		drawBuffer->SetScissor(
-			static_cast<int>(viewport.x),
-			static_cast<int>(viewport.y),
-			static_cast<int>(viewport.width),
-			static_cast<int>(viewport.height)
-		);
-		drawBuffer->SetViewport(
-			static_cast<int>(viewport.x),
-			static_cast<int>(viewport.y),
-			static_cast<int>(viewport.width),
-			static_cast<int>(viewport.height)
-		);
-
-		{
-			ProfileScope scope(ProfileColors::Draw, "Draw Meshes");
-			for (int i = 0; i < batch->meshInstances.size(); i++)
-			{
-				MeshInstance& instance = *batch->meshInstances[i];
-				drawBuffer->SetIndexBuffer(*instance.indexBuffer);
-				drawBuffer->SetVertexBuffer(*instance.vertexBuffer);
-				drawBuffer->SetResourceSets(instance.resourceSets->data(), (int)instance.resourceSets->size());
-				drawBuffer->DrawIndexedElements(instance.indexCount, 1, 0, 0, 0);
-			}
-		}
-
-		drawBuffer->EndSubPass();
-		drawBuffer->EndPass();
-
-		drawBuffer->End();
-
-	}, 1, "Command Buffer Creation");
-	
-	for (int i = 0; i < m_batchBuffers.size(); i++)
-	{
-		m_renderer->QueuePrimaryBuffer("Camera View Render", RenderCommandStage::View_GBuffer, m_batchBuffers[i], reinterpret_cast<uint64_t>(view), renderBatches[i]->material->GetShader().Get()->GetProperties().RenderOrder);
-	}
+	// Draw view to frame buffer.
+	m_drawViewState.world = &world;
+	m_drawViewState.frustum = view->frustum;
+	m_drawViewState.viewProperties = &view->viewProperties;
+	m_drawViewState.name = "Camera View";
+	m_drawViewState.stage = RenderCommandStage::View_GBuffer;
+	m_drawViewState.viewport = viewport;
+	m_drawViewState.viewId = reinterpret_cast<uint64_t>(view);
+	m_renderer->DrawView(m_drawViewState);
 
 	// Transition buffer at start of rendering.
 	{
@@ -183,7 +114,7 @@ void RenderCameraViewSystem::TickView(
 
 		// Clear all buffers we will be rendering to.
 		buffer->Clear(m_renderer->GetDepthImage(), Color(0.1f, 0.1f, 0.1f, 1.0f), 1.0f, 0.0f);
-		buffer->Clear(m_renderer->GetShadowMaskImage(), Color(0.0f, 0.0f, 0.0f, 0.0f), 1.0f, 0.0f);
+		buffer->Clear(m_renderer->GetShadowMaskImage(), Color(1.0f, 1.0f, 1.0f, 1.0f), 1.0f, 0.0f);
 		buffer->Clear(m_renderer->GetLightAccumulationImage(), Color(0.0f, 0.0f, 0.0f, 0.0f), 1.0f, 0.0f);
 
 		// DBEUG DEBUG DEBUG DEBUG

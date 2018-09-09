@@ -46,11 +46,17 @@ String VulkanImageView::GetName()
 	return m_name;
 }
 
-bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image)
+bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image, int baseLayer, int layerCount)
 {
 	//m_logger->WriteInfo(LogCategory::Vulkan, "Builiding new image view: %s", m_name.c_str());
 
 	std::shared_ptr<VulkanImage> vulkanImage = std::static_pointer_cast<VulkanImage>(image);
+
+	if (baseLayer == -1 && layerCount == -1)
+	{
+		baseLayer = 0;
+		layerCount = vulkanImage->GetLayers();
+	}
 
 	m_vulkanImage = vulkanImage;
 
@@ -65,11 +71,11 @@ bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image)
 	createViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	createViewInfo.image = vulkanImage->GetVkImage();
 
-	if (image->GetLayers() == 6)
+	if (layerCount == 6)
 	{
 		createViewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 	}
-	else if (image->GetLayers() == 1)
+	else if (layerCount == 1)
 	{
 		createViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	}
@@ -98,8 +104,8 @@ bool VulkanImageView::Build(std::shared_ptr<IGraphicsImage> image)
 	createViewInfo.format = vulkanImage->GetVkFormat();
 	createViewInfo.subresourceRange.aspectMask = aspectFlags;
 	createViewInfo.subresourceRange.baseMipLevel = 0;
-	createViewInfo.subresourceRange.baseArrayLayer = 0;
-	createViewInfo.subresourceRange.layerCount = vulkanImage->GetLayers();
+	createViewInfo.subresourceRange.baseArrayLayer = baseLayer;
+	createViewInfo.subresourceRange.layerCount = layerCount;
 	createViewInfo.subresourceRange.levelCount = vulkanImage->GetMipLevels();
 	createViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 	createViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;

@@ -39,8 +39,10 @@
 #include "Engine/Systems/Camera/FlyCameraMovementSystem.h"
 #include "Engine/Systems/Render/RenderCameraViewSystem.h"
 #include "Engine/Systems/Render/RenderCameraViewShadowMaskSystem.h"
-#include "Engine/Systems/Render/RenderDebugSystem.h"
 #include "Engine/Systems/Render/RenderDirectionalShadowMapSystem.h"
+#include "Engine/Systems/Render/RenderSpotLightShadowMapSystem.h"
+#include "Engine/Systems/Render/RenderPointLightShadowMapSystem.h"
+#include "Engine/Systems/Render/RenderDebugSystem.h"
 
 #include "Engine/Utilities/Statistic.h"
 
@@ -429,6 +431,8 @@ bool Engine::InitWorld()
 	m_world->AddSystem<RenderCameraViewSystem>(m_world, m_graphics, m_logger, m_renderer);
 	m_world->AddSystem<RenderCameraViewShadowMaskSystem>(m_world, m_graphics, m_logger, m_renderer, m_resourceManager);
 	m_world->AddSystem<RenderDirectionalShadowMapSystem>(m_world, m_logger, m_renderer, m_resourceManager, m_graphics);
+	m_world->AddSystem<RenderSpotLightShadowMapSystem>(m_world, m_logger, m_renderer, m_resourceManager, m_graphics);
+	m_world->AddSystem<RenderPointLightShadowMapSystem>(m_world, m_logger, m_renderer, m_resourceManager, m_graphics);
 
 	// Transform
 	m_world->AddSystem<TransformSystem>();

@@ -32,7 +32,15 @@ private:
 	ResourcePtr<Material> m_directionalShadowMaskMaterial;
 	std::shared_ptr<MeshRenderState> m_directionalShadowMaskRenderState;
 
+	ResourcePtr<Material> m_spotlightShadowMaskMaterial;
+	std::shared_ptr<MeshRenderState> m_spotlightShadowMaskRenderState;
+
+	ResourcePtr<Material> m_pointShadowMaskMaterial;
+	std::shared_ptr<MeshRenderState> m_pointShadowMaskRenderState;
+	
 	AspectId m_directionalComponentAspectId;
+	AspectId m_spotComponentAspectId;
+	AspectId m_pointComponentAspectId;
 
 private:
 	void TickView(
